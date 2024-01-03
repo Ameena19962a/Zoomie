@@ -1,0 +1,92 @@
+<!--
+  src: Specifies the path to the image using the "Copy Path" feature in Parcel | '/images/lorum/ipsum/lorumipsum.png'
+  width: Specifies the width of an image | 640
+  height: Specifies the height of an image. This is required. | 640
+  valign: Define the vertical alignment of the content | 'top' or 'middle' or 'bottom'
+-->
+<!doctype html>
+<html lang="und" dir="auto" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+  <head></head>
+  <head>
+    <title>Image background example</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
+    <!--[if mso]>
+    <noscript>
+      <xml>
+        <o:OfficeDocumentSettings>
+          <o:AllowPNG />
+          <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+      </xml>
+    </noscript>
+    <![endif]-->
+  <!--[if !mso]><!-->
+    <style type="text/css">
+      @font-face {
+        font-family: 'family';
+        font-style: style;
+        font-weight: 400;
+        src: url('https://www.google.co.uk/') format('format');
+      }
+    </style>
+    <!--[endif]-->
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+      table,
+      td {
+        border-collapse: collapse;
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+      img {
+        border: 0;
+        height: auto;
+        line-height: 100%;
+        outline: none;
+        text-decoration: none;
+        -ms-interpolation-mode: bicubic;
+      }
+      @media (max-width: 640px) {
+        .height-auto-container {
+          height: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body style="word-spacing:normal;background-color:transparent;">
+    <div lang="und" dir="auto" style="background-color:transparent;">
+      <table role="presentation" border="0" cellspacing="0" width="100%" valign="top" cellpadding="0">
+        <tr>
+          <td>
+            <!--[if mso]><table role="presentation" align="center" border="0" cellpadding="0" cellspacing="0" style="width:640px;" width="640"><tr><!--[endif]-->
+            <!--[if mso]><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly"><!--[endif]-->
+            <div style="margin:0px auto;max-width:640px;">
+              <table role="presentation" align="center" border="0" cellpadding="0" cellspacing="0" width="100%" valign="top">
+                <tr>
+                  <td style="direction:ltr;font-size:0px;">
+                    <v:image alt="" xmlns:v="urn:schemas-microsoft-com:vml" style="display:none;border:0;height:640px;mso-position-horizontal:center;position:absolute;top:0;width:640px;z-index:-3;" src="https://fakeimg.pl/640x640"></v:image>
+                    <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%;">
+                      <tr style="vertical-align:bottom;">
+                        <td style="width:0.01%;padding-bottom:100%;mso-padding-bottom-alt:0;"></td>
+                        <td class="height-auto-container" height="640" background="https://fakeimg.pl/640x640" style="background:url('https://fakeimg.pl/640x640') no-repeat center center / cover;background-position:center center;background-size:cover;background-repeat:no-repeat;vertical-align:bottom;">                        </td>
+                        <td style="width:0.01%;padding-bottom:100%;mso-padding-bottom-alt:0;"></td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <!--[if mso]></td><!--[endif]-->
+            <!--[if mso]></tr></table><!--[endif]-->
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>
