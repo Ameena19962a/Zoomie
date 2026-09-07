@@ -1,47 +1,2276 @@
-<!DOCTYPE html>
-<html lang="en" >
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>zoomie </title>
-  <link rel="stylesheet" href="./style.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TimeAnchor</title>
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="TimeAnchor" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#f6f4ef" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" href="icons/icon-512.png" />
+<!--
+  Cloud accounts (Supabase). This only works with real network access (the
+  native app, or a normally-hosted copy of this page) — it will not work
+  inside a sandboxed preview that blocks outside requests. If the two
+  constants in the script below are left as placeholders, the app just runs
+  in local-only mode as before; nothing breaks.
+-->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #f6f4ef;
+    --card: #ffffff;
+    --border: #e3ded3;
+    --text: #2c2a27;
+    --muted: #706a5f;
+    --muted-2: #8a8477;
+    --track: #eae6db;
+    --accent: #4d6b86;
+    --focus-ring: #2c6e9e;
+    --danger-quiet: #966335;
 
+    --cat-buffer: #9aa0a1;
+    --cat-buffer-tint: #eef0ef;
+
+    --radius-lg: 22px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1c1b19;
+      --card:#252320;
+      --border:#38352f;
+      --text:#ece8e0;
+      --muted:#b3ab9c;
+      --muted-2:#948c7c;
+      --track:#3a372f;
+      --accent:#8fb4d1;
+      --focus-ring:#8fd0ff;
+      --cat-buffer:#7c8283;
+      --cat-buffer-tint:#2c2e2c;
+    }
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    line-height:1.45;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* ---------- Whimsical themed backdrops ----------
+     Every color theme except Monotone (kept deliberately plain, for anyone
+     who picked it specifically to cut down visual noise) gets its own
+     tiled decoration at two scales so it doesn't read as an obvious
+     repeating grid, with a slow, gentle twinkle (never faster than a
+     normal breath — nowhere near flash-rate territory). */
+  body[data-bg-pattern]{ position:relative; }
+  body[data-bg-pattern]::before, body[data-bg-pattern]::after{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-repeat: repeat;
+  }
+  /* Scoped to the actual static layout pieces (not a blanket ">*") so any
+     element appended straight to <body> later — celebration overlays,
+     etc. — isn't unexpectedly forced down to this z-index too: this
+     selector's specificity (it includes the "body" type) beats a plain
+     class selector, so a bare ">*" would silently win over e.g.
+     .celebrate-flash{ z-index:45 } and hide it behind everything. */
+  body[data-bg-pattern] > .notice-banner,
+  body[data-bg-pattern] > .auth-screen,
+  body[data-bg-pattern] > main.layout,
+  body[data-bg-pattern] > footer.app-footer{ position:relative; z-index:1; }
+  /* header.app-header is excluded above: it already has its own
+     position:sticky + z-index:20 (needed so it stays above scrolled
+     content, not just above the sparkle backdrop) — restating z-index
+     here at a lower value would fight that, not help it. */
+
+  /* Pink: 4-point stars (gold/white/magenta/lavender). */
+  body[data-bg-pattern="stars"]::before, body[data-bg-pattern="stars"]::after{
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cpath d='M15 3 L17.2 9.8 L24 12 L17.2 14.2 L15 21 L12.8 14.2 L6 12 L12.8 9.8 Z' fill='%23ffd166'/%3E%3Cpath d='M70 20 L72.5 27 L80 30 L72.5 33 L70 40 L67.5 33 L60 30 L67.5 27 Z' fill='%23ffffff'/%3E%3Cpath d='M40 60 L42 66 L48 68 L42 70 L40 76 L38 70 L32 68 L38 66 Z' fill='%23f472b6'/%3E%3Cpath d='M85 78 L86.8 82.5 L91.5 84 L86.8 85.5 L85 90 L83.2 85.5 L78.5 84 L83.2 82.5 Z' fill='%23c084fc'/%3E%3C/svg%3E");
+  }
+  body[data-bg-pattern="stars"]::before{ background-size: 130px 130px; background-position: 0 0; opacity:.85; }
+  body[data-bg-pattern="stars"]::after{ background-size: 210px 210px; background-position: 55px 90px; opacity:.55; transform:scale(1.3); }
+
+  /* Blue: drifting bubbles (soft outlined + a couple of filled dots). */
+  body[data-bg-pattern="bubbles"]::before, body[data-bg-pattern="bubbles"]::after{
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='20' cy='24' r='11' fill='none' stroke='%23ffffff' stroke-width='2.5' opacity='0.85'/%3E%3Ccircle cx='72' cy='58' r='15' fill='none' stroke='%23dbeeff' stroke-width='2.5' opacity='0.75'/%3E%3Ccircle cx='48' cy='86' r='7' fill='%23ffffff' opacity='0.55'/%3E%3Ccircle cx='30' cy='68' r='4' fill='%23ffffff' opacity='0.6'/%3E%3Ccircle cx='86' cy='18' r='5' fill='none' stroke='%23ffffff' stroke-width='2' opacity='0.7'/%3E%3C/svg%3E");
+  }
+  body[data-bg-pattern="bubbles"]::before{ background-size: 150px 150px; background-position: 0 0; opacity:.8; }
+  body[data-bg-pattern="bubbles"]::after{ background-size: 230px 230px; background-position: 70px 60px; opacity:.5; transform:scale(1.25); }
+
+  /* Calm mixed: confetti flecks in the app's own category colors. */
+  body[data-bg-pattern="confetti"]::before, body[data-bg-pattern="confetti"]::after{
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect x='10' y='15' width='11' height='11' rx='2.5' fill='%235b7fa6' opacity='0.85' transform='rotate(20 15.5 20.5)'/%3E%3Crect x='60' y='42' width='10' height='10' rx='2.5' fill='%23ab8657' opacity='0.85' transform='rotate(-18 65 47)'/%3E%3Ccircle cx='38' cy='72' r='5.5' fill='%236f9c7d' opacity='0.8'/%3E%3Cpath d='M76 8 L84 8 L80 16 Z' fill='%239a7bb0' opacity='0.85'/%3E%3Ccircle cx='87' cy='82' r='4' fill='%235b7fa6' opacity='0.7'/%3E%3C/svg%3E");
+  }
+  body[data-bg-pattern="confetti"]::before{ background-size: 140px 140px; background-position: 0 0; opacity:.8; }
+  body[data-bg-pattern="confetti"]::after{ background-size: 220px 220px; background-position: 60px 80px; opacity:.5; transform:scale(1.3); }
+
+  @media not (prefers-reduced-motion: reduce){
+    body[data-bg-pattern]::before{ animation: sparkleTwinkle 5s ease-in-out infinite; }
+    body[data-bg-pattern]::after{ animation: sparkleTwinkle 7s ease-in-out infinite 1.5s; }
+  }
+  @keyframes sparkleTwinkle{ 0%,100%{ opacity:.45 } 50%{ opacity:1 } }
+
+  a, button, input, select, textarea{ font-family:inherit; }
+  button{ cursor:pointer; }
+  button:focus-visible, [tabindex]:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible{
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  .visually-hidden{
+    position:absolute !important; width:1px;height:1px; padding:0;margin:-1px;
+    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+
+  /* ---------- Small celebratory burst on "Mark done" ---------- */
+  .celebrate-burst{
+    position:fixed; pointer-events:none; z-index:50; font-size:20px; line-height:1;
+    animation: celebrateFloat 950ms ease-out forwards;
+  }
+  @keyframes celebrateFloat{
+    0%{ opacity:1; transform:translate(0,0) scale(.6) rotate(0deg); }
+    100%{ opacity:0; transform:translate(var(--dx,0px),-55px) scale(1.15) rotate(20deg); }
+  }
+  .celebrate-message{
+    position:fixed; pointer-events:none; z-index:50; font-weight:700; font-size:14px;
+    color:var(--accent); background:var(--card); border:1px solid var(--border);
+    padding:6px 12px; border-radius:999px; box-shadow:0 4px 14px rgba(0,0,0,.12);
+    transform:translateX(-50%);
+  }
+  @media not (prefers-reduced-motion: reduce){
+    .celebrate-message{ animation: celebrateMsgPop 1400ms ease-out forwards; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .celebrate-message{ animation: celebrateMsgFadeOnly 1400ms ease-out forwards; }
+  }
+  @keyframes celebrateMsgPop{
+    0%{ opacity:0; transform:translate(-50%, 6px) scale(.9); }
+    15%{ opacity:1; transform:translate(-50%, 0) scale(1); }
+    80%{ opacity:1; }
+    100%{ opacity:0; transform:translate(-50%, -10px) scale(1); }
+  }
+  @keyframes celebrateMsgFadeOnly{
+    0%{ opacity:0; }
+    15%{ opacity:1; }
+    80%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+  /* A bigger, impossible-to-miss celebration: a soft wash of color across
+     the whole screen (not just a few sparkles near wherever you tapped),
+     so finishing a task reads as a real moment even glanced at quickly or
+     tapped from way down in the timeline. */
+  .celebrate-flash{
+    position:fixed; inset:0; z-index:45; pointer-events:none; opacity:0;
+    background: radial-gradient(circle at var(--fx,50%) var(--fy,40%),
+      rgba(255,209,102,.85) 0%, rgba(244,114,182,.7) 30%, rgba(192,132,252,.5) 55%, transparent 78%);
+  }
+  @media not (prefers-reduced-motion: reduce){
+    .celebrate-flash{ animation: celebrateFlashPulse 750ms ease-out forwards; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .celebrate-flash{ animation: celebrateFlashFadeOnly 750ms ease-out forwards; }
+  }
+  @keyframes celebrateFlashPulse{
+    0%{ opacity:0; transform:scale(.85); }
+    30%{ opacity:1; transform:scale(1); }
+    100%{ opacity:0; transform:scale(1.2); }
+  }
+  @keyframes celebrateFlashFadeOnly{
+    0%{ opacity:0; }
+    30%{ opacity:.85; }
+    100%{ opacity:0; }
+  }
+
+  /* ---------- Header ---------- */
+  header.app-header{
+    position:sticky; top:0; z-index:20;
+    background:var(--bg);
+    border-bottom:1px solid var(--border);
+    padding: calc(14px + var(--safe-top)) 20px 14px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .brand{ display:flex; flex-direction:column; gap:2px; }
+  .brand h1{ margin:0; font-size:22px; letter-spacing:.2px; }
+  .brand p{ margin:0; font-size:12.5px; color:var(--muted); }
+  .header-controls{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+
+  .seg{ display:flex; gap:2px; }
+  .seg button{
+    border:none; background:transparent; color:var(--text);
+    padding:6px 11px; border-radius:999px; font-size:12.5px; font-weight:600;
+  }
+  .seg button.active{ background:var(--accent); color:#fff; }
+  .sim-clock{ font-size:12.5px; color:var(--muted); white-space:nowrap; }
+  .sim-clock strong{ color:var(--text); font-variant-numeric:tabular-nums; }
+
+  .icon-btn{
+    border:1px solid var(--border); background:var(--card); color:var(--text);
+    border-radius:999px; width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+    font-size:16px;
+  }
+  .primary-btn{
+    border:none; background:var(--accent); color:#fff; font-weight:600;
+    padding:9px 16px; border-radius:999px; font-size:13.5px;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .ghost-btn{
+    border:1px solid var(--border); background:var(--card); color:var(--text);
+    padding:8px 13px; border-radius:999px; font-size:13px; font-weight:600;
+  }
+  .quiet-btn{
+    border:1px solid var(--border); background:transparent; color:var(--text);
+    padding:6px 11px; border-radius:8px; font-size:12.5px;
+  }
+  .text-btn{
+    border:none; background:transparent; color:var(--accent); font-weight:600; font-size:13px; padding:4px 2px;
+  }
+  .duration-chips{
+    display:flex; flex-wrap:wrap; gap:6px; margin-top:7px;
+  }
+  .duration-chip{
+    border:1px solid var(--border); background:var(--track); color:var(--text);
+    padding:5px 12px; border-radius:999px; font-size:12.5px; font-weight:600;
+  }
+  .duration-chip:hover{ background:var(--accent); color:#fff; border-color:var(--accent); }
+
+  /* Progressive disclosure for the New block form: steps and extras stay
+     tucked away until asked for, so the form that opens by default is
+     just Title / Category / When / How long. */
+  .more-options{ margin-top:16px; border-top:1px solid var(--border); padding-top:12px; }
+  .more-options summary{
+    cursor:pointer; font-weight:600; font-size:13px; color:var(--accent);
+    list-style:none; display:flex; align-items:center; gap:6px;
+  }
+  .more-options summary::-webkit-details-marker{ display:none; }
+  .more-options summary::before{ content:"+"; font-size:16px; line-height:1; }
+  .more-options[open] summary::before{ content:"\2212"; }
+  .more-options summary span{ font-weight:400; color:var(--muted); }
+  .more-options-body{ padding-top:4px; }
+
+  /* ---------- Layout ---------- */
+  main.layout{
+    max-width:1120px; margin:0 auto; padding:20px;
+    display:grid; grid-template-columns: 380px 1fr; gap:20px; align-items:start;
+  }
+  @media (max-width: 880px){
+    main.layout{ grid-template-columns: 1fr; }
+  }
+  .panel{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg);
+    padding:18px;
+  }
+  .panel h2{ margin:0 0 10px 0; font-size:15px; }
+  .focus-panel{ position:sticky; top:78px; }
+  @media (max-width:880px){ .focus-panel{ position:static; } }
+
+  footer.app-footer{
+    max-width:1120px; margin:0 auto; padding:8px 20px calc(40px + var(--safe-bottom)); color:var(--muted-2); font-size:12px;
+  }
+
+  .notice-banner{
+    max-width:1120px; margin:12px auto 0; padding:0 20px;
+  }
+  .notice-banner .inner{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--cat-buffer-tint); border:1px solid var(--border); border-radius:var(--radius-md);
+    padding:10px 14px; font-size:12.5px; color:var(--text);
+  }
+  /* The accent color reads fine on white cards but doesn't reliably clear
+     4.5:1 against this banner's tinted background across every theme, so
+     its buttons use the same solid --text color as the rest of the
+     banner (still visually distinct via underline + weight). */
+  .notice-banner .inner .text-btn{ color:var(--text); text-decoration:underline; font-weight:700; }
+
+  /* ---------- Category chip ---------- */
+  .cat-chip{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:12px; font-weight:600; padding:3px 9px; border-radius:999px;
+    border:1px solid transparent;
+  }
+
+  /* ---------- Pie timer ---------- */
+  .pie-wrap{ position:relative; display:inline-flex; align-items:center; justify-content:center; }
+  .pie-outer{
+    border-radius:50%;
+    background: conic-gradient(var(--pie-color, var(--accent)) 0% var(--frac, 100%), var(--track) var(--frac, 100%) 100%);
+    transition: background 0.25s linear;
+    display:flex; align-items:center; justify-content:center;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .pie-outer{ transition:none; }
+  }
+  .pie-hole{
+    background:var(--card);
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column;
+  }
+  .pie-label{ font-weight:700; font-variant-numeric:tabular-nums; }
+  .pie.overrun .pie-outer{ box-shadow: 0 0 0 3px var(--danger-quiet) inset; }
+  @media not (prefers-reduced-motion: reduce){
+    .pie.overrun .pie-outer{ animation: gentlePulse 2.4s ease-in-out infinite; }
+  }
+  @keyframes gentlePulse{ 0%,100%{ opacity:1 } 50%{ opacity:.8 } }
+
+  /* ---------- Focus panel content ---------- */
+  .focus-empty{ color:var(--muted); font-size:13.5px; padding:10px 2px; }
+  .focus-empty .next-line{ margin-top:6px; color:var(--text); }
+  .focus-current{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; }
+  .focus-current .big-pie{ margin:6px 0 2px; }
+  .focus-title{ font-size:25px; font-weight:800; margin:0; line-height:1.25; }
+  .focus-time-range{ font-size:12.5px; color:var(--muted); }
+  .focus-remaining-text{ font-size:13.5px; margin:0; }
+  .focus-actions{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:6px; }
+
+  .overrun-banner{
+    width:100%; text-align:left; background:var(--cat-buffer-tint);
+    border:1px solid var(--border); border-radius:var(--radius-md);
+    padding:12px; font-size:13px; margin-top:4px;
+  }
+  .overrun-banner p{ margin:0 0 8px; }
+  .overrun-row{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .overrun-row input[type=number]{ width:56px; padding:5px 6px; border-radius:6px; border:1px solid var(--border); background:var(--card); color:var(--text); }
+
+  .subtask-list{ width:100%; text-align:left; list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .subtask-list li{ display:flex; align-items:center; gap:8px; font-size:13px; padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:var(--bg); }
+  .subtask-list li.done{ color:var(--muted); }
+  .subtask-list li.done .subtask-title{ text-decoration: line-through; text-decoration-color:var(--muted-2); }
+  .subtask-list input[type=checkbox]{ width:16px;height:16px; }
+  .subtask-est{ margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
+
+  .soundtrack-stub{
+    width:100%; margin-top:4px; display:flex; align-items:center; gap:10px;
+    border:1px dashed var(--border); border-radius:var(--radius-md); padding:9px 12px; font-size:12.5px; color:var(--muted);
+  }
+  .soundtrack-stub .play-toggle{
+    width:30px;height:30px;border-radius:50%; border:1px solid var(--border); background:var(--card); color:var(--text); flex:none;
+  }
+  .soundtrack-bar{ flex:1; height:5px; border-radius:999px; background:var(--track); overflow:hidden; }
+  .soundtrack-bar > span{ display:block; height:100%; background:var(--accent); }
+
+  /* ---------- Timeline ---------- */
+  .timeline-toolbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:10px; flex-wrap:wrap; }
+  .timeline-list{ display:flex; flex-direction:column; }
+  .tl-gap{ display:flex; align-items:center; justify-content:center; padding:2px 0; }
+  .tl-gap button{
+    font-size:11px; color:var(--muted); background:transparent; border:1px dashed var(--border);
+    border-radius:999px; padding:3px 10px;
+  }
+  .tl-gap button:hover, .tl-gap button:focus-visible{ color:var(--text); border-color:var(--accent); }
+
+  .block-row{
+    display:flex; gap:12px; align-items:flex-start;
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+    padding:12px 14px; margin:6px 0; border-left-width:6px; border-left-style:solid;
+  }
+  .block-row.is-buffer{
+    background-image: repeating-linear-gradient(135deg, color-mix(in srgb, var(--cat-buffer) 12%, transparent) 0 7px, transparent 7px 14px);
+    border-left-color: var(--cat-buffer);
+  }
+  .block-row.is-current{ box-shadow: 0 0 0 2px var(--accent); }
+  .block-row.is-done{ opacity:.68; }
+  .block-main{ flex:1; min-width:0; }
+  .block-top-line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .block-title{ font-weight:700; font-size:14px; margin:0; }
+  .block-meta{ font-size:12px; color:var(--muted); margin-top:3px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .status-tag{ font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted); }
+  .status-tag.now{ color:#fff; background:var(--accent); border-color:var(--accent); }
+  .status-tag.over{ color:var(--danger-quiet); border-color:var(--danger-quiet); background:transparent; }
+  .status-tag.wait{ color:var(--muted); border-style:dashed; }
+  .block-actions{ display:flex; gap:6px; align-items:center; flex:none; }
+  .icon-mini{ border:1px solid var(--border); background:transparent; color:var(--muted); width:28px;height:28px; border-radius:7px; font-size:13px; }
+  .icon-mini:hover{ color:var(--text); }
+  .subtask-badge{ font-size:11.5px; color:var(--muted); }
+
+  /* ---------- Dialogs ---------- */
+  dialog{
+    border:none; border-radius:var(--radius-lg); padding:0; width:min(520px, 92vw);
+    background:var(--card); color:var(--text);
+  }
+  dialog::backdrop{ background:rgba(20,18,14,.45); }
+  .dialog-inner{ padding:20px; max-height:82vh; overflow:auto; }
+  .dialog-inner h2{ margin:0 0 4px; font-size:17px; }
+  .dialog-sub{ margin:0 0 16px; font-size:12.5px; color:var(--muted); }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12.5px; font-weight:600; margin-bottom:5px; }
+  .field input[type=text], .field input[type=time], .field input[type=number], .field select{
+    width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-size:13.5px;
+  }
+  .field-row{ display:flex; gap:10px; }
+  .field-row .field{ flex:1; }
+  .checkbox-field{ display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:12px; }
+  .checkbox-field input{ width:16px; height:16px; }
+  .nudge-box{
+    background: var(--cat-buffer-tint); border:1px solid var(--border); border-radius:var(--radius-md);
+    padding:11px 12px; font-size:12.5px; margin-bottom:14px;
+  }
+  .nudge-box p{ margin:0 0 8px; }
+  .nudge-actions{ display:flex; gap:8px; }
+  .subtask-editor-row{ display:flex; gap:6px; margin-bottom:6px; align-items:center; }
+  .subtask-editor-row input[type=text]{ flex:1; }
+  .subtask-editor-row input[type=number]{ width:64px; }
+  .dialog-actions{ display:flex; justify-content:space-between; gap:8px; margin-top:18px; }
+  .dialog-actions .right-group{ display:flex; gap:8px; }
+  .color-swatch-input{ width:44px; height:32px; padding:2px; border:1px solid var(--border); border-radius:6px; background:var(--bg); }
+  .cat-manage-row{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+  .cat-manage-row input[type=text].cname{ flex:1; }
+  .cat-manage-row input[type=text].cicon{ width:44px; text-align:center; }
+
+  /* ---------- Auth screen ---------- */
+  .auth-screen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .auth-card{
+    width:100%; max-width:380px; background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius-lg); padding:28px;
+  }
+  .auth-card h1{ margin:0 0 4px; font-size:22px; }
+  .auth-card .auth-sub{ margin:0 0 20px; font-size:13px; color:var(--muted); }
+  .auth-tabs{ display:flex; gap:4px; background:var(--bg); border:1px solid var(--border); border-radius:999px; padding:4px; margin-bottom:18px; }
+  .auth-tabs button{ flex:1; border:none; background:transparent; padding:8px; border-radius:999px; font-size:13px; font-weight:600; color:var(--muted); }
+  .auth-tabs button.active{ background:var(--accent); color:#fff; }
+  .auth-error{ font-size:12.5px; color:var(--danger-quiet); margin:0 0 10px; min-height:1em; }
+  .auth-footer-link{ text-align:center; margin-top:14px; font-size:12.5px; color:var(--muted); }
+  .auth-offline-link{ display:block; text-align:center; margin-top:18px; font-size:12px; }
+  .auth-card .primary-btn{ width:100%; justify-content:center; padding:11px; font-size:14px; }
+  .cloud-status{ font-size:11.5px; color:var(--muted); display:flex; align-items:center; gap:5px; }
+  .cloud-status .dot{ width:7px; height:7px; border-radius:50%; background:var(--muted-2); }
+  .cloud-status.synced .dot{ background:#6f9c7d; }
+  .cloud-status.syncing .dot{ background:var(--accent); }
+  .cloud-status.error .dot{ background:var(--danger-quiet); }
+</style>
 </head>
 <body>
 
+<header class="app-header">
+  <div class="brand">
+    <h1 id="brandTagline">Hi, Ameena</h1>
+  </div>
+  <div class="header-controls">
+    <div class="sim-clock" id="simClockWrap" title="Speed and other testing tools are in Settings"><strong id="simClockText">--:--</strong></div>
+    <button type="button" class="icon-btn" id="speakNowBtn" aria-label="Speak the time and current plan" title="Speak the time and current plan" style="display:none;">🔊</button>
+    <span class="cloud-status" id="cloudStatus" style="display:none;"><span class="dot"></span><span id="cloudStatusText">Local only</span></span>
+    <button type="button" class="icon-btn" id="signOutBtn" aria-label="Sign out" title="Sign out" style="display:none;">↩️</button>
+    <button type="button" class="icon-btn" id="settingsBtn" aria-label="Settings: categories, sound, and more" title="Settings">⚙️</button>
+    <button type="button" class="primary-btn" data-action="new-block">+ New block</button>
+  </div>
+</header>
 
-<!DOCTYPE html>
-<html>
-<head>
-	<title>Slide Navbar</title>
-	<link rel="stylesheet" type="text/css" href="slide navbar style.css">
+<div class="notice-banner" id="noticeBanner" style="display:none;">
+  <div class="inner">
+    <span id="noticeText"></span>
+    <span style="display:flex; gap:6px; flex:none;">
+      <button type="button" class="text-btn" id="noticeUndo" style="display:none;">Undo</button>
+      <button type="button" class="text-btn" id="noticeDismiss">Dismiss</button>
+    </span>
+  </div>
+</div>
 
-<link href="https://fonts.googleapis.com/css2?family=Shadows+Into+Light&display=swap" rel="stylesheet">
-</head>
-<body>
-	<div class="main">  	
-		<input type="checkbox" id="chk" aria-hidden="true">
+<div class="auth-screen" id="authScreen" style="display:none;">
+  <div class="auth-card">
+    <h1>TimeAnchor</h1>
+    <p class="auth-sub">Sign in to keep your timeline synced across devices.</p>
+    <div class="auth-tabs" role="tablist">
+      <button type="button" role="tab" id="authTabLogin" class="active" aria-selected="true">Log in</button>
+      <button type="button" role="tab" id="authTabSignup" aria-selected="false">Sign up</button>
+    </div>
+    <p class="auth-error" id="authError" role="alert"></p>
+    <form id="authForm">
+      <div class="field" id="authNameField" style="display:none;"><label for="authName">Your name</label><input type="text" id="authName" autocomplete="name" placeholder="e.g. Sam"></div>
+      <div class="field"><label for="authEmail">Email</label><input type="email" id="authEmail" autocomplete="email" required></div>
+      <div class="field"><label for="authPassword">Password</label><input type="password" id="authPassword" autocomplete="current-password" required minlength="6"></div>
+      <div class="field" id="authConfirmField" style="display:none;"><label for="authConfirm">Confirm password</label><input type="password" id="authConfirm" autocomplete="new-password" minlength="6"></div>
+      <button type="submit" class="primary-btn" id="authSubmit">Log in</button>
+    </form>
+    <a href="#" class="auth-offline-link text-btn" id="authOfflineLink">Continue without an account (this device only)</a>
+  </div>
+</div>
 
-			<div class="signup">
-				<form>
-					<label for="chk" aria-hidden="true">Join Us</label>
-					<input type="text" name="txt" placeholder="User name" required="">
-					<input type="email" name="email" placeholder="Email" required="">
-					<input type="password" name="pswd" placeholder="Password" required="">
-					<button>Register</button>
-				</form>
-			</div>
+<main class="layout" id="mainApp" style="display:none;">
+  <section class="panel focus-panel" aria-labelledby="focusHeading">
+    <h2 id="focusHeading">Right now</h2>
+    <div id="focusPanelBody"></div>
+  </section>
 
-			<div class="login">
-				<form>
-					<label for="chk" aria-hidden="true">Welcome back</label>
-					<input type="email" name="email" placeholder="Email" required="">
-					<input type="password" name="pswd" placeholder="Password" required="">
-					<button><a href="levels.html">Login</button> 
-				</form>
-			</div>
-	</div>
-</body>
-</html>
-  
+  <section class="panel" aria-labelledby="timelineHeading">
+    <div class="timeline-toolbar">
+      <h2 id="timelineHeading" style="margin:0;">Today's timeline</h2>
+    </div>
+    <div class="timeline-list" id="timelineList"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="todoHeading" style="grid-column:1 / -1;">
+    <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
+    <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
+    <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
+      <input type="text" id="todoInput" placeholder="Add something…" style="flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13.5px;">
+      <button type="submit" class="primary-btn">Add</button>
+    </form>
+    <ul class="subtask-list" id="todoList" style="margin:0;"></ul>
+  </section>
+</main>
+
+<footer class="app-footer" id="mainFooter" style="display:none;">
+  <span id="footerStorageNote">Your schedule is saved on this device only (no account, no cloud sync).</span>
+  The speed control is a testing aid that fast-forwards the on-screen clock — it never changes the real reminder times.
+</footer>
+
+<div id="ariaLive" class="visually-hidden" aria-live="polite"></div>
+
+<dialog id="blockDialog" aria-labelledby="blockDialogTitle">
+  <div class="dialog-inner" id="blockDialogInner"></div>
+</dialog>
+
+<dialog id="settingsDialog" aria-labelledby="settingsDialogTitle">
+  <div class="dialog-inner" id="settingsDialogInner"></div>
+</dialog>
+
+<dialog id="confirmDialog" aria-labelledby="confirmDialogTitle">
+  <div class="dialog-inner">
+    <h2 id="confirmDialogTitle" class="visually-hidden">Confirm</h2>
+    <p id="confirmMessage" style="margin:0 0 18px;"></p>
+    <div class="dialog-actions">
+      <div></div>
+      <div class="right-group">
+        <button type="button" class="ghost-btn" id="confirmCancel">Cancel</button>
+        <button type="button" class="primary-btn" id="confirmYes">Delete</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------------------------------------------------------------
+     Utilities
+  --------------------------------------------------------------------- */
+  let uidCounter = 1;
+  function uid(prefix){ return prefix + "_" + (uidCounter++) + "_" + Math.random().toString(36).slice(2,7); }
+
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+  // Category colors are user-editable (a plain color picker), so a chosen
+  // hue can easily be too pale/mid-tone to read as text once it's sitting
+  // on its own light tinted pill background. This darkens it just enough
+  // to guarantee real contrast, however it was picked — the pill's
+  // background tint and border keep the original, undarkened color.
+  function hexToRgbArr(hex){
+    const c = hex.replace('#', '');
+    return [parseInt(c.substr(0,2),16), parseInt(c.substr(2,2),16), parseInt(c.substr(4,2),16)];
+  }
+  function relLuminance(hex){
+    const [r,g,b] = hexToRgbArr(hex).map(v => v / 255);
+    const lin = (v) => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    return 0.2126*lin(r) + 0.7152*lin(g) + 0.0722*lin(b);
+  }
+  function contrastRatio(hex1, hex2){
+    const L1 = relLuminance(hex1), L2 = relLuminance(hex2);
+    const lighter = Math.max(L1, L2), darker = Math.min(L1, L2);
+    return (lighter + 0.05) / (darker + 0.05);
+  }
+  function mixHex(hex, bgHex, pct){
+    const [r,g,b] = hexToRgbArr(hex);
+    const [br,bg,bb] = hexToRgbArr(bgHex);
+    return "#" + [r*pct + br*(1-pct), g*pct + bg*(1-pct), b*pct + bb*(1-pct)]
+      .map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
+  }
+  function readableChipText(hex){
+    // The chip's actual background is this color mixed at 16% over the
+    // current theme's card color (matching the CSS color-mix() used for
+    // the pill background) — darken against *that*, not an assumed white,
+    // since a tinted background can be a little darker than white.
+    const cardHex = (getComputedStyle(document.documentElement).getPropertyValue("--card") || "#ffffff").trim() || "#ffffff";
+    const tint = mixHex(hex, cardHex, 0.16);
+    let amt = 0;
+    let cur = hex;
+    while (contrastRatio(cur, tint) < 4.5 && amt < 0.9){
+      amt += 0.03;
+      const [r,g,b] = hexToRgbArr(hex);
+      cur = "#" + [r,g,b].map(v => Math.round(v * (1 - amt)).toString(16).padStart(2, "0")).join("");
+    }
+    return cur;
+  }
+
+  function fmtClock(mFloat){
+    let m = ((mFloat % 1440) + 1440) % 1440;
+    let h = Math.floor(m / 60);
+    let mm = Math.floor(m % 60);
+    let ampm = h < 12 ? "AM" : "PM";
+    let h12 = h % 12; if (h12 === 0) h12 = 12;
+    return h12 + ":" + String(mm).padStart(2, "0") + " " + ampm;
+  }
+  // Accepts free-typed time in either 12-hour ("9:30 am", "9am", "9:30pm")
+  // or 24-hour ("21:30", "9:30") form — a plain typable text field instead
+  // of relying on the browser's native time-picker widget, which some
+  // embedded/sandboxed viewers render awkwardly or restrict to click-only.
+  function parseTimeFlexible(str){
+    if (!str) return null;
+    const m = str.trim().toLowerCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
+    if (!m) return null;
+    let h = parseInt(m[1], 10);
+    const min = m[2] ? parseInt(m[2], 10) : 0;
+    const ampm = m[3];
+    if (min > 59) return null;
+    if (ampm){
+      if (h < 1 || h > 12) return null;
+      if (ampm === "pm" && h < 12) h += 12;
+      if (ampm === "am" && h === 12) h = 0;
+    } else if (h > 23) {
+      return null;
+    }
+    return h * 60 + min;
+  }
+  // Accepts free-typed duration: a plain number of minutes ("45"), with a
+  // unit ("45m", "45 min"), hours ("1h", "1 hour"), or combined ("1h 30m",
+  // "1:30"). Same reasoning as parseTimeFlexible — a plain text field the
+  // native number-input spinner some viewers render as click-only.
+  function parseDurationFlexible(str){
+    if (!str) return null;
+    str = str.trim().toLowerCase();
+    if (/^\d+$/.test(str)) return parseInt(str, 10);
+    const colon = str.match(/^(\d+):(\d{2})$/);
+    if (colon) return parseInt(colon[1], 10) * 60 + parseInt(colon[2], 10);
+    let total = 0, matched = false;
+    const hMatch = str.match(/(\d+(?:\.\d+)?)\s*h(?:ours?|rs?)?/);
+    if (hMatch){ total += Math.round(parseFloat(hMatch[1]) * 60); matched = true; }
+    const mMatch = str.match(/(\d+)\s*m(?:in(?:ute)?s?)?/);
+    if (mMatch){ total += parseInt(mMatch[1], 10); matched = true; }
+    if (!matched || total <= 0) return null;
+    return total;
+  }
+  function fmtDuration(min){
+    min = Math.round(min);
+    if (min < 60) return min + "m";
+    const h = Math.floor(min/60), r = min % 60;
+    return r ? (h + "h " + r + "m") : (h + "h");
+  }
+  function todayStr(){
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  }
+  function actualNowMinutes(){
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes() + d.getSeconds()/60;
+  }
+
+  const BUFFER_META = { name: "Buffer", color: "#9aa0a1", icon: "⏳" };
+  const STORAGE_KEY = "timeanchor_state_v1";
+
+  /* ---------------------------------------------------------------------
+     Cloud accounts (optional). Leave these two as placeholders to run
+     fully local-only — nothing else in the app requires them. Fill them
+     in with a Supabase project's URL + anon/public key (never the
+     service_role key) to turn on sign-in and cross-device sync.
+  --------------------------------------------------------------------- */
+  const SUPABASE_URL = "REPLACE_WITH_YOUR_SUPABASE_URL";
+  const SUPABASE_ANON_KEY = "REPLACE_WITH_YOUR_SUPABASE_ANON_KEY";
+  const cloudEnabled = /^https:\/\/.+\.supabase\.co\/?$/.test(SUPABASE_URL) && SUPABASE_ANON_KEY.length > 20;
+  const sb = (cloudEnabled && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  let currentUser = null;
+  let offlineMode = false;
+  let appBooted = false;
+
+  /* ---------------------------------------------------------------------
+     Color themes — bulk-recolor every category (in their current order)
+     plus the app's accent color in one tap. All kept in the same muted,
+     low-saturation range as the original palette, just shifted in hue.
+  --------------------------------------------------------------------- */
+  // Every theme is a COMPLETE palette (bg/card/text/muted/border/track), not
+  // just an accent tint — a theme is a deliberate, explicit look, so once
+  // picked it stays correct regardless of the device's light/dark setting.
+  // (A partial override was exactly how the Pink theme ended up with
+  // light dark-mode text sitting on a light pink background — unreadable.)
+  const COLOR_THEMES = {
+    mixed:    { label: "Calm mixed",  accent: "#4d6b86", focusRing: "#2c6e9e", bg: "#f6f4ef", card: "#ffffff", text: "#2c2a27", muted: "#706a5f", muted2: "#746f64", border: "#e3ded3", track: "#eae6db", bgPattern: "confetti", colors: ["#5b7fa6", "#ab8657", "#6f9c7d", "#9a7bb0"] },
+    monotone: { label: "Monotone",    accent: "#5c5c5c", focusRing: "#3d3d3d", bg: "#f2f2f0", card: "#ffffff", text: "#2a2a2a", muted: "#66666a", muted2: "#6d6d74", border: "#dcdcdc", track: "#e6e6e6", colors: ["#454545", "#6b6b6b", "#8c8c8c", "#3a3a3a"] },
+    blue:     { label: "Blue",        accent: "#3f6b95", focusRing: "#2a5a86", bg: "#f0f4f8", card: "#ffffff", text: "#1f3347", muted: "#5c7186", muted2: "#5e717f", border: "#d7e2ea", track: "#e2ebf1", bgPattern: "bubbles", colors: ["#2f5a80", "#4a7fa5", "#3d8fa0", "#5f7fa8"] },
+    pink:     { label: "Pink",        accent: "#b0508a", focusRing: "#9a3f78", bg: "#fdeef5", card: "#fffbfd", text: "#5a2245", muted: "#8f4a72", muted2: "#97587c", border: "#f3c9df", track: "#f8ddec", bgPattern: "stars", colors: ["#c15a92", "#d97fae", "#a54f8a", "#b96a9c"] }
+  };
+  function applyColorTheme(key){
+    const theme = COLOR_THEMES[key] || COLOR_THEMES.mixed;
+    state.colorTheme = COLOR_THEMES[key] ? key : "mixed";
+    state.categories.forEach((c, i) => { c.color = theme.colors[i % theme.colors.length]; });
+    setThemeCssVars(theme);
+  }
+  function setThemeCssVars(theme){
+    document.documentElement.style.setProperty("--accent", theme.accent);
+    document.documentElement.style.setProperty("--focus-ring", theme.focusRing);
+    document.documentElement.style.setProperty("--bg", theme.bg);
+    document.documentElement.style.setProperty("--card", theme.card);
+    document.documentElement.style.setProperty("--text", theme.text);
+    document.documentElement.style.setProperty("--muted", theme.muted);
+    document.documentElement.style.setProperty("--muted-2", theme.muted2);
+    document.documentElement.style.setProperty("--border", theme.border);
+    document.documentElement.style.setProperty("--track", theme.track);
+    // Buffer blocks and notice banners use a neutral tint rather than a
+    // category color — tie it to this theme's own track/muted tones so it
+    // never falls back to the system dark-mode default (which caused
+    // unreadable near-black banners on a light theme's dark-colored text).
+    document.documentElement.style.setProperty("--cat-buffer-tint", theme.track);
+    document.documentElement.style.setProperty("--cat-buffer", theme.muted2);
+    if (theme.bgPattern) document.body.setAttribute("data-bg-pattern", theme.bgPattern);
+    else document.body.removeAttribute("data-bg-pattern");
+  }
+
+  /* ---------------------------------------------------------------------
+     Default day template (used on first run, and to seed any newly
+     added days — the schedule itself repeats daily until edited)
+  --------------------------------------------------------------------- */
+  function defaultCategories(){
+    return [
+      { id: "work",     name: "Work",     color: "#5b7fa6", icon: "💼", defaultMinutes: 45 },
+      { id: "admin",    name: "Admin",    color: "#ab8657", icon: "🗂️", defaultMinutes: 20 },
+      { id: "rest",     name: "Rest",     color: "#6f9c7d", icon: "🌿", defaultMinutes: 20 },
+      { id: "personal", name: "Personal", color: "#9a7bb0", icon: "🌸", defaultMinutes: 30 }
+    ];
+  }
+  function defaultBlocks(){
+    return []; // start empty — add your own; no sample day to clear out first
+  }
+
+  function mkBlock(title, categoryId, start, duration, isBuffer, subtasks, soundtrackEnabled){
+    return {
+      id: uid("blk"), title, categoryId, start, duration,
+      isBuffer: !!isBuffer, subtasks: subtasks || [],
+      soundtrackEnabled: !!soundtrackEnabled, status: "pending"
+    };
+  }
+  function mkBuffer(start, duration){
+    return mkBlock("Buffer", null, start, duration, true, [], false);
+  }
+
+  /* ---------------------------------------------------------------------
+     Persistence (device-local only — this is a real installed app now,
+     so we save with the platform's storage instead of staying in-memory)
+  --------------------------------------------------------------------- */
+  function loadPersisted(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.blocks) || !Array.isArray(parsed.categories)) return null;
+      return parsed;
+    } catch (e) { return null; }
+  }
+  function persist(){
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        nudgeThreshold: state.nudgeThreshold,
+        categories: state.categories,
+        blocks: state.blocks,
+        savedForDate: state.savedForDate,
+        soundEnabled: state.soundEnabled,
+        soundVolume: state.soundVolume,
+        speakEnabled: state.speakEnabled,
+        firstName: state.firstName,
+        showTimer: state.showTimer,
+        colorTheme: state.colorTheme,
+        todos: state.todos
+      }));
+    } catch (e) { /* storage unavailable — app still works for this session */ }
+  }
+
+  /* ---------------------------------------------------------------------
+     State
+  --------------------------------------------------------------------- */
+  const persisted = loadPersisted();
+  const state = persisted ? {
+    nudgeThreshold: persisted.nudgeThreshold || 45,
+    categories: persisted.categories,
+    blocks: persisted.blocks,
+    savedForDate: persisted.savedForDate || todayStr(),
+    soundEnabled: persisted.soundEnabled !== false,
+    soundVolume: typeof persisted.soundVolume === "number" ? persisted.soundVolume : 0.6,
+    speakEnabled: persisted.speakEnabled === true,
+    firstName: persisted.firstName || "",
+    showTimer: persisted.showTimer !== false,
+    colorTheme: persisted.colorTheme || "mixed",
+    todos: Array.isArray(persisted.todos) ? persisted.todos : [],
+    demoOffset: 0,
+    speed: 1
+  } : {
+    nudgeThreshold: 45,
+    categories: defaultCategories(),
+    blocks: defaultBlocks(),
+    savedForDate: todayStr(),
+    soundEnabled: true,
+    soundVolume: 0.6,
+    speakEnabled: false,
+    firstName: "",
+    showTimer: true,
+    colorTheme: "mixed",
+    todos: [],
+    demoOffset: 0,
+    speed: 1
+  };
+
+  // Restore just the theme's CSS vars (accent/focus-ring/bg/card/sparkle) —
+  // does NOT touch category colors, since those may have been hand-edited
+  // since the theme was last applied and already carry their own saved colors.
+  function restoreThemeVars(){
+    setThemeCssVars(COLOR_THEMES[state.colorTheme] || COLOR_THEMES.mixed);
+  }
+  restoreThemeVars();
+
+  // New day: the schedule is a repeating daily template — carry the same
+  // blocks forward but clear yesterday's "done" marks.
+  if (state.savedForDate !== todayStr()){
+    state.blocks.forEach(b => { b.status = "pending"; });
+    state.savedForDate = todayStr();
+    persist();
+  }
+
+  function catFor(block){
+    if (block.isBuffer || !block.categoryId) return BUFFER_META;
+    return state.categories.find(c => c.id === block.categoryId) || BUFFER_META;
+  }
+  function sortedBlocks(){ return [...state.blocks].sort((a,b) => a.start - b.start); }
+
+  function getCurrentBlock(){
+    for (const b of sortedBlocks()){
+      if (b.status === "pending" && state.simNow >= b.start) return b;
+    }
+    return null;
+  }
+  function getNextUpcoming(){
+    const cur = getCurrentBlock();
+    const list = sortedBlocks();
+    if (cur){
+      const idx = list.findIndex(b => b.id === cur.id);
+      for (let i = idx+1; i < list.length; i++) if (list[i].status === "pending") return list[i];
+      return null;
+    }
+    for (const b of list) if (b.status === "pending") return b;
+    return null;
+  }
+
+  function shiftBlocksFrom(pointMinutes, deltaMinutes, excludeIds){
+    excludeIds = excludeIds || new Set();
+    state.blocks.forEach(b => {
+      if (!excludeIds.has(b.id) && b.start >= pointMinutes) b.start += deltaMinutes;
+    });
+  }
+
+  /* ---------------------------------------------------------------------
+     Local notifications — real reminders that fire even if the app is
+     backgrounded or closed (native only; best-effort in a plain browser
+     tab). These always track the REAL schedule, never the demo speed.
+  --------------------------------------------------------------------- */
+  const hasCapacitor = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const LocalNotifications = hasCapacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.LocalNotifications : null;
+  let notifPermission = "unknown";
+
+  async function initNotifications(){
+    if (LocalNotifications){
+      try {
+        const perm = await LocalNotifications.checkPermissions();
+        if (perm.display !== "granted"){
+          const req = await LocalNotifications.requestPermissions();
+          notifPermission = req.display;
+        } else {
+          notifPermission = "granted";
+        }
+      } catch (e) { notifPermission = "unavailable"; }
+    } else if (typeof Notification !== "undefined") {
+      try {
+        notifPermission = Notification.permission === "default" ? (await Notification.requestPermission()) : Notification.permission;
+      } catch (e) { notifPermission = "unavailable"; }
+    } else {
+      notifPermission = "unavailable";
+    }
+    if (notifPermission !== "granted"){
+      showNotice("Reminders are off — allow notifications in your device settings if you'd like TimeAnchor to alert you when blocks start and end.");
+    }
+    scheduleNotifications();
+  }
+
+  function minutesToRealDate(minutesSinceMidnight){
+    const now = new Date();
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    d.setMinutes(minutesSinceMidnight);
+    if (d.getTime() <= now.getTime()) return null; // already passed today — don't schedule
+    return d;
+  }
+
+  let notifIdCounter = 1;
+  async function scheduleNotifications(){
+    if (!LocalNotifications || notifPermission !== "granted") return;
+    try {
+      const pending = await LocalNotifications.getPending();
+      if (pending && pending.notifications && pending.notifications.length){
+        await LocalNotifications.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) });
+      }
+      const toSchedule = [];
+      sortedBlocks().forEach(b => {
+        if (b.status === "done") return;
+        const cat = catFor(b);
+        const startDate = minutesToRealDate(b.start);
+        if (startDate) toSchedule.push({
+          id: notifIdCounter++, title: "Starting now", body: b.title + " (" + cat.name + ")", schedule: { at: startDate }
+        });
+        if (b.duration >= 10){
+          const soonDate = minutesToRealDate(b.start + b.duration - 5);
+          if (soonDate) toSchedule.push({
+            id: notifIdCounter++, title: b.title, body: "Ends in 5 minutes", schedule: { at: soonDate }
+          });
+        }
+        const endDate = minutesToRealDate(b.start + b.duration);
+        if (endDate) toSchedule.push({
+          id: notifIdCounter++, title: b.title, body: "Time's up — check in on TimeAnchor", schedule: { at: endDate }
+        });
+      });
+      if (toSchedule.length) await LocalNotifications.schedule({ notifications: toSchedule });
+    } catch (e) { /* scheduling is best-effort */ }
+  }
+
+  // Browser-tab fallback: only useful while this tab stays open, since a
+  // plain web page can't wake itself up the way a native app can.
+  const webNotifiedKeys = new Set();
+  function checkWebNotifyFallback(){
+    if (LocalNotifications || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    if (document.visibilityState !== "hidden") return;
+    sortedBlocks().forEach(b => {
+      if (b.status === "done") return;
+      const startKey = b.id + ":start";
+      const endKey = b.id + ":end";
+      if (!webNotifiedKeys.has(startKey) && state.simNow >= b.start && state.simNow < b.start + 1){
+        webNotifiedKeys.add(startKey);
+        new Notification("Starting now", { body: b.title, tag: startKey });
+      }
+      if (!webNotifiedKeys.has(endKey) && state.simNow >= b.start + b.duration && state.simNow < b.start + b.duration + 1){
+        webNotifiedKeys.add(endKey);
+        new Notification(b.title, { body: "Time's up", tag: endKey });
+      }
+    });
+  }
+
+  function showNotice(text, undoFn){
+    document.getElementById("noticeText").textContent = text;
+    document.getElementById("noticeBanner").style.display = "";
+    const undoBtn = document.getElementById("noticeUndo");
+    if (undoFn){
+      undoBtn.style.display = "";
+      undoBtn.onclick = () => { undoFn(); document.getElementById("noticeBanner").style.display = "none"; };
+    } else {
+      undoBtn.style.display = "none";
+      undoBtn.onclick = null;
+    }
+  }
+  document.getElementById("noticeDismiss").addEventListener("click", () => {
+    document.getElementById("noticeBanner").style.display = "none";
+  });
+
+  /* ---------------------------------------------------------------------
+     A small celebratory reward for finishing a task — sparkles that pop
+     and float from wherever "Mark done" was tapped, plus a short chime
+     and a quick encouraging note. This is deliberately *variable*: which
+     emoji and which phrase show up is randomized each time (unpredictable
+     small rewards hold attention better than the exact same one every
+     time), while staying calm and non-garish — a handful of sparkles and
+     one line of text, nothing that takes over the screen. The sparkles
+     are skipped entirely for reduced-motion; the phrase still shows
+     (opacity fade only, no movement) so finishing something still gets
+     acknowledged either way.
+  --------------------------------------------------------------------- */
+  const CELEBRATE_MESSAGES = ["Nice work!", "Done. ✓", "One down.", "Nailed it.", "Task complete.", "You did it!", "That's a wrap.", "Off the list."];
+  function celebrateBurst(x, y){
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // The full-screen color wash — always shown (even for reduced-motion,
+    // just as a fade rather than a scaling pulse) so the celebration is
+    // obvious no matter where on the page the tap happened, not just a
+    // handful of sparkles that are easy to miss.
+    const flash = document.createElement("div");
+    flash.className = "celebrate-flash";
+    const vw = window.innerWidth || 1, vh = window.innerHeight || 1;
+    flash.style.setProperty("--fx", ((x / vw) * 100) + "%");
+    flash.style.setProperty("--fy", ((y / vh) * 100) + "%");
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 800);
+
+    if (!reduceMotion){
+      const emojis = ["✨", "🎉", "⭐", "💫"];
+      for (let i = 0; i < 5; i++){
+        const el = document.createElement("span");
+        el.className = "celebrate-burst";
+        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        el.style.left = (x + (Math.random() - 0.5) * 34) + "px";
+        el.style.top = (y - 8) + "px";
+        el.style.setProperty("--dx", ((Math.random() - 0.5) * 80) + "px");
+        el.style.animationDelay = (Math.random() * 120) + "ms";
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1200);
+      }
+    }
+    const msg = document.createElement("span");
+    msg.className = "celebrate-message";
+    msg.textContent = CELEBRATE_MESSAGES[Math.floor(Math.random() * CELEBRATE_MESSAGES.length)];
+    msg.style.left = x + "px";
+    msg.style.top = Math.max(8, y - 40) + "px";
+    document.body.appendChild(msg);
+    setTimeout(() => msg.remove(), 1500);
+  }
+
+  function playCompletionChime(){
+    if (!state.soundEnabled) return;
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      const now = audioCtx.currentTime;
+      const peakBase = clamp(state.soundVolume, 0, 1) * 0.32;
+      // A brighter, quicker "ta-da" than the block-start chime, so the
+      // two are easy to tell apart by ear — same gentle volume cap and
+      // soft fade-in, just a different, more resolved little flourish for
+      // finishing something.
+      [
+        { freq: 784.00, at: 0.00, dur: 0.16 },
+        { freq: 1046.50, at: 0.09, dur: 0.16 },
+        { freq: 1318.51, at: 0.18, dur: 0.38 }
+      ].forEach((note) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = note.freq;
+        const start = now + note.at;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(peakBase, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + note.dur);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(start);
+        osc.stop(start + note.dur + 0.02);
+      });
+    } catch (e) { /* the visual celebration still communicates completion without sound */ }
+  }
+
+  /* ---------------------------------------------------------------------
+     In-app confirm dialog — used instead of the browser's native confirm(),
+     which some embedded/sandboxed viewers block or silently no-op, making
+     a delete/clear action look like it does nothing at all.
+  --------------------------------------------------------------------- */
+  const confirmDialog = document.getElementById("confirmDialog");
+  function showConfirm(message, onYes, confirmLabel){
+    document.getElementById("confirmMessage").textContent = message;
+    const yesBtn = document.getElementById("confirmYes");
+    yesBtn.textContent = confirmLabel || "Delete";
+    yesBtn.onclick = () => { confirmDialog.close(); onYes(); };
+    confirmDialog.showModal();
+  }
+  document.getElementById("confirmCancel").addEventListener("click", () => confirmDialog.close());
+
+  /* ---------------------------------------------------------------------
+     Low-capacity ("bed rot") day. Autistic burnout / spoon-theory guidance
+     treats a demand-free rest day as a legitimate recovery need, not a
+     failure — so this clears today's remaining plan with validating
+     copy, no streak-breaking, no "missed" language, and a one-tap undo.
+  --------------------------------------------------------------------- */
+  function hasClearableBlocksToday(){
+    return state.blocks.some(b => b.status === "pending");
+  }
+  function clearLowCapacityDay(){
+    showConfirm("Clear the rest of today's plan? Nothing is lost — your schedule comes back fresh tomorrow.", () => {
+      const clearedIds = [];
+      state.blocks.forEach(b => { if (b.status === "pending"){ clearedIds.push(b.id); b.status = "skipped"; } });
+      commit();
+      showNotice("Today's plan is cleared — no pressure. Tomorrow starts fresh.", () => {
+        state.blocks.forEach(b => { if (clearedIds.includes(b.id)) b.status = "pending"; });
+        commit();
+      });
+    }, "Clear plan");
+  }
+
+  /* ---------------------------------------------------------------------
+     Rendering: Pie timer
+  --------------------------------------------------------------------- */
+  function pieMarkup(fraction, colorHex, sizePx, holeRatio, holeLabel, overrun, idAttr){
+    const pct = clamp(fraction, 0, 1) * 100;
+    const holeSize = Math.round(sizePx * holeRatio);
+    const idBit = idAttr ? ' id="' + idAttr + '"' : "";
+    return (
+      '<div class="pie-wrap pie' + (overrun ? ' overrun' : '') + '"' + idBit + ' style="width:' + sizePx + 'px;height:' + sizePx + 'px;">' +
+        '<div class="pie-outer" style="width:' + sizePx + 'px;height:' + sizePx + 'px;--frac:' + pct.toFixed(2) + '%;--pie-color:' + colorHex + ';">' +
+          '<div class="pie-hole" style="width:' + holeSize + 'px;height:' + holeSize + 'px;">' +
+            (holeLabel ? '<span class="pie-label" style="font-size:' + Math.round(sizePx*0.14) + 'px;">' + holeLabel + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function timeInfo(block){
+    const end = block.start + block.duration;
+    const remaining = end - state.simNow;
+    const fraction = clamp(remaining / block.duration, 0, 1);
+    const overrun = remaining <= 0;
+    return { end, remaining, fraction, overrun };
+  }
+
+  /* ---------------------------------------------------------------------
+     Rendering: Focus panel
+  --------------------------------------------------------------------- */
+  function renderFocusPanel(){
+    const el = document.getElementById("focusPanelBody");
+    const cur = getCurrentBlock();
+
+    if (!cur){
+      const next = getNextUpcoming();
+      if (next){
+        const cat = catFor(next);
+        el.innerHTML =
+          '<div class="focus-empty">' +
+            '<p>Nothing scheduled right now &mdash; this is open time.</p>' +
+            '<p class="next-line">Next up: <strong>' + escapeHtml(next.title) + '</strong> (' + cat.icon + ' ' + escapeHtml(cat.name) + ') at ' + fmtClock(next.start) + '.</p>' +
+            '<div class="focus-actions"><button type="button" class="ghost-btn" data-action="start-now" data-id="' + next.id + '">Start it now</button></div>' +
+          '</div>' + lowCapacityLinkHtml();
+      } else if (state.blocks.length === 0){
+        el.innerHTML = '<div class="focus-empty"><p>Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.</p></div>';
+      } else {
+        el.innerHTML = '<div class="focus-empty"><p>Nothing else is scheduled for today.</p></div>' + lowCapacityLinkHtml();
+      }
+      updateAriaLive("Nothing is currently active.");
+      return;
+    }
+
+    const cat = catFor(cur);
+    const { remaining, fraction, overrun } = timeInfo(cur);
+    const holeLabel = overrun ? "Time's up" : (Math.ceil(remaining) + "m");
+    const pie = state.showTimer
+      ? pieMarkup(fraction, cat.color, 120, 0.62, holeLabel, overrun, "focusPie")
+      : '<div class="timer-off-display" style="font-size:28px;font-weight:800;padding:8px 0;color:' + (overrun ? "var(--danger-quiet)" : readableChipText(cat.color)) + ';">' + holeLabel + '</div>';
+
+    let subtasksHtml = "";
+    if (!cur.isBuffer && cur.subtasks && cur.subtasks.length){
+      subtasksHtml = '<ul class="subtask-list">' + cur.subtasks.map(st =>
+        '<li class="' + (st.done ? "done" : "") + '">' +
+          '<input type="checkbox" id="sub_' + st.id + '" data-action="toggle-subtask" data-block="' + cur.id + '" data-sub="' + st.id + '" ' + (st.done ? "checked" : "") + ' aria-label="Mark step \'' + escapeAttr(st.title) + '\' done">' +
+          '<label class="subtask-title" for="sub_' + st.id + '">' + escapeHtml(st.title) + '</label>' +
+          '<span class="subtask-est">' + st.est + 'm</span>' +
+        '</li>'
+      ).join("") + '</ul>';
+    }
+
+    let soundtrackHtml = "";
+    if (!cur.isBuffer && cur.soundtrackEnabled){
+      const played = clamp(1 - fraction, 0, 1) * 100;
+      soundtrackHtml =
+        '<div class="soundtrack-stub">' +
+          '<button type="button" class="play-toggle" data-action="toggle-play" aria-label="' + (cur._playing ? "Pause" : "Play") + ' placeholder soundtrack">' + (cur._playing ? "⏸" : "▶") + '</button>' +
+          '<div>' +
+            '<div>' + escapeHtml(cat.name) + ' mix &middot; ' + fmtDuration(cur.duration) + ' (prototype stub, no audio)</div>' +
+            '<div class="soundtrack-bar"><span style="width:' + played.toFixed(1) + '%;"></span></div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    let overrunHtml = "";
+    if (overrun){
+      const suggested = Math.max(5, Math.ceil(Math.abs(remaining)/5)*5);
+      overrunHtml =
+        '<div class="overrun-banner">' +
+          '<p>This block ran over by about ' + Math.ceil(Math.abs(remaining)) + ' minutes. You can extend it, or push the rest of today later so the schedule matches reality.</p>' +
+          '<div class="overrun-row">' +
+            '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="5">Reflow +5m</button>' +
+            '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="10">Reflow +10m</button>' +
+            '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="' + suggested + '">Reflow +' + suggested + 'm (match overrun)</button>' +
+          '</div>' +
+        '</div>';
+    }
+
+    el.innerHTML =
+      '<div class="focus-current">' +
+        '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
+        '<div class="big-pie">' + pie + '</div>' +
+        '<p class="focus-title">' + escapeHtml(cur.title) + '</p>' +
+        '<p class="focus-time-range">' + fmtClock(cur.start) + '&ndash;' + fmtClock(cur.start + cur.duration) + ' &middot; ' + fmtDuration(cur.duration) + (overrun ? " (running over)" : "") + '</p>' +
+        '<p class="focus-remaining-text" id="focusRemainingText">' + remainingSentence(cur, remaining, overrun) + '</p>' +
+        subtasksHtml +
+        soundtrackHtml +
+        overrunHtml +
+        '<div class="focus-actions">' +
+          '<button type="button" class="ghost-btn" data-action="extend" data-id="' + cur.id + '" data-min="5">+5m</button>' +
+          '<button type="button" class="ghost-btn" data-action="extend" data-id="' + cur.id + '" data-min="10">+10m</button>' +
+          '<button type="button" class="primary-btn" data-action="done" data-id="' + cur.id + '">Mark done</button>' +
+        '</div>' +
+      '</div>' + lowCapacityLinkHtml();
+  }
+
+  function lowCapacityLinkHtml(){
+    if (!hasClearableBlocksToday()) return "";
+    return '<a href="#" class="auth-offline-link text-btn" data-action="low-capacity-day" style="margin-top:14px;">Low-capacity day? Clear the rest of today</a>';
+  }
+
+  function remainingSentence(block, remaining, overrun){
+    if (overrun) return block.title + ": time is up. Extend it or reflow the rest of today.";
+    return Math.ceil(remaining) + " minute" + (Math.ceil(remaining) === 1 ? "" : "s") + " remaining on " + block.title + ".";
+  }
+
+  let lastAnnounced = "";
+  function updateAriaLive(text){
+    if (text === lastAnnounced) return;
+    lastAnnounced = text;
+    document.getElementById("ariaLive").textContent = text;
+  }
+
+  /* ---------------------------------------------------------------------
+     Rendering: Timeline
+  --------------------------------------------------------------------- */
+  function statusFor(block, curId){
+    if (block.status === "done") return { label: "Completed", cls: "" };
+    if (block.status === "skipped") return { label: "Skipped today", cls: "wait" };
+    if (block.id === curId){
+      const { overrun } = timeInfo(block);
+      return overrun ? { label: "Running over", cls: "over" } : { label: "In progress", cls: "now" };
+    }
+    // "Upcoming" is the default, expected state for most rows — a pill on
+    // every single one just adds noise, so only call out states that are
+    // actually informative (in progress, done, running late/over, skipped).
+    if (block.start > state.simNow) return null;
+    return { label: "Waiting — running behind", cls: "wait" };
+  }
+
+  function renderTimeline(){
+    const list = sortedBlocks();
+    const cur = getCurrentBlock();
+    const curId = cur ? cur.id : null;
+    const el = document.getElementById("timelineList");
+
+    let html = "";
+    list.forEach((block) => {
+      const cat = catFor(block);
+      const st = statusFor(block, curId);
+      const isCurrent = block.id === curId;
+      let miniTimer = "";
+      if (isCurrent && state.showTimer){
+        const { fraction, overrun } = timeInfo(block);
+        miniTimer = pieMarkup(fraction, cat.color, 40, 0.5, "", overrun, "timelineMiniPie");
+      }
+      let subtaskBadge = "";
+      if (!block.isBuffer && block.subtasks && block.subtasks.length){
+        const done = block.subtasks.filter(s => s.done).length;
+        subtaskBadge = '<span class="subtask-badge">' + done + '/' + block.subtasks.length + ' steps</span>';
+      }
+
+      html +=
+        '<div class="block-row' + (block.isBuffer ? " is-buffer" : "") + (isCurrent ? " is-current" : "") + ((block.status === "done" || block.status === "skipped") ? " is-done" : "") + '" style="border-left-color:' + cat.color + ';">' +
+          (miniTimer ? miniTimer : "") +
+          '<div class="block-main">' +
+            '<div class="block-top-line">' +
+              '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
+              '<p class="block-title">' + escapeHtml(block.title) + '</p>' +
+            '</div>' +
+            '<div class="block-meta">' +
+              '<span>' + fmtClock(block.start) + '&ndash;' + fmtClock(block.start + block.duration) + ' &middot; ' + fmtDuration(block.duration) + '</span>' +
+              (st ? '<span class="status-tag ' + st.cls + '">' + st.label + '</span>' : "") +
+              subtaskBadge +
+            '</div>' +
+          '</div>' +
+          '<div class="block-actions">' +
+            (block.status !== "done" && block.status !== "skipped"
+              ? '<button type="button" class="icon-mini" data-action="done" data-id="' + block.id + '" aria-label="Mark ' + escapeAttr(block.title) + ' done">✅</button>'
+              : "") +
+            '<button type="button" class="icon-mini" data-action="edit" data-id="' + block.id + '" aria-label="Edit ' + escapeAttr(block.title) + '">✏️</button>' +
+            '<button type="button" class="icon-mini" data-action="delete" data-id="' + block.id + '" aria-label="Delete ' + escapeAttr(block.title) + '">🗑️</button>' +
+          '</div>' +
+        '</div>';
+
+      html += '<div class="tl-gap"><button type="button" data-action="insert-buffer" data-after="' + block.id + '" aria-label="Insert a 5-minute buffer here" title="Insert a 5-minute buffer">+ buffer</button></div>';
+    });
+
+    el.innerHTML = html || '<p style="color:var(--muted);font-size:13px;">No blocks yet. Use "+ New block" to add one.</p>';
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function escapeAttr(s){ return escapeHtml(s); }
+
+  /* ---------------------------------------------------------------------
+     Full render + tick loop
+  --------------------------------------------------------------------- */
+  function render(){
+    renderFocusPanel();
+    renderTimeline();
+    renderTodos();
+  }
+
+  // Runs every 200ms (tick) without touching any button/row markup — only
+  // the live numbers (pie fraction, "Xm remaining" text, soundtrack bar)
+  // get mutated in place. This is what stops the countdown from stealing
+  // taps: rebuilding the whole timeline's innerHTML that often would
+  // destroy and recreate the very button someone just tapped, dropping
+  // the click before it fires (especially on real touch devices).
+  function updatePieEl(wrap, fraction, overrun, holeLabel){
+    if (!wrap) return;
+    const outer = wrap.querySelector(".pie-outer");
+    if (outer) outer.style.setProperty("--frac", (clamp(fraction, 0, 1) * 100).toFixed(2) + "%");
+    wrap.classList.toggle("overrun", !!overrun);
+    if (holeLabel !== null){
+      const label = wrap.querySelector(".pie-label");
+      if (label) label.textContent = holeLabel;
+    }
+  }
+  function renderTickLite(){
+    const cur = getCurrentBlock();
+    if (!cur) return;
+    const { remaining, fraction, overrun } = timeInfo(cur);
+    const holeLabel = overrun ? "Time's up" : (Math.ceil(remaining) + "m");
+
+    if (state.showTimer){
+      updatePieEl(document.getElementById("focusPie"), fraction, overrun, holeLabel);
+      updatePieEl(document.getElementById("timelineMiniPie"), fraction, overrun, null);
+    } else {
+      const off = document.querySelector(".timer-off-display");
+      if (off) off.textContent = holeLabel;
+    }
+
+    const remainText = document.getElementById("focusRemainingText");
+    if (remainText) remainText.textContent = remainingSentence(cur, remaining, overrun);
+
+    if (!cur.isBuffer && cur.soundtrackEnabled){
+      const bar = document.querySelector(".soundtrack-bar > span");
+      if (bar) bar.style.width = (clamp(1 - fraction, 0, 1) * 100).toFixed(1) + "%";
+    }
+  }
+
+  function renderTodos(){
+    const list = document.getElementById("todoList");
+    if (!list) return;
+    list.innerHTML = state.todos.map(t =>
+      '<li class="' + (t.done ? "done" : "") + '">' +
+        '<input type="checkbox" id="todo_' + t.id + '" data-action="toggle-todo" data-id="' + t.id + '" ' + (t.done ? "checked" : "") + ' aria-label="Mark \'' + escapeAttr(t.title) + '\' done">' +
+        '<label class="subtask-title" for="todo_' + t.id + '">' + escapeHtml(t.title) + '</label>' +
+        '<button type="button" class="icon-mini" data-action="delete-todo" data-id="' + t.id + '" style="margin-left:auto;" aria-label="Delete ' + escapeAttr(t.title) + '">🗑️</button>' +
+      '</li>'
+    ).join("") || '<p style="color:var(--muted);font-size:13px;margin:0;">Nothing on the list yet.</p>';
+  }
+
+  // Structural changes (add/edit/delete/reflow/etc) need to be saved and
+  // re-scheduled — plain ticking does not.
+  let cloudSaveTimer = null;
+  function commit(){
+    persist();
+    scheduleNotifications();
+    render();
+    if (cloudEnabled && currentUser && !offlineMode){
+      setCloudStatus("syncing", "Saving…");
+      clearTimeout(cloudSaveTimer);
+      cloudSaveTimer = setTimeout(saveCloudState, 700);
+    }
+  }
+
+  function updateSimClock(){
+    document.getElementById("simClockText").textContent = fmtClock(state.simNow);
+    document.querySelectorAll("#speedSeg button").forEach(b => {
+      b.classList.toggle("active", parseInt(b.dataset.speed,10) === state.speed);
+    });
+  }
+
+  /* ---------------------------------------------------------------------
+     Alarm chime — a soft two-note tone when a block actually starts, not
+     a jarring digital beep. Sound sensitivity is common in autistic
+     adults (sudden/high-pitched noise is a frequent trigger), so this is
+     deliberately gentle (fades in, low peak volume even at max), on by
+     default, and trivially muted from Settings — the shrinking timer
+     still communicates state with sound off.
+  --------------------------------------------------------------------- */
+  let audioCtx = null;
+  function unlockAudioOnce(){
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    } catch (e) { /* Web Audio unavailable — silent, no functional loss */ }
+  }
+  document.addEventListener("click", unlockAudioOnce, { once: true });
+  document.addEventListener("touchstart", unlockAudioOnce, { once: true });
+
+  function playAlarmChime(){
+    if (!state.soundEnabled) return;
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      const now = audioCtx.currentTime;
+      const peakBase = clamp(state.soundVolume, 0, 1) * 0.32; // gentle even at "full" volume
+      // A short, cute little sparkle: a four-note rising arpeggio
+      // (C5 → E5 → G5 → C6) on a soft triangle wave, which reads as more
+      // of a toy-bell "ta-da" than a plain two-note doorbell chime. Each
+      // note still fades in over ~20ms (never a hard onset) and the whole
+      // thing is done in under a second — informative, not startling.
+      [
+        { freq: 523.25, at: 0.00, peak: 1.00 },
+        { freq: 659.25, at: 0.11, peak: 0.95 },
+        { freq: 783.99, at: 0.22, peak: 0.95 },
+        { freq: 1046.50, at: 0.34, peak: 1.05 }
+      ].forEach((note) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = note.freq;
+        const start = now + note.at;
+        const peak = peakBase * note.peak;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(peak, start + 0.02); // soft pluck, not sudden
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.32);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(start);
+        osc.stop(start + 0.34);
+      });
+    } catch (e) { /* the visual timer still communicates state without sound */ }
+  }
+
+  /* ---------------------------------------------------------------------
+     Spoken time + plan — a second, optional channel alongside the chime,
+     for when even glancing at the screen is more than someone wants to
+     do right then. Reuses the same info already shown in the focus panel.
+  --------------------------------------------------------------------- */
+  const speechSupported = "speechSynthesis" in window;
+
+  function buildSpokenStatus(){
+    const clockPart = "It's " + fmtClock(state.simNow) + ".";
+    const cur = getCurrentBlock();
+    if (cur){
+      const { remaining, overrun } = timeInfo(cur);
+      return clockPart + " " + (overrun
+        ? cur.title + ", time is up."
+        : "You're in " + cur.title + ", " + Math.ceil(remaining) + " minute" + (Math.ceil(remaining) === 1 ? "" : "s") + " left.");
+    }
+    const next = getNextUpcoming();
+    return clockPart + " " + (next ? "Next up: " + next.title + " at " + fmtClock(next.start) + "." : "Nothing else scheduled today.");
+  }
+
+  function speakNow(){
+    if (!("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel(); // avoid overlapping utterances if triggered repeatedly
+      const u = new SpeechSynthesisUtterance(buildSpokenStatus());
+      u.rate = 0.95;
+      u.volume = clamp(state.soundVolume, 0, 1); // reuses the existing volume setting rather than adding a second one
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* the visual timer and aria-live text still communicate status */ }
+  }
+
+  let lastCurrentBlockId; // undefined until first tick after boot (no chime for a block already in progress at launch)
+  let lastOverrun = false;
+  let ticksSinceStructuralRender = 0;
+  const STRUCTURAL_RENDER_EVERY_TICKS = 150; // ~30s safety-net resync (e.g. "Upcoming" -> "Waiting" labels)
+  let lastTickMs = performance.now();
+  function tick(){
+    if (!appBooted) return;
+    const now = performance.now();
+    const deltaSec = (now - lastTickMs) / 1000;
+    lastTickMs = now;
+    const deltaMin = deltaSec / 60;
+    // At 1x this is always real wall-clock time. Faster speeds only pile up
+    // a temporary on-screen offset for testing — they never touch what's
+    // actually scheduled or when real reminders fire.
+    if (state.speed !== 1) state.demoOffset += deltaMin * (state.speed - 1);
+    state.simNow = actualNowMinutes() + state.demoOffset;
+    if (state.simNow >= 1440) { state.simNow -= 1440; }
+    updateSimClock();
+
+    const nowCurrent = getCurrentBlock();
+    const nowCurrentId = nowCurrent ? nowCurrent.id : null;
+    const nowOverrun = nowCurrent ? timeInfo(nowCurrent).overrun : false;
+    // Only rebuild the timeline/focus panel's actual markup (buttons and
+    // all) when something structural changed, or every ~30s as a safety
+    // net — never on every 200ms tick. See renderTickLite() above for why.
+    const structuralChange =
+      lastCurrentBlockId === undefined ||
+      nowCurrentId !== lastCurrentBlockId ||
+      nowOverrun !== lastOverrun ||
+      ticksSinceStructuralRender >= STRUCTURAL_RENDER_EVERY_TICKS;
+    if (structuralChange){
+      render();
+      ticksSinceStructuralRender = 0;
+    } else {
+      renderTickLite();
+      ticksSinceStructuralRender++;
+    }
+    checkWebNotifyFallback();
+
+    if (lastCurrentBlockId !== undefined && nowCurrentId && nowCurrentId !== lastCurrentBlockId){
+      playAlarmChime();
+      if (state.speakEnabled) setTimeout(speakNow, 650); // let the chime finish first
+    }
+    lastCurrentBlockId = nowCurrentId;
+    lastOverrun = nowOverrun;
+
+    const today = todayStr();
+    if (today !== state.savedForDate){
+      state.blocks.forEach(b => { b.status = "pending"; });
+      state.savedForDate = today;
+      webNotifiedKeys.clear();
+      commit();
+      ticksSinceStructuralRender = 0;
+    }
+  }
+  setInterval(tick, 200);
+
+  /* ---------------------------------------------------------------------
+     Actions (event delegation)
+  --------------------------------------------------------------------- */
+  document.addEventListener("click", function(e){
+    const t = e.target.closest("[data-action]");
+    if (!t) return;
+    const action = t.dataset.action;
+
+    if (action === "speed"){
+      state.speed = parseInt(t.dataset.speed, 10);
+      updateSimClock();
+      return;
+    }
+    if (action === "new-block"){ openBlockForm(null); return; }
+    if (action === "edit"){
+      const b = state.blocks.find(x => x.id === t.dataset.id);
+      if (b) openBlockForm(b);
+      return;
+    }
+    if (action === "delete"){
+      const b = state.blocks.find(x => x.id === t.dataset.id);
+      if (b) showConfirm('Delete "' + b.title + '"? This can\'t be undone.', () => {
+        state.blocks = state.blocks.filter(x => x.id !== b.id);
+        commit();
+      });
+      return;
+    }
+    if (action === "insert-buffer"){
+      insertBufferAfter(t.dataset.after);
+      return;
+    }
+    if (action === "done"){
+      const b = state.blocks.find(x => x.id === t.dataset.id);
+      if (b) { b.status = "done"; commit(); celebrateBurst(e.clientX, e.clientY); playCompletionChime(); }
+      return;
+    }
+    if (action === "extend"){
+      const b = state.blocks.find(x => x.id === t.dataset.id);
+      const min = parseInt(t.dataset.min, 10) || 5;
+      if (b) { b.duration += min; commit(); }
+      return;
+    }
+    if (action === "reflow"){
+      const b = state.blocks.find(x => x.id === t.dataset.id);
+      const min = parseInt(t.dataset.min, 10) || 5;
+      if (b) { reflowAfter(b, min); commit(); }
+      return;
+    }
+    if (action === "start-now"){
+      const b = state.blocks.find(x => x.id === t.dataset.id);
+      if (b){
+        const oldStart = b.start;
+        const newStart = Math.round(state.simNow);
+        const delta = newStart - oldStart;
+        if (delta !== 0){
+          state.blocks.forEach(other => { if (other.id !== b.id && other.start > oldStart) other.start += delta; });
+          b.start = newStart;
+        }
+        commit();
+      }
+      return;
+    }
+    if (action === "toggle-play"){
+      const cur = getCurrentBlock();
+      if (cur) { cur._playing = !cur._playing; render(); }
+      return;
+    }
+    if (action === "low-capacity-day"){
+      e.preventDefault();
+      clearLowCapacityDay();
+      return;
+    }
+    if (action === "delete-todo"){
+      const delId = t.dataset.id;
+      state.todos = state.todos.filter(td => td.id !== delId);
+      commit();
+      return;
+    }
+  });
+
+  const todoForm = document.getElementById("todoForm");
+  if (todoForm) todoForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const input = document.getElementById("todoInput");
+    const title = input.value.trim();
+    if (!title) return;
+    state.todos.push({ id: uid("todo"), title, done: false });
+    input.value = "";
+    commit();
+  });
+
+  document.addEventListener("change", function(e){
+    const todoChk = e.target.closest("[data-action='toggle-todo']");
+    if (todoChk){
+      const t = state.todos.find(x => x.id === todoChk.dataset.id);
+      if (t) { t.done = todoChk.checked; commit(); }
+      return;
+    }
+    const t = e.target.closest("[data-action='toggle-subtask']");
+    if (!t) return;
+    const b = state.blocks.find(x => x.id === t.dataset.block);
+    if (!b) return;
+    const st = (b.subtasks || []).find(s => s.id === t.dataset.sub);
+    if (st) { st.done = t.checked; commit(); }
+  });
+
+  function insertBufferAfter(afterId){
+    const after = state.blocks.find(b => b.id === afterId);
+    if (!after) return;
+    const point = after.start + after.duration;
+    const buf = mkBuffer(point, 5);
+    state.blocks.push(buf);
+    shiftBlocksFrom(point, 5, new Set([buf.id]));
+    commit();
+  }
+
+  // Pushes every block scheduled after `block`'s planned end forward by `minutes`,
+  // so the rest of the day reflects an overrun instead of silently going stale.
+  function reflowAfter(block, minutes){
+    const point = block.start + block.duration;
+    shiftBlocksFrom(point, minutes, new Set());
+  }
+
+  /* ---------------------------------------------------------------------
+     Block Add/Edit dialog
+  --------------------------------------------------------------------- */
+  const blockDialog = document.getElementById("blockDialog");
+  let formSubtasks = [];
+  let formDismissedNudge = false;
+  let formEditingId = null;
+  let formIsBuffer = false;
+
+  function suggestedNewStart(){
+    const list = sortedBlocks();
+    if (!list.length) return Math.round(state.simNow / 5) * 5;
+    const last = list[list.length - 1];
+    return last.start + last.duration;
+  }
+
+  let formCategoryId = null;
+
+  function openBlockForm(block){
+    formEditingId = block ? block.id : null;
+    formIsBuffer = block ? block.isBuffer : false;
+    formSubtasks = block && block.subtasks ? block.subtasks.map(s => ({...s})) : [];
+    formCategoryId = block ? block.categoryId : (state.categories[0] ? state.categories[0].id : null);
+    formDismissedNudge = false;
+    renderBlockDialog(block);
+    blockDialog.showModal();
+    document.getElementById("bd_title").focus();
+  }
+
+  function renderBlockDialog(block){
+    const isEdit = !!block;
+    const title = block ? block.title : "";
+    const startStr = fmtClock(block ? block.start : suggestedNewStart());
+    const activeCat = state.categories.find(c => c.id === formCategoryId);
+    const duration = block ? block.duration : (activeCat ? (activeCat.defaultMinutes || 30) : 30);
+    const soundtrackEnabled = block ? !!block.soundtrackEnabled : false;
+
+    let bodyFields = "";
+    if (!formIsBuffer){
+      const catOptions = state.categories.map(c =>
+        '<option value="' + c.id + '"' + (c.id === formCategoryId ? " selected" : "") + '>' +
+          c.icon + ' ' + escapeHtml(c.name) + ' &middot; ' + (c.defaultMinutes || 30) + 'm default' +
+        '</option>'
+      ).join("");
+
+      const hasExtrasAlready = formSubtasks.length > 0 || soundtrackEnabled;
+      bodyFields =
+        '<div class="field"><label for="bd_category">Category <span style="font-weight:400;color:var(--muted);">(also sets a default length)</span></label>' +
+          '<select id="bd_category">' + catOptions + '</select>' +
+        '</div>' +
+        '<div id="bd_nudge"></div>' +
+        '<div class="field-row">' +
+          '<div class="field"><label for="bd_start">Start time</label><input type="text" id="bd_start" value="' + startStr + '" placeholder="e.g. 9:30 AM" inputmode="text"><p id="bd_startError" style="margin:5px 0 0;font-size:11.5px;color:var(--danger-quiet);display:none;">Type a time like 9:30 AM or 14:30.</p></div>' +
+          '<div class="field"><label for="bd_duration">Duration</label><input type="text" id="bd_duration" value="' + duration + 'm" placeholder="e.g. 45m or 1h 30m" inputmode="text">' +
+            '<div class="duration-chips" role="group" aria-label="Quick duration">' +
+              [15, 30, 45, 60, 90].map(m =>
+                '<button type="button" class="duration-chip" data-min="' + m + '">' + (m >= 60 ? Math.floor(m / 60) + "h" + (m % 60 ? " " + (m % 60) + "m" : "") : m + "m") + '</button>'
+              ).join("") +
+            '</div>' +
+            '<p id="bd_durationError" style="margin:5px 0 0;font-size:11.5px;color:var(--danger-quiet);display:none;">Type a length like 45m, 1h, or 1h 30m.</p></div>' +
+        '</div>' +
+        '<details class="more-options" id="bd_moreOptions"' + (hasExtrasAlready ? " open" : "") + '>' +
+          '<summary>More options <span>(steps, soundtrack, buffer)</span></summary>' +
+          '<div class="more-options-body">' +
+            '<h3 style="font-size:13px;margin:14px 0 8px;color:var(--muted);">Steps (optional)</h3>' +
+            '<div class="field"><button type="button" class="text-btn" id="bd_addStepLink">+ Add a step</button></div>' +
+            '<div id="bd_subtasks"></div>' +
+            '<h3 style="font-size:13px;margin:16px 0 8px;color:var(--muted);">Extras (optional)</h3>' +
+            '<div class="checkbox-field">' +
+              '<input type="checkbox" id="bd_soundtrack" ' + (soundtrackEnabled ? "checked" : "") + '>' +
+              '<label for="bd_soundtrack">Play a timer-length soundtrack for this block (prototype stub)</label>' +
+            '</div>' +
+            '<div class="checkbox-field">' +
+              '<input type="checkbox" id="bd_addBuffer">' +
+              '<label for="bd_addBuffer">Add a short buffer right after this block</label>' +
+            '</div>' +
+            '<div class="field" id="bd_bufferMinWrap" style="display:none;">' +
+              '<label for="bd_bufferMin">Buffer length</label>' +
+              '<input type="text" id="bd_bufferMin" value="5m" placeholder="e.g. 5m" inputmode="text">' +
+            '</div>' +
+          '</div>' +
+        '</details>';
+    } else {
+      // Buffers skip category/steps/extras entirely, but still need a
+      // start time and length.
+      bodyFields =
+        '<div class="field-row">' +
+          '<div class="field"><label for="bd_start">Start time</label><input type="text" id="bd_start" value="' + startStr + '" placeholder="e.g. 9:30 AM" inputmode="text"><p id="bd_startError" style="margin:5px 0 0;font-size:11.5px;color:var(--danger-quiet);display:none;">Type a time like 9:30 AM or 14:30.</p></div>' +
+          '<div class="field"><label for="bd_duration">Duration</label><input type="text" id="bd_duration" value="' + duration + 'm" placeholder="e.g. 45m or 1h 30m" inputmode="text">' +
+            '<div class="duration-chips" role="group" aria-label="Quick duration">' +
+              [15, 30, 45, 60, 90].map(m =>
+                '<button type="button" class="duration-chip" data-min="' + m + '">' + (m >= 60 ? Math.floor(m / 60) + "h" + (m % 60 ? " " + (m % 60) + "m" : "") : m + "m") + '</button>'
+              ).join("") +
+            '</div>' +
+            '<p id="bd_durationError" style="margin:5px 0 0;font-size:11.5px;color:var(--danger-quiet);display:none;">Type a length like 45m, 1h, or 1h 30m.</p></div>' +
+        '</div>';
+    }
+
+    document.getElementById("blockDialogInner").innerHTML =
+      '<h2 id="blockDialogTitle">' + (isEdit ? (formIsBuffer ? "Edit buffer" : "Edit block") : "New block") + '</h2>' +
+      '<p class="dialog-sub">' + (formIsBuffer ? "Buffers are short transition blocks between tasks." : "Pick a template, name it, and set when it starts &mdash; everything else is optional.") + '</p>' +
+      '<div class="field"><label for="bd_title">Title</label>' +
+        '<input type="text" id="bd_title" value="' + escapeAttr(title) + '" placeholder="' + (formIsBuffer ? "Buffer" : "e.g. Write report") + '"></div>' +
+      bodyFields +
+      '<div class="dialog-actions">' +
+        '<div>' + (isEdit ? '<button type="button" class="quiet-btn" id="bd_delete">Delete</button>' : '') + '</div>' +
+        '<div class="right-group">' +
+          '<button type="button" class="ghost-btn" id="bd_cancel">Cancel</button>' +
+          '<button type="button" class="primary-btn" id="bd_save">Save</button>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById("bd_cancel").addEventListener("click", () => blockDialog.close());
+    document.getElementById("bd_save").addEventListener("click", () => saveBlockForm());
+    const delBtn = document.getElementById("bd_delete");
+    if (delBtn) delBtn.addEventListener("click", () => {
+      showConfirm("Delete this block? This can't be undone.", () => {
+        state.blocks = state.blocks.filter(b => b.id !== formEditingId);
+        blockDialog.close();
+        commit();
+      });
+    });
+
+    if (!formIsBuffer){
+      document.getElementById("bd_category").addEventListener("change", (e) => {
+        const cat = state.categories.find(c => c.id === e.target.value);
+        if (cat) document.getElementById("bd_duration").value = (cat.defaultMinutes || 30) + "m";
+        renderNudge();
+      });
+      document.getElementById("bd_duration").addEventListener("input", renderNudge);
+      document.querySelectorAll(".duration-chip").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.getElementById("bd_duration").value = btn.dataset.min + "m";
+          renderNudge();
+          document.getElementById("bd_duration").focus();
+        });
+      });
+      renderSubtaskEditor();
+      renderNudge();
+      document.getElementById("bd_addStepLink").addEventListener("click", () => {
+        formSubtasks.push({ id: uid("st"), title: "", est: 10, done: false });
+        renderSubtaskEditor();
+      });
+      const addBufferChk = document.getElementById("bd_addBuffer");
+      addBufferChk.addEventListener("change", () => {
+        document.getElementById("bd_bufferMinWrap").style.display = addBufferChk.checked ? "" : "none";
+      });
+    }
+  }
+
+  function renderNudge(){
+    const wrap = document.getElementById("bd_nudge");
+    if (!wrap) return;
+    const duration = parseDurationFlexible(document.getElementById("bd_duration").value) || 0;
+    if (duration > state.nudgeThreshold && formSubtasks.length === 0 && !formDismissedNudge){
+      wrap.innerHTML =
+        '<div class="nudge-box">' +
+          '<p>This is a long block &mdash; want to break it into smaller steps?</p>' +
+          '<div class="nudge-actions">' +
+            '<button type="button" class="ghost-btn" id="bd_nudgeYes">Break it down</button>' +
+            '<button type="button" class="text-btn" id="bd_nudgeNo">No thanks</button>' +
+          '</div>' +
+        '</div>';
+      document.getElementById("bd_nudgeYes").addEventListener("click", () => {
+        formSubtasks.push({ id: uid("st"), title: "", est: 15, done: false });
+        formSubtasks.push({ id: uid("st"), title: "", est: 15, done: false });
+        renderSubtaskEditor();
+        renderNudge();
+      });
+      document.getElementById("bd_nudgeNo").addEventListener("click", () => {
+        formDismissedNudge = true;
+        renderNudge();
+      });
+    } else {
+      wrap.innerHTML = "";
+    }
+  }
+
+  function renderSubtaskEditor(){
+    const wrap = document.getElementById("bd_subtasks");
+    if (!wrap) return;
+    wrap.innerHTML = formSubtasks.map((s, i) =>
+      '<div class="subtask-editor-row">' +
+        '<input type="text" data-idx="' + i + '" data-f="title" value="' + escapeAttr(s.title) + '" placeholder="Step name" aria-label="Step ' + (i+1) + ' name">' +
+        '<input type="number" data-idx="' + i + '" data-f="est" value="' + s.est + '" min="1" step="1" aria-label="Step ' + (i+1) + ' estimated minutes">' +
+        '<button type="button" class="icon-mini" data-idx="' + i + '" data-f="remove" aria-label="Remove step ' + (i+1) + '">✕</button>' +
+      '</div>'
+    ).join("");
+    wrap.querySelectorAll("input").forEach(inp => {
+      inp.addEventListener("input", () => {
+        const i = parseInt(inp.dataset.idx, 10);
+        const f = inp.dataset.f;
+        formSubtasks[i][f] = f === "est" ? (parseInt(inp.value,10) || 1) : inp.value;
+      });
+    });
+    wrap.querySelectorAll("button[data-f='remove']").forEach(btn => {
+      btn.addEventListener("click", () => {
+        formSubtasks.splice(parseInt(btn.dataset.idx,10), 1);
+        renderSubtaskEditor();
+        renderNudge();
+      });
+    });
+  }
+
+  function saveBlockForm(){
+    const startVal = parseTimeFlexible(document.getElementById("bd_start").value);
+    if (startVal === null){
+      document.getElementById("bd_startError").style.display = "";
+      document.getElementById("bd_start").focus();
+      return;
+    }
+    document.getElementById("bd_startError").style.display = "none";
+
+    const durationVal = parseDurationFlexible(document.getElementById("bd_duration").value);
+    if (durationVal === null){
+      document.getElementById("bd_durationError").style.display = "";
+      document.getElementById("bd_duration").focus();
+      return;
+    }
+    document.getElementById("bd_durationError").style.display = "none";
+
+    const titleVal = document.getElementById("bd_title").value.trim() || (formIsBuffer ? "Buffer" : "Untitled block");
+
+    let block;
+    if (formEditingId){
+      block = state.blocks.find(b => b.id === formEditingId);
+      block.title = titleVal;
+      block.start = startVal;
+      block.duration = durationVal;
+    } else {
+      block = mkBlock(titleVal, null, startVal, durationVal, formIsBuffer, [], false);
+      state.blocks.push(block);
+    }
+
+    if (!formIsBuffer){
+      block.categoryId = document.getElementById("bd_category").value || (state.categories[0] ? state.categories[0].id : null);
+      block.soundtrackEnabled = document.getElementById("bd_soundtrack").checked;
+      block.subtasks = formSubtasks.filter(s => s.title.trim().length > 0).map(s => ({ id: s.id, title: s.title.trim(), est: s.est, done: !!s.done }));
+
+      const addBufferChk = document.getElementById("bd_addBuffer");
+      if (addBufferChk && addBufferChk.checked){
+        const bufMin = parseDurationFlexible(document.getElementById("bd_bufferMin").value) || 5;
+        const point = block.start + block.duration;
+        const buf = mkBuffer(point, bufMin);
+        state.blocks.push(buf);
+        shiftBlocksFrom(point, bufMin, new Set([buf.id, block.id]));
+      }
+    }
+
+    blockDialog.close();
+    commit();
+  }
+
+  /* ---------------------------------------------------------------------
+     Settings dialog (categories + nudge threshold)
+  --------------------------------------------------------------------- */
+  const settingsDialog = document.getElementById("settingsDialog");
+  document.getElementById("settingsBtn").addEventListener("click", () => {
+    renderSettingsDialog();
+    settingsDialog.showModal();
+  });
+
+  function renderSettingsDialog(){
+    const inner = document.getElementById("settingsDialogInner");
+    inner.innerHTML =
+      '<h2 id="settingsDialogTitle">Settings</h2>' +
+      '<p class="dialog-sub">Saved on this device' + (cloudEnabled && currentUser && !offlineMode ? ' and synced to your account.' : '.') + '</p>' +
+
+      '<div class="field"><label for="st_firstName">Your name</label>' +
+        '<input type="text" id="st_firstName" value="' + escapeAttr(state.firstName) + '" placeholder="e.g. Sam"></div>' +
+
+      '<div class="checkbox-field">' +
+        '<input type="checkbox" id="st_showTimer" ' + (state.showTimer ? "checked" : "") + '>' +
+        '<label for="st_showTimer">Show the shrinking timer shape (turn off for just the number)</label>' +
+      '</div>' +
+
+      '<h3 style="font-size:13.5px;margin:16px 0 8px;">Color theme</h3>' +
+      '<p class="dialog-sub" style="margin-bottom:8px;">Recolors all categories at once &mdash; you can still fine-tune individual colors below afterward.</p>' +
+      '<div id="st_themeRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">' +
+        Object.keys(COLOR_THEMES).map(key => {
+          const t = COLOR_THEMES[key];
+          const active = state.colorTheme === key;
+          return '<button type="button" class="ghost-btn" data-theme="' + key + '" style="display:flex;align-items:center;gap:6px;' + (active ? 'border-color:' + t.accent + ';box-shadow:0 0 0 2px ' + t.accent + ';' : '') + '">' +
+            '<span style="width:14px;height:14px;border-radius:50%;background:' + t.colors[0] + ';display:inline-block;"></span>' +
+            escapeHtml(t.label) +
+          '</button>';
+        }).join('') +
+      '</div>' +
+
+      '<h3 style="font-size:13.5px;margin:16px 0 8px;">Categories</h3>' +
+      '<div id="st_catRows"></div>' +
+      '<div class="field"><button type="button" class="text-btn" id="st_addCat">+ Add category</button></div>' +
+
+      '<details class="more-options" id="st_soundDetails"' + (state.soundEnabled || state.speakEnabled ? " open" : "") + '>' +
+        '<summary>Sound &amp; voice</summary>' +
+        '<div class="more-options-body">' +
+          '<div class="checkbox-field">' +
+            '<input type="checkbox" id="st_soundEnabled" ' + (state.soundEnabled ? "checked" : "") + '>' +
+            '<label for="st_soundEnabled">Play a soft chime when a block starts or a task is marked done</label>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="st_soundVolume">Volume</label>' +
+            '<input type="range" id="st_soundVolume" min="0" max="1" step="0.1" value="' + state.soundVolume + '" style="width:100%;">' +
+          '</div>' +
+          '<div class="field" style="display:flex;gap:8px;">' +
+            '<button type="button" class="quiet-btn" id="st_testSound">Test start chime</button>' +
+            '<button type="button" class="quiet-btn" id="st_testDoneChime">Test done chime</button>' +
+          '</div>' +
+          (speechSupported ?
+            '<div class="checkbox-field">' +
+              '<input type="checkbox" id="st_speakEnabled" ' + (state.speakEnabled ? "checked" : "") + '>' +
+              '<label for="st_speakEnabled">Also say the time and plan out loud when a block starts</label>' +
+            '</div>' +
+            '<div class="field"><button type="button" class="quiet-btn" id="st_testSpeak">Test voice</button></div>'
+          : '') +
+        '</div>' +
+      '</details>' +
+
+      '<details class="more-options" id="st_nudgeDetails">' +
+        '<summary>Task breakdown</summary>' +
+        '<div class="more-options-body">' +
+          '<div class="field"><label for="st_threshold">Nudge threshold (minutes)</label>' +
+            '<input type="number" id="st_threshold" min="10" step="5" value="' + state.nudgeThreshold + '"></div>' +
+        '</div>' +
+      '</details>' +
+
+      '<details class="more-options" id="st_testingDetails">' +
+        '<summary>Testing tools</summary>' +
+        '<div class="more-options-body">' +
+          '<p class="dialog-sub" style="margin-bottom:8px;">Speeds up the on-screen clock so you can see timers shrink without waiting — not a real feature, and it never changes when real reminders fire.</p>' +
+          '<div class="seg" id="speedSeg" style="border:1px solid var(--border); border-radius:999px; padding:4px; width:max-content;">' +
+            '<button type="button" data-action="speed" data-speed="1">1x</button>' +
+            '<button type="button" data-action="speed" data-speed="10">10x</button>' +
+            '<button type="button" data-action="speed" data-speed="60">60x</button>' +
+          '</div>' +
+        '</div>' +
+      '</details>' +
+
+      '<div class="dialog-actions"><div></div><div class="right-group"><button type="button" class="primary-btn" id="st_done">Save &amp; close</button></div></div>';
+
+    document.getElementById("st_soundEnabled").addEventListener("change", (e) => {
+      state.soundEnabled = e.target.checked;
+    });
+    document.getElementById("st_soundVolume").addEventListener("input", (e) => {
+      state.soundVolume = parseFloat(e.target.value);
+    });
+    document.getElementById("st_testSound").addEventListener("click", () => {
+      const was = state.soundEnabled;
+      state.soundEnabled = true;
+      playAlarmChime();
+      state.soundEnabled = was;
+    });
+    document.getElementById("st_testDoneChime").addEventListener("click", () => {
+      const was = state.soundEnabled;
+      state.soundEnabled = true;
+      playCompletionChime();
+      state.soundEnabled = was;
+    });
+    if (speechSupported){
+      document.getElementById("st_speakEnabled").addEventListener("change", (e) => {
+        state.speakEnabled = e.target.checked;
+      });
+      document.getElementById("st_testSpeak").addEventListener("click", () => speakNow());
+    }
+    document.getElementById("st_threshold").addEventListener("input", (e) => {
+      state.nudgeThreshold = Math.max(5, parseInt(e.target.value, 10) || 45);
+    });
+    document.getElementById("st_addCat").addEventListener("click", () => {
+      state.categories.push({ id: uid("cat"), name: "New category", color: "#84a0ab", icon: "•" });
+      renderCatRows();
+    });
+    document.getElementById("st_themeRow").querySelectorAll("button[data-theme]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        applyColorTheme(btn.dataset.theme);
+        renderSettingsDialog();
+      });
+    });
+    document.getElementById("st_firstName").addEventListener("input", (e) => {
+      state.firstName = e.target.value.trim();
+      updateGreeting();
+    });
+    document.getElementById("st_showTimer").addEventListener("change", (e) => {
+      state.showTimer = e.target.checked;
+      render();
+    });
+    document.getElementById("st_done").addEventListener("click", () => {
+      settingsDialog.close();
+      commit();
+    });
+    renderCatRows();
+    updateSimClock(); // sync the just-rendered speed buttons' active state
+  }
+
+  function renderCatRows(){
+    const wrap = document.getElementById("st_catRows");
+    wrap.innerHTML = state.categories.map(c => {
+      const inUse = state.blocks.some(b => b.categoryId === c.id);
+      return (
+        '<div class="cat-manage-row" data-cat="' + c.id + '">' +
+          '<input type="color" class="color-swatch-input" data-f="color" value="' + c.color + '" aria-label="' + escapeAttr(c.name) + ' color">' +
+          '<input type="text" class="cicon" data-f="icon" value="' + escapeAttr(c.icon) + '" maxlength="2" aria-label="' + escapeAttr(c.name) + ' icon">' +
+          '<input type="text" class="cname" data-f="name" value="' + escapeAttr(c.name) + '" aria-label="Category name">' +
+          '<button type="button" class="icon-mini" data-f="remove" ' + (inUse ? 'disabled title="In use by existing blocks"' : 'title="Delete category"') + '>🗑️</button>' +
+        '</div>'
+      );
+    }).join("");
+
+    wrap.querySelectorAll(".cat-manage-row").forEach(row => {
+      const id = row.dataset.cat;
+      const cat = state.categories.find(c => c.id === id);
+      row.querySelectorAll("input").forEach(inp => {
+        inp.addEventListener("input", () => { cat[inp.dataset.f] = inp.value; });
+      });
+      const rm = row.querySelector("button[data-f='remove']");
+      rm.addEventListener("click", () => {
+        if (rm.disabled) return;
+        state.categories = state.categories.filter(c => c.id !== id);
+        renderCatRows();
+      });
+    });
+  }
+
+  /* ---------------------------------------------------------------------
+     Cloud auth screen + boot sequence
+  --------------------------------------------------------------------- */
+  function setCloudStatus(mode, text){
+    const el = document.getElementById("cloudStatus");
+    if (!cloudEnabled || offlineMode || !currentUser){ el.style.display = "none"; return; }
+    el.style.display = "";
+    el.className = "cloud-status " + mode;
+    document.getElementById("cloudStatusText").textContent = text;
+  }
+
+  function showAuthScreen(){
+    document.getElementById("authScreen").style.display = "";
+    document.getElementById("mainApp").style.display = "none";
+    document.getElementById("mainFooter").style.display = "none";
+    document.getElementById("signOutBtn").style.display = "none";
+    document.getElementById("authEmail").focus();
+  }
+
+  function showMainApp(){
+    const signedIn = cloudEnabled && currentUser && !offlineMode;
+    document.getElementById("authScreen").style.display = "none";
+    document.getElementById("mainApp").style.display = "";
+    document.getElementById("mainFooter").style.display = "";
+    document.getElementById("signOutBtn").style.display = signedIn ? "" : "none";
+    document.getElementById("footerStorageNote").textContent = signedIn
+      ? "Your schedule is synced to your account."
+      : "Your schedule is saved on this device only (no account, no cloud sync).";
+  }
+
+  function updateGreeting(){
+    const el = document.getElementById("brandTagline");
+    if (!el) return;
+    el.textContent = state.firstName ? "Hi, " + state.firstName : "TimeAnchor";
+  }
+
+  function finishBoot(){
+    appBooted = true;
+    showMainApp();
+    state.simNow = actualNowMinutes();
+    const already = getCurrentBlock();
+    lastCurrentBlockId = already ? already.id : null; // don't chime for a block already in progress at launch
+    updateSimClock();
+    updateGreeting();
+    render();
+    initNotifications();
+  }
+
+  async function loadCloudState(userId){
+    try {
+      const { data, error } = await sb.from("timeanchor_state").select("data").eq("user_id", userId).maybeSingle();
+      if (error) throw error;
+      return data ? data.data : null;
+    } catch (e) { return null; }
+  }
+
+  async function saveCloudState(){
+    if (!cloudEnabled || !currentUser || offlineMode) return;
+    try {
+      const payload = {
+        nudgeThreshold: state.nudgeThreshold, categories: state.categories,
+        blocks: state.blocks, savedForDate: state.savedForDate,
+        soundEnabled: state.soundEnabled, soundVolume: state.soundVolume, speakEnabled: state.speakEnabled,
+        firstName: state.firstName, showTimer: state.showTimer,
+        colorTheme: state.colorTheme, todos: state.todos
+      };
+      const { error } = await sb.from("timeanchor_state").upsert({
+        user_id: currentUser.id, data: payload, updated_at: new Date().toISOString()
+      });
+      if (error) throw error;
+      setCloudStatus("synced", "Synced");
+    } catch (e) {
+      setCloudStatus("error", "Sync failed — saved on this device");
+    }
+  }
+
+  async function onAuthed(user){
+    currentUser = user;
+    setCloudStatus("syncing", "Loading…");
+    const cloud = await loadCloudState(user.id);
+    if (cloud){
+      Object.assign(state, cloud);
+    } else {
+      // First login for this account — seed from any existing on-device
+      // schedule if there is one, otherwise the default day template.
+      const local = loadPersisted();
+      Object.assign(state, local || {
+        nudgeThreshold: 45, categories: defaultCategories(), blocks: defaultBlocks(), savedForDate: todayStr(),
+        soundEnabled: true, soundVolume: 0.6, speakEnabled: false, firstName: "", showTimer: true,
+        colorTheme: "mixed", todos: []
+      });
+      // The name typed at signup only fills in if nothing's already set
+      // (e.g. no leftover local-only data on this device/browser already
+      // has one) — never silently overwrites a name someone chose.
+      if (!state.firstName) state.firstName = (user.user_metadata && user.user_metadata.full_name) || "";
+      await saveCloudState();
+    }
+    restoreThemeVars();
+    finishBoot();
+    setCloudStatus("synced", "Synced");
+  }
+
+  let authMode = "login";
+  function setAuthMode(mode){
+    authMode = mode;
+    document.getElementById("authTabLogin").classList.toggle("active", mode === "login");
+    document.getElementById("authTabLogin").setAttribute("aria-selected", String(mode === "login"));
+    document.getElementById("authTabSignup").classList.toggle("active", mode === "signup");
+    document.getElementById("authTabSignup").setAttribute("aria-selected", String(mode === "signup"));
+    document.getElementById("authSubmit").textContent = mode === "login" ? "Log in" : "Sign up";
+    document.getElementById("authPassword").autocomplete = mode === "login" ? "current-password" : "new-password";
+    document.getElementById("authNameField").style.display = mode === "signup" ? "" : "none";
+    document.getElementById("authName").required = mode === "signup";
+    document.getElementById("authConfirmField").style.display = mode === "signup" ? "" : "none";
+    document.getElementById("authConfirm").required = mode === "signup";
+    document.getElementById("authError").textContent = "";
+  }
+  document.getElementById("authTabLogin").addEventListener("click", () => setAuthMode("login"));
+  document.getElementById("authTabSignup").addEventListener("click", () => setAuthMode("signup"));
+
+  document.getElementById("authForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("authEmail").value.trim();
+    const password = document.getElementById("authPassword").value;
+    const name = document.getElementById("authName").value.trim();
+    const confirm = document.getElementById("authConfirm").value;
+    const errEl = document.getElementById("authError");
+    const submitBtn = document.getElementById("authSubmit");
+    errEl.textContent = "";
+
+    if (authMode === "signup"){
+      if (!name){
+        errEl.textContent = "Enter your name.";
+        document.getElementById("authName").focus();
+        return;
+      }
+      if (password !== confirm){
+        errEl.textContent = "Passwords don't match.";
+        document.getElementById("authConfirm").focus();
+        return;
+      }
+    }
+
+    submitBtn.disabled = true;
+    try {
+      const { data, error } = authMode === "login"
+        ? await sb.auth.signInWithPassword({ email, password })
+        : await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
+      if (error) { errEl.textContent = error.message; return; }
+      if (authMode === "signup" && !data.session){
+        errEl.textContent = "Check your email to confirm your account, then log in.";
+        setAuthMode("login");
+        return;
+      }
+      await onAuthed(data.user);
+    } catch (err) {
+      errEl.textContent = "Something went wrong — please try again.";
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  document.getElementById("authOfflineLink").addEventListener("click", (e) => {
+    e.preventDefault();
+    offlineMode = true;
+    finishBoot();
+  });
+
+  document.getElementById("signOutBtn").addEventListener("click", async () => {
+    if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
+    location.reload();
+  });
+
+  if (speechSupported){
+    const speakBtn = document.getElementById("speakNowBtn");
+    speakBtn.style.display = "";
+    speakBtn.addEventListener("click", () => speakNow());
+  }
+
+  async function boot(){
+    if (!cloudEnabled){
+      finishBoot();
+      return;
+    }
+    try {
+      const { data } = await sb.auth.getSession();
+      if (data && data.session && data.session.user){
+        await onAuthed(data.session.user);
+      } else {
+        showAuthScreen();
+      }
+    } catch (e) {
+      finishBoot(); // cloud unreachable — fall back to local-only rather than block the app
+    }
+  }
+  boot();
+
+  // Installable-app support: register the service worker so "Add to Home
+  // Screen" behaves like a real app (own icon, opens full-screen, keeps
+  // working offline). It fetches fresh content over the network whenever
+  // possible and only falls back to its cache when offline, so edits show
+  // up on next load rather than getting stuck on an old cached copy.
+  if ("serviceWorker" in navigator){
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").then((reg) => {
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") reg.update();
+        });
+      }).catch(() => {});
+    });
+  }
+})();
+</script>
 </body>
 </html>
