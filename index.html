@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>TimeAnchor</title>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -401,8 +401,17 @@
   .dialog-sub{ margin:0 0 16px; font-size:12.5px; color:var(--muted); }
   .field{ margin-bottom:14px; }
   .field label{ display:block; font-size:12.5px; font-weight:600; margin-bottom:5px; }
-  .field input[type=text], .field input[type=time], .field input[type=number], .field select{
-    width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-size:13.5px;
+  .field input[type=text], .field input[type=time], .field input[type=number],
+  .field input[type=email], .field input[type=password], .field select{
+    width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);
+    /* 16px is the line iOS Safari (and any WebKit view, including a
+       home-screen-installed app — this isn't a Safari-only quirk) uses to
+       decide whether to zoom in on focus. Anything smaller here and
+       tapping into the field yanks the whole page in. */
+    font-size:16px;
+  }
+  .cat-manage-row input[type=text]{
+    padding:8px 9px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-size:16px;
   }
   .field-row{ display:flex; gap:10px; }
   .field-row .field{ flex:1; }
@@ -511,7 +520,7 @@
     <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
     <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
     <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
-      <input type="text" id="todoInput" placeholder="Add something…" style="flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13.5px;">
+      <input type="text" id="todoInput" placeholder="Add something…" style="flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
       <button type="submit" class="primary-btn">Add</button>
     </form>
     <ul class="subtask-list" id="todoList" style="margin:0;"></ul>
