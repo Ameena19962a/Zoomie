@@ -1,10 +1,17 @@
-
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>TimeAnchor</title>
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="TimeAnchor" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#f6f4ef" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" href="icons/icon-512.png" />
 <!--
   Cloud accounts (Supabase). This only works with real network access (the
   native app, or a normally-hosted copy of this page) — it will not work
@@ -24,14 +31,14 @@
     --track: #eae6db;
     --accent: #4d6b86;
     --focus-ring: #2c6e9e;
-    --danger-quiet: #b3763f;
+    --danger-quiet: #966335;
 
     --cat-buffer: #9aa0a1;
     --cat-buffer-tint: #eef0ef;
 
-    --radius-lg: 16px;
-    --radius-md: 10px;
-    --radius-sm: 7px;
+    --radius-lg: 22px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
@@ -59,6 +66,59 @@
     line-height:1.45;
     -webkit-tap-highlight-color: transparent;
   }
+  /* ---------- Whimsical themed backdrops ----------
+     Every color theme except Monotone (kept deliberately plain, for anyone
+     who picked it specifically to cut down visual noise) gets its own
+     tiled decoration at two scales so it doesn't read as an obvious
+     repeating grid, with a slow, gentle twinkle (never faster than a
+     normal breath — nowhere near flash-rate territory). */
+  body[data-bg-pattern]{ position:relative; }
+  body[data-bg-pattern]::before, body[data-bg-pattern]::after{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-repeat: repeat;
+  }
+  /* Scoped to the actual static layout pieces (not a blanket ">*") so any
+     element appended straight to <body> later — celebration overlays,
+     etc. — isn't unexpectedly forced down to this z-index too: this
+     selector's specificity (it includes the "body" type) beats a plain
+     class selector, so a bare ">*" would silently win over e.g.
+     .celebrate-flash{ z-index:45 } and hide it behind everything. */
+  body[data-bg-pattern] > .notice-banner,
+  body[data-bg-pattern] > .auth-screen,
+  body[data-bg-pattern] > main.layout,
+  body[data-bg-pattern] > footer.app-footer{ position:relative; z-index:1; }
+  /* header.app-header is excluded above: it already has its own
+     position:sticky + z-index:20 (needed so it stays above scrolled
+     content, not just above the sparkle backdrop) — restating z-index
+     here at a lower value would fight that, not help it. */
+
+  /* Pink: 4-point stars (gold/white/magenta/lavender). */
+  body[data-bg-pattern="stars"]::before, body[data-bg-pattern="stars"]::after{
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cpath d='M15 3 L17.2 9.8 L24 12 L17.2 14.2 L15 21 L12.8 14.2 L6 12 L12.8 9.8 Z' fill='%23ffd166'/%3E%3Cpath d='M70 20 L72.5 27 L80 30 L72.5 33 L70 40 L67.5 33 L60 30 L67.5 27 Z' fill='%23ffffff'/%3E%3Cpath d='M40 60 L42 66 L48 68 L42 70 L40 76 L38 70 L32 68 L38 66 Z' fill='%23f472b6'/%3E%3Cpath d='M85 78 L86.8 82.5 L91.5 84 L86.8 85.5 L85 90 L83.2 85.5 L78.5 84 L83.2 82.5 Z' fill='%23c084fc'/%3E%3C/svg%3E");
+  }
+  body[data-bg-pattern="stars"]::before{ background-size: 130px 130px; background-position: 0 0; opacity:.85; }
+  body[data-bg-pattern="stars"]::after{ background-size: 210px 210px; background-position: 55px 90px; opacity:.55; transform:scale(1.3); }
+
+  /* Blue: drifting bubbles (soft outlined + a couple of filled dots). */
+  body[data-bg-pattern="bubbles"]::before, body[data-bg-pattern="bubbles"]::after{
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='20' cy='24' r='11' fill='none' stroke='%23ffffff' stroke-width='2.5' opacity='0.85'/%3E%3Ccircle cx='72' cy='58' r='15' fill='none' stroke='%23dbeeff' stroke-width='2.5' opacity='0.75'/%3E%3Ccircle cx='48' cy='86' r='7' fill='%23ffffff' opacity='0.55'/%3E%3Ccircle cx='30' cy='68' r='4' fill='%23ffffff' opacity='0.6'/%3E%3Ccircle cx='86' cy='18' r='5' fill='none' stroke='%23ffffff' stroke-width='2' opacity='0.7'/%3E%3C/svg%3E");
+  }
+  body[data-bg-pattern="bubbles"]::before{ background-size: 150px 150px; background-position: 0 0; opacity:.8; }
+  body[data-bg-pattern="bubbles"]::after{ background-size: 230px 230px; background-position: 70px 60px; opacity:.5; transform:scale(1.25); }
+
+  /* Calm mixed: confetti flecks in the app's own category colors. */
+  body[data-bg-pattern="confetti"]::before, body[data-bg-pattern="confetti"]::after{
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect x='10' y='15' width='11' height='11' rx='2.5' fill='%235b7fa6' opacity='0.85' transform='rotate(20 15.5 20.5)'/%3E%3Crect x='60' y='42' width='10' height='10' rx='2.5' fill='%23ab8657' opacity='0.85' transform='rotate(-18 65 47)'/%3E%3Ccircle cx='38' cy='72' r='5.5' fill='%236f9c7d' opacity='0.8'/%3E%3Cpath d='M76 8 L84 8 L80 16 Z' fill='%239a7bb0' opacity='0.85'/%3E%3Ccircle cx='87' cy='82' r='4' fill='%235b7fa6' opacity='0.7'/%3E%3C/svg%3E");
+  }
+  body[data-bg-pattern="confetti"]::before{ background-size: 140px 140px; background-position: 0 0; opacity:.8; }
+  body[data-bg-pattern="confetti"]::after{ background-size: 220px 220px; background-position: 60px 80px; opacity:.5; transform:scale(1.3); }
+
+  @media not (prefers-reduced-motion: reduce){
+    body[data-bg-pattern]::before{ animation: sparkleTwinkle 5s ease-in-out infinite; }
+    body[data-bg-pattern]::after{ animation: sparkleTwinkle 7s ease-in-out infinite 1.5s; }
+  }
+  @keyframes sparkleTwinkle{ 0%,100%{ opacity:.45 } 50%{ opacity:1 } }
+
   a, button, input, select, textarea{ font-family:inherit; }
   button{ cursor:pointer; }
   button:focus-visible, [tabindex]:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible{
@@ -70,6 +130,65 @@
     overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
   }
 
+  /* ---------- Small celebratory burst on "Mark done" ---------- */
+  .celebrate-burst{
+    position:fixed; pointer-events:none; z-index:50; font-size:20px; line-height:1;
+    animation: celebrateFloat 950ms ease-out forwards;
+  }
+  @keyframes celebrateFloat{
+    0%{ opacity:1; transform:translate(0,0) scale(.6) rotate(0deg); }
+    100%{ opacity:0; transform:translate(var(--dx,0px),-55px) scale(1.15) rotate(20deg); }
+  }
+  .celebrate-message{
+    position:fixed; pointer-events:none; z-index:50; font-weight:700; font-size:14px;
+    color:var(--accent); background:var(--card); border:1px solid var(--border);
+    padding:6px 12px; border-radius:999px; box-shadow:0 4px 14px rgba(0,0,0,.12);
+    transform:translateX(-50%);
+  }
+  @media not (prefers-reduced-motion: reduce){
+    .celebrate-message{ animation: celebrateMsgPop 1400ms ease-out forwards; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .celebrate-message{ animation: celebrateMsgFadeOnly 1400ms ease-out forwards; }
+  }
+  @keyframes celebrateMsgPop{
+    0%{ opacity:0; transform:translate(-50%, 6px) scale(.9); }
+    15%{ opacity:1; transform:translate(-50%, 0) scale(1); }
+    80%{ opacity:1; }
+    100%{ opacity:0; transform:translate(-50%, -10px) scale(1); }
+  }
+  @keyframes celebrateMsgFadeOnly{
+    0%{ opacity:0; }
+    15%{ opacity:1; }
+    80%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+  /* A bigger, impossible-to-miss celebration: a soft wash of color across
+     the whole screen (not just a few sparkles near wherever you tapped),
+     so finishing a task reads as a real moment even glanced at quickly or
+     tapped from way down in the timeline. */
+  .celebrate-flash{
+    position:fixed; inset:0; z-index:45; pointer-events:none; opacity:0;
+    background: radial-gradient(circle at var(--fx,50%) var(--fy,40%),
+      rgba(255,209,102,.85) 0%, rgba(244,114,182,.7) 30%, rgba(192,132,252,.5) 55%, transparent 78%);
+  }
+  @media not (prefers-reduced-motion: reduce){
+    .celebrate-flash{ animation: celebrateFlashPulse 750ms ease-out forwards; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .celebrate-flash{ animation: celebrateFlashFadeOnly 750ms ease-out forwards; }
+  }
+  @keyframes celebrateFlashPulse{
+    0%{ opacity:0; transform:scale(.85); }
+    30%{ opacity:1; transform:scale(1); }
+    100%{ opacity:0; transform:scale(1.2); }
+  }
+  @keyframes celebrateFlashFadeOnly{
+    0%{ opacity:0; }
+    30%{ opacity:.85; }
+    100%{ opacity:0; }
+  }
+
   /* ---------- Header ---------- */
   header.app-header{
     position:sticky; top:0; z-index:20;
@@ -79,7 +198,7 @@
     display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
   }
   .brand{ display:flex; flex-direction:column; gap:2px; }
-  .brand h1{ margin:0; font-size:20px; letter-spacing:.2px; }
+  .brand h1{ margin:0; font-size:22px; letter-spacing:.2px; }
   .brand p{ margin:0; font-size:12.5px; color:var(--muted); }
   .header-controls{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
 
@@ -113,6 +232,51 @@
   .text-btn{
     border:none; background:transparent; color:var(--accent); font-weight:600; font-size:13px; padding:4px 2px;
   }
+  .duration-chips{
+    display:flex; flex-wrap:wrap; gap:6px; margin-top:7px;
+  }
+  .duration-chip{
+    border:1px solid var(--border); background:var(--track); color:var(--text);
+    padding:5px 12px; border-radius:999px; font-size:12.5px; font-weight:600;
+  }
+  .duration-chip:hover{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .duration-chip.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
+
+  /* Simple/Full app mode — Simple hides the timed timeline entirely so the
+     to-do + spoon list is the whole screen; no markup is removed, just hidden,
+     so switching back to Full needs no rebuild. */
+  body.mode-simple #focusPanelSection,
+  body.mode-simple #timelinePanelSection,
+  body.mode-simple #newBlockBtn{ display:none; }
+
+  .spoon-budget{
+    background:var(--track); border:1px solid var(--border); border-radius:var(--radius-md);
+    padding:12px 14px; margin-bottom:14px;
+  }
+  .spoon-budget-row{ display:flex; flex-wrap:wrap; gap:3px; margin-bottom:6px; }
+  .spoon-budget-row .spoon{ font-size:19px; line-height:1; opacity:1; filter:none; }
+  .spoon-budget-row .spoon.empty{ opacity:.28; filter:grayscale(1); }
+  .spoon-budget-text{ margin:0; font-size:13px; color:var(--muted); font-weight:600; }
+  .spoon-budget-text.over{ color:var(--danger-quiet); }
+  .todo-spoon-badge{
+    border:1px solid var(--border); background:var(--card); color:var(--muted);
+    padding:3px 9px; border-radius:999px; font-size:12px; font-weight:600; flex:none;
+  }
+  .todo-spoon-badge:hover{ border-color:var(--accent); color:var(--accent); }
+
+  /* Progressive disclosure for the New block form: steps and extras stay
+     tucked away until asked for, so the form that opens by default is
+     just Title / Category / When / How long. */
+  .more-options{ margin-top:16px; border-top:1px solid var(--border); padding-top:12px; }
+  .more-options summary{
+    cursor:pointer; font-weight:600; font-size:13px; color:var(--accent);
+    list-style:none; display:flex; align-items:center; gap:6px;
+  }
+  .more-options summary::-webkit-details-marker{ display:none; }
+  .more-options summary::before{ content:"+"; font-size:16px; line-height:1; }
+  .more-options[open] summary::before{ content:"\2212"; }
+  .more-options summary span{ font-weight:400; color:var(--muted); }
+  .more-options-body{ padding-top:4px; }
 
   /* ---------- Layout ---------- */
   main.layout{
@@ -142,6 +306,11 @@
     background:var(--cat-buffer-tint); border:1px solid var(--border); border-radius:var(--radius-md);
     padding:10px 14px; font-size:12.5px; color:var(--text);
   }
+  /* The accent color reads fine on white cards but doesn't reliably clear
+     4.5:1 against this banner's tinted background across every theme, so
+     its buttons use the same solid --text color as the rest of the
+     banner (still visually distinct via underline + weight). */
+  .notice-banner .inner .text-btn{ color:var(--text); text-decoration:underline; font-weight:700; }
 
   /* ---------- Category chip ---------- */
   .cat-chip{
@@ -179,7 +348,7 @@
   .focus-empty .next-line{ margin-top:6px; color:var(--text); }
   .focus-current{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; }
   .focus-current .big-pie{ margin:6px 0 2px; }
-  .focus-title{ font-size:17px; font-weight:700; margin:0; }
+  .focus-title{ font-size:25px; font-weight:800; margin:0; line-height:1.25; }
   .focus-time-range{ font-size:12.5px; color:var(--muted); }
   .focus-remaining-text{ font-size:13.5px; margin:0; }
   .focus-actions{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:6px; }
@@ -218,7 +387,7 @@
     font-size:11px; color:var(--muted); background:transparent; border:1px dashed var(--border);
     border-radius:999px; padding:3px 10px;
   }
-  .tl-gap button:hover{ color:var(--text); border-color:var(--accent); }
+  .tl-gap button:hover, .tl-gap button:focus-visible{ color:var(--text); border-color:var(--accent); }
 
   .block-row{
     display:flex; gap:12px; align-items:flex-start;
@@ -255,8 +424,17 @@
   .dialog-sub{ margin:0 0 16px; font-size:12.5px; color:var(--muted); }
   .field{ margin-bottom:14px; }
   .field label{ display:block; font-size:12.5px; font-weight:600; margin-bottom:5px; }
-  .field input[type=text], .field input[type=time], .field input[type=number], .field select{
-    width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-size:13.5px;
+  .field input[type=text], .field input[type=time], .field input[type=number],
+  .field input[type=email], .field input[type=password], .field select{
+    width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);
+    /* 16px is the line iOS Safari (and any WebKit view, including a
+       home-screen-installed app — this isn't a Safari-only quirk) uses to
+       decide whether to zoom in on focus. Anything smaller here and
+       tapping into the field yanks the whole page in. */
+    font-size:16px;
+  }
+  .cat-manage-row input[type=text]{
+    padding:8px 9px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-size:16px;
   }
   .field-row{ display:flex; gap:10px; }
   .field-row .field{ flex:1; }
@@ -306,8 +484,7 @@
 
 <header class="app-header">
   <div class="brand">
-    <h1>TimeAnchor</h1>
-    <p>A time-blocking app for time-blindness &middot; saved on this device</p>
+    <h1 id="brandTagline">Hi, Ameena</h1>
   </div>
   <div class="header-controls">
     <div class="sim-clock" id="simClockWrap" title="Speed and other testing tools are in Settings"><strong id="simClockText">--:--</strong></div>
@@ -315,7 +492,7 @@
     <span class="cloud-status" id="cloudStatus" style="display:none;"><span class="dot"></span><span id="cloudStatusText">Local only</span></span>
     <button type="button" class="icon-btn" id="signOutBtn" aria-label="Sign out" title="Sign out" style="display:none;">↩️</button>
     <button type="button" class="icon-btn" id="settingsBtn" aria-label="Settings: categories, sound, and more" title="Settings">⚙️</button>
-    <button type="button" class="primary-btn" data-action="new-block">+ New block</button>
+    <button type="button" class="primary-btn" id="newBlockBtn" data-action="new-block">+ New block</button>
   </div>
 </header>
 
@@ -339,8 +516,10 @@
     </div>
     <p class="auth-error" id="authError" role="alert"></p>
     <form id="authForm">
+      <div class="field" id="authNameField" style="display:none;"><label for="authName">Your name</label><input type="text" id="authName" autocomplete="name" placeholder="e.g. Sam"></div>
       <div class="field"><label for="authEmail">Email</label><input type="email" id="authEmail" autocomplete="email" required></div>
       <div class="field"><label for="authPassword">Password</label><input type="password" id="authPassword" autocomplete="current-password" required minlength="6"></div>
+      <div class="field" id="authConfirmField" style="display:none;"><label for="authConfirm">Confirm password</label><input type="password" id="authConfirm" autocomplete="new-password" minlength="6"></div>
       <button type="submit" class="primary-btn" id="authSubmit">Log in</button>
     </form>
     <a href="#" class="auth-offline-link text-btn" id="authOfflineLink">Continue without an account (this device only)</a>
@@ -348,18 +527,33 @@
 </div>
 
 <main class="layout" id="mainApp" style="display:none;">
-  <section class="panel focus-panel" aria-labelledby="focusHeading">
+  <section class="panel focus-panel" id="focusPanelSection" aria-labelledby="focusHeading">
     <h2 id="focusHeading">Right now</h2>
     <div id="focusPanelBody"></div>
   </section>
 
-  <section class="panel" aria-labelledby="timelineHeading">
+  <section class="panel" id="timelinePanelSection" aria-labelledby="timelineHeading">
     <div class="timeline-toolbar">
       <h2 id="timelineHeading" style="margin:0;">Today's timeline</h2>
     </div>
     <div class="timeline-list" id="timelineList"></div>
   </section>
+
+  <section class="panel" aria-labelledby="todoHeading" style="grid-column:1 / -1;">
+    <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
+    <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
+    <div class="spoon-budget" id="spoonBudgetBar"></div>
+    <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
+      <input type="text" id="todoInput" placeholder="Add something…" style="flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
+      <button type="submit" class="primary-btn">Add</button>
+    </form>
+    <ul class="subtask-list" id="todoList" style="margin:0;"></ul>
+  </section>
 </main>
+
+<dialog id="todoSpoonDialog" aria-labelledby="todoSpoonDialogTitle">
+  <div class="dialog-inner" id="todoSpoonDialogInner"></div>
+</dialog>
 
 <footer class="app-footer" id="mainFooter" style="display:none;">
   <span id="footerStorageNote">Your schedule is saved on this device only (no account, no cloud sync).</span>
@@ -376,6 +570,20 @@
   <div class="dialog-inner" id="settingsDialogInner"></div>
 </dialog>
 
+<dialog id="confirmDialog" aria-labelledby="confirmDialogTitle">
+  <div class="dialog-inner">
+    <h2 id="confirmDialogTitle" class="visually-hidden">Confirm</h2>
+    <p id="confirmMessage" style="margin:0 0 18px;"></p>
+    <div class="dialog-actions">
+      <div></div>
+      <div class="right-group">
+        <button type="button" class="ghost-btn" id="confirmCancel">Cancel</button>
+        <button type="button" class="primary-btn" id="confirmYes">Delete</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
 <script>
 (function(){
   "use strict";
@@ -388,6 +596,48 @@
 
   function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
 
+  // Category colors are user-editable (a plain color picker), so a chosen
+  // hue can easily be too pale/mid-tone to read as text once it's sitting
+  // on its own light tinted pill background. This darkens it just enough
+  // to guarantee real contrast, however it was picked — the pill's
+  // background tint and border keep the original, undarkened color.
+  function hexToRgbArr(hex){
+    const c = hex.replace('#', '');
+    return [parseInt(c.substr(0,2),16), parseInt(c.substr(2,2),16), parseInt(c.substr(4,2),16)];
+  }
+  function relLuminance(hex){
+    const [r,g,b] = hexToRgbArr(hex).map(v => v / 255);
+    const lin = (v) => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    return 0.2126*lin(r) + 0.7152*lin(g) + 0.0722*lin(b);
+  }
+  function contrastRatio(hex1, hex2){
+    const L1 = relLuminance(hex1), L2 = relLuminance(hex2);
+    const lighter = Math.max(L1, L2), darker = Math.min(L1, L2);
+    return (lighter + 0.05) / (darker + 0.05);
+  }
+  function mixHex(hex, bgHex, pct){
+    const [r,g,b] = hexToRgbArr(hex);
+    const [br,bg,bb] = hexToRgbArr(bgHex);
+    return "#" + [r*pct + br*(1-pct), g*pct + bg*(1-pct), b*pct + bb*(1-pct)]
+      .map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
+  }
+  function readableChipText(hex){
+    // The chip's actual background is this color mixed at 16% over the
+    // current theme's card color (matching the CSS color-mix() used for
+    // the pill background) — darken against *that*, not an assumed white,
+    // since a tinted background can be a little darker than white.
+    const cardHex = (getComputedStyle(document.documentElement).getPropertyValue("--card") || "#ffffff").trim() || "#ffffff";
+    const tint = mixHex(hex, cardHex, 0.16);
+    let amt = 0;
+    let cur = hex;
+    while (contrastRatio(cur, tint) < 4.5 && amt < 0.9){
+      amt += 0.03;
+      const [r,g,b] = hexToRgbArr(hex);
+      cur = "#" + [r,g,b].map(v => Math.round(v * (1 - amt)).toString(16).padStart(2, "0")).join("");
+    }
+    return cur;
+  }
+
   function fmtClock(mFloat){
     let m = ((mFloat % 1440) + 1440) % 1440;
     let h = Math.floor(m / 60);
@@ -396,14 +646,44 @@
     let h12 = h % 12; if (h12 === 0) h12 = 12;
     return h12 + ":" + String(mm).padStart(2, "0") + " " + ampm;
   }
-  function fmtClock24(mFloat){
-    let m = ((Math.round(mFloat) % 1440) + 1440) % 1440;
-    let h = Math.floor(m / 60), mm = m % 60;
-    return String(h).padStart(2,"0") + ":" + String(mm).padStart(2,"0");
+  // Accepts free-typed time in either 12-hour ("9:30 am", "9am", "9:30pm")
+  // or 24-hour ("21:30", "9:30") form — a plain typable text field instead
+  // of relying on the browser's native time-picker widget, which some
+  // embedded/sandboxed viewers render awkwardly or restrict to click-only.
+  function parseTimeFlexible(str){
+    if (!str) return null;
+    const m = str.trim().toLowerCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
+    if (!m) return null;
+    let h = parseInt(m[1], 10);
+    const min = m[2] ? parseInt(m[2], 10) : 0;
+    const ampm = m[3];
+    if (min > 59) return null;
+    if (ampm){
+      if (h < 1 || h > 12) return null;
+      if (ampm === "pm" && h < 12) h += 12;
+      if (ampm === "am" && h === 12) h = 0;
+    } else if (h > 23) {
+      return null;
+    }
+    return h * 60 + min;
   }
-  function parseTime24(str){
-    const parts = (str || "00:00").split(":");
-    return (parseInt(parts[0],10) || 0) * 60 + (parseInt(parts[1],10) || 0);
+  // Accepts free-typed duration: a plain number of minutes ("45"), with a
+  // unit ("45m", "45 min"), hours ("1h", "1 hour"), or combined ("1h 30m",
+  // "1:30"). Same reasoning as parseTimeFlexible — a plain text field the
+  // native number-input spinner some viewers render as click-only.
+  function parseDurationFlexible(str){
+    if (!str) return null;
+    str = str.trim().toLowerCase();
+    if (/^\d+$/.test(str)) return parseInt(str, 10);
+    const colon = str.match(/^(\d+):(\d{2})$/);
+    if (colon) return parseInt(colon[1], 10) * 60 + parseInt(colon[2], 10);
+    let total = 0, matched = false;
+    const hMatch = str.match(/(\d+(?:\.\d+)?)\s*h(?:ours?|rs?)?/);
+    if (hMatch){ total += Math.round(parseFloat(hMatch[1]) * 60); matched = true; }
+    const mMatch = str.match(/(\d+)\s*m(?:in(?:ute)?s?)?/);
+    if (mMatch){ total += parseInt(mMatch[1], 10); matched = true; }
+    if (!matched || total <= 0) return null;
+    return total;
   }
   function fmtDuration(min){
     min = Math.round(min);
@@ -438,6 +718,48 @@
   let appBooted = false;
 
   /* ---------------------------------------------------------------------
+     Color themes — bulk-recolor every category (in their current order)
+     plus the app's accent color in one tap. All kept in the same muted,
+     low-saturation range as the original palette, just shifted in hue.
+  --------------------------------------------------------------------- */
+  // Every theme is a COMPLETE palette (bg/card/text/muted/border/track), not
+  // just an accent tint — a theme is a deliberate, explicit look, so once
+  // picked it stays correct regardless of the device's light/dark setting.
+  // (A partial override was exactly how the Pink theme ended up with
+  // light dark-mode text sitting on a light pink background — unreadable.)
+  const COLOR_THEMES = {
+    mixed:    { label: "Calm mixed",  accent: "#4d6b86", focusRing: "#2c6e9e", bg: "#f6f4ef", card: "#ffffff", text: "#2c2a27", muted: "#706a5f", muted2: "#746f64", border: "#e3ded3", track: "#eae6db", bgPattern: "confetti", colors: ["#5b7fa6", "#ab8657", "#6f9c7d", "#9a7bb0"] },
+    monotone: { label: "Monotone",    accent: "#5c5c5c", focusRing: "#3d3d3d", bg: "#f2f2f0", card: "#ffffff", text: "#2a2a2a", muted: "#66666a", muted2: "#6d6d74", border: "#dcdcdc", track: "#e6e6e6", colors: ["#454545", "#6b6b6b", "#8c8c8c", "#3a3a3a"] },
+    blue:     { label: "Blue",        accent: "#3f6b95", focusRing: "#2a5a86", bg: "#f0f4f8", card: "#ffffff", text: "#1f3347", muted: "#5c7186", muted2: "#5e717f", border: "#d7e2ea", track: "#e2ebf1", bgPattern: "bubbles", colors: ["#2f5a80", "#4a7fa5", "#3d8fa0", "#5f7fa8"] },
+    pink:     { label: "Pink",        accent: "#b0508a", focusRing: "#9a3f78", bg: "#fdeef5", card: "#fffbfd", text: "#5a2245", muted: "#8f4a72", muted2: "#97587c", border: "#f3c9df", track: "#f8ddec", bgPattern: "stars", colors: ["#c15a92", "#d97fae", "#a54f8a", "#b96a9c"] }
+  };
+  function applyColorTheme(key){
+    const theme = COLOR_THEMES[key] || COLOR_THEMES.mixed;
+    state.colorTheme = COLOR_THEMES[key] ? key : "mixed";
+    state.categories.forEach((c, i) => { c.color = theme.colors[i % theme.colors.length]; });
+    setThemeCssVars(theme);
+  }
+  function setThemeCssVars(theme){
+    document.documentElement.style.setProperty("--accent", theme.accent);
+    document.documentElement.style.setProperty("--focus-ring", theme.focusRing);
+    document.documentElement.style.setProperty("--bg", theme.bg);
+    document.documentElement.style.setProperty("--card", theme.card);
+    document.documentElement.style.setProperty("--text", theme.text);
+    document.documentElement.style.setProperty("--muted", theme.muted);
+    document.documentElement.style.setProperty("--muted-2", theme.muted2);
+    document.documentElement.style.setProperty("--border", theme.border);
+    document.documentElement.style.setProperty("--track", theme.track);
+    // Buffer blocks and notice banners use a neutral tint rather than a
+    // category color — tie it to this theme's own track/muted tones so it
+    // never falls back to the system dark-mode default (which caused
+    // unreadable near-black banners on a light theme's dark-colored text).
+    document.documentElement.style.setProperty("--cat-buffer-tint", theme.track);
+    document.documentElement.style.setProperty("--cat-buffer", theme.muted2);
+    if (theme.bgPattern) document.body.setAttribute("data-bg-pattern", theme.bgPattern);
+    else document.body.removeAttribute("data-bg-pattern");
+  }
+
+  /* ---------------------------------------------------------------------
      Default day template (used on first run, and to seed any newly
      added days — the schedule itself repeats daily until edited)
   --------------------------------------------------------------------- */
@@ -450,26 +772,7 @@
     ];
   }
   function defaultBlocks(){
-    return [
-      mkBlock("Deep Work", "work", 540, 45, false, [], false),
-      mkBuffer(585, 10),
-      mkBlock("Write project report", "work", 595, 60, false, [
-        { id: uid("st"), title: "Outline", est: 15, done: false },
-        { id: uid("st"), title: "Draft intro", est: 20, done: false },
-        { id: uid("st"), title: "Draft body", est: 15, done: false },
-        { id: uid("st"), title: "Review & send", est: 10, done: false }
-      ], false),
-      mkBuffer(655, 10),
-      mkBlock("Email & admin", "admin", 665, 30, false, [], false),
-      mkBuffer(695, 10),
-      mkBlock("Call with Mia", "personal", 705, 30, false, [], false),
-      mkBlock("Lunch", "rest", 735, 45, false, [], false),
-      mkBuffer(780, 10),
-      mkBlock("Focus sprint", "work", 790, 60, false, [], true),
-      mkBuffer(850, 10),
-      mkBlock("Admin catch-up", "admin", 860, 30, false, [], false),
-      mkBlock("Afternoon walk", "rest", 890, 40, false, [], false)
-    ];
+    return []; // start empty — add your own; no sample day to clear out first
   }
 
   function mkBlock(title, categoryId, start, duration, isBuffer, subtasks, soundtrackEnabled){
@@ -505,7 +808,13 @@
         savedForDate: state.savedForDate,
         soundEnabled: state.soundEnabled,
         soundVolume: state.soundVolume,
-        speakEnabled: state.speakEnabled
+        speakEnabled: state.speakEnabled,
+        firstName: state.firstName,
+        showTimer: state.showTimer,
+        colorTheme: state.colorTheme,
+        todos: state.todos,
+        appMode: state.appMode,
+        dailySpoonBudget: state.dailySpoonBudget
       }));
     } catch (e) { /* storage unavailable — app still works for this session */ }
   }
@@ -522,6 +831,12 @@
     soundEnabled: persisted.soundEnabled !== false,
     soundVolume: typeof persisted.soundVolume === "number" ? persisted.soundVolume : 0.6,
     speakEnabled: persisted.speakEnabled === true,
+    firstName: persisted.firstName || "",
+    showTimer: persisted.showTimer !== false,
+    colorTheme: persisted.colorTheme || "mixed",
+    todos: Array.isArray(persisted.todos) ? persisted.todos : [],
+    appMode: persisted.appMode === "full" ? "full" : "simple",
+    dailySpoonBudget: typeof persisted.dailySpoonBudget === "number" ? persisted.dailySpoonBudget : 12,
     demoOffset: 0,
     speed: 1
   } : {
@@ -532,14 +847,29 @@
     soundEnabled: true,
     soundVolume: 0.6,
     speakEnabled: false,
+    firstName: "",
+    showTimer: true,
+    colorTheme: "mixed",
+    todos: [],
+    appMode: "simple",
+    dailySpoonBudget: 12,
     demoOffset: 0,
     speed: 1
   };
+
+  // Restore just the theme's CSS vars (accent/focus-ring/bg/card/sparkle) —
+  // does NOT touch category colors, since those may have been hand-edited
+  // since the theme was last applied and already carry their own saved colors.
+  function restoreThemeVars(){
+    setThemeCssVars(COLOR_THEMES[state.colorTheme] || COLOR_THEMES.mixed);
+  }
+  restoreThemeVars();
 
   // New day: the schedule is a repeating daily template — carry the same
   // blocks forward but clear yesterday's "done" marks.
   if (state.savedForDate !== todayStr()){
     state.blocks.forEach(b => { b.status = "pending"; });
+    state.todos.forEach(t => { t.done = false; });
     state.savedForDate = todayStr();
     persist();
   }
@@ -685,6 +1015,103 @@
   });
 
   /* ---------------------------------------------------------------------
+     A small celebratory reward for finishing a task — sparkles that pop
+     and float from wherever "Mark done" was tapped, plus a short chime
+     and a quick encouraging note. This is deliberately *variable*: which
+     emoji and which phrase show up is randomized each time (unpredictable
+     small rewards hold attention better than the exact same one every
+     time), while staying calm and non-garish — a handful of sparkles and
+     one line of text, nothing that takes over the screen. The sparkles
+     are skipped entirely for reduced-motion; the phrase still shows
+     (opacity fade only, no movement) so finishing something still gets
+     acknowledged either way.
+  --------------------------------------------------------------------- */
+  const CELEBRATE_MESSAGES = ["Nice work!", "Done. ✓", "One down.", "Nailed it.", "Task complete.", "You did it!", "That's a wrap.", "Off the list."];
+  function celebrateBurst(x, y){
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // The full-screen color wash — always shown (even for reduced-motion,
+    // just as a fade rather than a scaling pulse) so the celebration is
+    // obvious no matter where on the page the tap happened, not just a
+    // handful of sparkles that are easy to miss.
+    const flash = document.createElement("div");
+    flash.className = "celebrate-flash";
+    const vw = window.innerWidth || 1, vh = window.innerHeight || 1;
+    flash.style.setProperty("--fx", ((x / vw) * 100) + "%");
+    flash.style.setProperty("--fy", ((y / vh) * 100) + "%");
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 800);
+
+    if (!reduceMotion){
+      const emojis = ["✨", "🎉", "⭐", "💫"];
+      for (let i = 0; i < 5; i++){
+        const el = document.createElement("span");
+        el.className = "celebrate-burst";
+        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        el.style.left = (x + (Math.random() - 0.5) * 34) + "px";
+        el.style.top = (y - 8) + "px";
+        el.style.setProperty("--dx", ((Math.random() - 0.5) * 80) + "px");
+        el.style.animationDelay = (Math.random() * 120) + "ms";
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1200);
+      }
+    }
+    const msg = document.createElement("span");
+    msg.className = "celebrate-message";
+    msg.textContent = CELEBRATE_MESSAGES[Math.floor(Math.random() * CELEBRATE_MESSAGES.length)];
+    msg.style.left = x + "px";
+    msg.style.top = Math.max(8, y - 40) + "px";
+    document.body.appendChild(msg);
+    setTimeout(() => msg.remove(), 1500);
+  }
+
+  function playCompletionChime(){
+    if (!state.soundEnabled) return;
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      const now = audioCtx.currentTime;
+      const peakBase = clamp(state.soundVolume, 0, 1) * 0.32;
+      // A brighter, quicker "ta-da" than the block-start chime, so the
+      // two are easy to tell apart by ear — same gentle volume cap and
+      // soft fade-in, just a different, more resolved little flourish for
+      // finishing something.
+      [
+        { freq: 784.00, at: 0.00, dur: 0.16 },
+        { freq: 1046.50, at: 0.09, dur: 0.16 },
+        { freq: 1318.51, at: 0.18, dur: 0.38 }
+      ].forEach((note) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = note.freq;
+        const start = now + note.at;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(peakBase, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + note.dur);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(start);
+        osc.stop(start + note.dur + 0.02);
+      });
+    } catch (e) { /* the visual celebration still communicates completion without sound */ }
+  }
+
+  /* ---------------------------------------------------------------------
+     In-app confirm dialog — used instead of the browser's native confirm(),
+     which some embedded/sandboxed viewers block or silently no-op, making
+     a delete/clear action look like it does nothing at all.
+  --------------------------------------------------------------------- */
+  const confirmDialog = document.getElementById("confirmDialog");
+  function showConfirm(message, onYes, confirmLabel){
+    document.getElementById("confirmMessage").textContent = message;
+    const yesBtn = document.getElementById("confirmYes");
+    yesBtn.textContent = confirmLabel || "Delete";
+    yesBtn.onclick = () => { confirmDialog.close(); onYes(); };
+    confirmDialog.showModal();
+  }
+  document.getElementById("confirmCancel").addEventListener("click", () => confirmDialog.close());
+
+  /* ---------------------------------------------------------------------
      Low-capacity ("bed rot") day. Autistic burnout / spoon-theory guidance
      treats a demand-free rest day as a legitimate recovery need, not a
      failure — so this clears today's remaining plan with validating
@@ -694,14 +1121,15 @@
     return state.blocks.some(b => b.status === "pending");
   }
   function clearLowCapacityDay(){
-    if (!confirm("Clear the rest of today's plan? Nothing is lost — your schedule comes back fresh tomorrow.")) return;
-    const clearedIds = [];
-    state.blocks.forEach(b => { if (b.status === "pending"){ clearedIds.push(b.id); b.status = "skipped"; } });
-    commit();
-    showNotice("Today's plan is cleared — no pressure. Tomorrow starts fresh.", () => {
-      state.blocks.forEach(b => { if (clearedIds.includes(b.id)) b.status = "pending"; });
+    showConfirm("Clear the rest of today's plan? Nothing is lost — your schedule comes back fresh tomorrow.", () => {
+      const clearedIds = [];
+      state.blocks.forEach(b => { if (b.status === "pending"){ clearedIds.push(b.id); b.status = "skipped"; } });
       commit();
-    });
+      showNotice("Today's plan is cleared — no pressure. Tomorrow starts fresh.", () => {
+        state.blocks.forEach(b => { if (clearedIds.includes(b.id)) b.status = "pending"; });
+        commit();
+      });
+    }, "Clear plan");
   }
 
   /* ---------------------------------------------------------------------
@@ -747,6 +1175,8 @@
             '<p class="next-line">Next up: <strong>' + escapeHtml(next.title) + '</strong> (' + cat.icon + ' ' + escapeHtml(cat.name) + ') at ' + fmtClock(next.start) + '.</p>' +
             '<div class="focus-actions"><button type="button" class="ghost-btn" data-action="start-now" data-id="' + next.id + '">Start it now</button></div>' +
           '</div>' + lowCapacityLinkHtml();
+      } else if (state.blocks.length === 0){
+        el.innerHTML = '<div class="focus-empty"><p>Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.</p></div>';
       } else {
         el.innerHTML = '<div class="focus-empty"><p>Nothing else is scheduled for today.</p></div>' + lowCapacityLinkHtml();
       }
@@ -757,7 +1187,9 @@
     const cat = catFor(cur);
     const { remaining, fraction, overrun } = timeInfo(cur);
     const holeLabel = overrun ? "Time's up" : (Math.ceil(remaining) + "m");
-    const pie = pieMarkup(fraction, cat.color, 190, 0.62, holeLabel, overrun, "focusPie");
+    const pie = state.showTimer
+      ? pieMarkup(fraction, cat.color, 120, 0.62, holeLabel, overrun, "focusPie")
+      : '<div class="timer-off-display" style="font-size:28px;font-weight:800;padding:8px 0;color:' + (overrun ? "var(--danger-quiet)" : readableChipText(cat.color)) + ';">' + holeLabel + '</div>';
 
     let subtasksHtml = "";
     if (!cur.isBuffer && cur.subtasks && cur.subtasks.length){
@@ -799,7 +1231,7 @@
 
     el.innerHTML =
       '<div class="focus-current">' +
-        '<span class="cat-chip" style="color:' + cat.color + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
+        '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
         '<div class="big-pie">' + pie + '</div>' +
         '<p class="focus-title">' + escapeHtml(cur.title) + '</p>' +
         '<p class="focus-time-range">' + fmtClock(cur.start) + '&ndash;' + fmtClock(cur.start + cur.duration) + ' &middot; ' + fmtDuration(cur.duration) + (overrun ? " (running over)" : "") + '</p>' +
@@ -842,7 +1274,10 @@
       const { overrun } = timeInfo(block);
       return overrun ? { label: "Running over", cls: "over" } : { label: "In progress", cls: "now" };
     }
-    if (block.start > state.simNow) return { label: "Upcoming", cls: "" };
+    // "Upcoming" is the default, expected state for most rows — a pill on
+    // every single one just adds noise, so only call out states that are
+    // actually informative (in progress, done, running late/over, skipped).
+    if (block.start > state.simNow) return null;
     return { label: "Waiting — running behind", cls: "wait" };
   }
 
@@ -858,9 +1293,9 @@
       const st = statusFor(block, curId);
       const isCurrent = block.id === curId;
       let miniTimer = "";
-      if (isCurrent){
+      if (isCurrent && state.showTimer){
         const { fraction, overrun } = timeInfo(block);
-        miniTimer = pieMarkup(fraction, cat.color, 40, 0.5, "", overrun, null);
+        miniTimer = pieMarkup(fraction, cat.color, 40, 0.5, "", overrun, "timelineMiniPie");
       }
       let subtaskBadge = "";
       if (!block.isBuffer && block.subtasks && block.subtasks.length){
@@ -873,22 +1308,25 @@
           (miniTimer ? miniTimer : "") +
           '<div class="block-main">' +
             '<div class="block-top-line">' +
-              '<span class="cat-chip" style="color:' + cat.color + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
+              '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
               '<p class="block-title">' + escapeHtml(block.title) + '</p>' +
             '</div>' +
             '<div class="block-meta">' +
               '<span>' + fmtClock(block.start) + '&ndash;' + fmtClock(block.start + block.duration) + ' &middot; ' + fmtDuration(block.duration) + '</span>' +
-              '<span class="status-tag ' + st.cls + '">' + st.label + '</span>' +
+              (st ? '<span class="status-tag ' + st.cls + '">' + st.label + '</span>' : "") +
               subtaskBadge +
             '</div>' +
           '</div>' +
           '<div class="block-actions">' +
+            (block.status !== "done" && block.status !== "skipped"
+              ? '<button type="button" class="icon-mini" data-action="done" data-id="' + block.id + '" aria-label="Mark ' + escapeAttr(block.title) + ' done">✅</button>'
+              : "") +
             '<button type="button" class="icon-mini" data-action="edit" data-id="' + block.id + '" aria-label="Edit ' + escapeAttr(block.title) + '">✏️</button>' +
             '<button type="button" class="icon-mini" data-action="delete" data-id="' + block.id + '" aria-label="Delete ' + escapeAttr(block.title) + '">🗑️</button>' +
           '</div>' +
         '</div>';
 
-      html += '<div class="tl-gap"><button type="button" data-action="insert-buffer" data-after="' + block.id + '">+ insert 5-min buffer</button></div>';
+      html += '<div class="tl-gap"><button type="button" data-action="insert-buffer" data-after="' + block.id + '" aria-label="Insert a 5-minute buffer here" title="Insert a 5-minute buffer">+ buffer</button></div>';
     });
 
     el.innerHTML = html || '<p style="color:var(--muted);font-size:13px;">No blocks yet. Use "+ New block" to add one.</p>';
@@ -903,8 +1341,109 @@
      Full render + tick loop
   --------------------------------------------------------------------- */
   function render(){
+    applyAppMode();
     renderFocusPanel();
     renderTimeline();
+    renderTodos();
+  }
+
+  function applyAppMode(){
+    document.body.classList.toggle("mode-simple", state.appMode !== "full");
+  }
+
+  /* ---------------------------------------------------------------------
+     Spoon theory energy budget — a well-known framework (Christine
+     Miserandino) for tracking finite daily capacity. The budget is a plain
+     number set in Settings; each to-do costs spoons when checked off and
+     can optionally give some back (rest/restorative tasks). Nothing is
+     stored as a running counter — it's recomputed from the todo list every
+     render, so it can never drift out of sync with what's actually checked.
+  --------------------------------------------------------------------- */
+  function todoSpoonCost(t){ return typeof t.spoonCost === "number" ? t.spoonCost : 2; }
+  function todoSpoonGain(t){ return typeof t.spoonGain === "number" ? t.spoonGain : 0; }
+
+  function computeSpoons(){
+    const budget = typeof state.dailySpoonBudget === "number" ? state.dailySpoonBudget : 12;
+    let spent = 0, gained = 0;
+    state.todos.forEach(t => {
+      if (t.done){
+        spent += todoSpoonCost(t);
+        gained += todoSpoonGain(t);
+      }
+    });
+    return { budget, remaining: budget - spent + gained };
+  }
+
+  function renderSpoonBudget(){
+    const bar = document.getElementById("spoonBudgetBar");
+    if (!bar) return;
+    const { budget, remaining } = computeSpoons();
+    const shown = Math.max(budget, 0);
+    const spoonsRow = Array.from({ length: shown }, (_, i) =>
+      '<span class="spoon' + (i < remaining ? '' : ' empty') + '">🥄</span>'
+    ).join("");
+    const over = remaining < 0;
+    bar.innerHTML =
+      '<div class="spoon-budget-row">' + spoonsRow + '</div>' +
+      '<p class="spoon-budget-text' + (over ? ' over' : '') + '">' +
+        (over ? "0 of " + budget + " spoons left — over budget, maybe rest a bit" : remaining + " of " + budget + " spoons left today") +
+      '</p>';
+  }
+
+  // Runs every 200ms (tick) without touching any button/row markup — only
+  // the live numbers (pie fraction, "Xm remaining" text, soundtrack bar)
+  // get mutated in place. This is what stops the countdown from stealing
+  // taps: rebuilding the whole timeline's innerHTML that often would
+  // destroy and recreate the very button someone just tapped, dropping
+  // the click before it fires (especially on real touch devices).
+  function updatePieEl(wrap, fraction, overrun, holeLabel){
+    if (!wrap) return;
+    const outer = wrap.querySelector(".pie-outer");
+    if (outer) outer.style.setProperty("--frac", (clamp(fraction, 0, 1) * 100).toFixed(2) + "%");
+    wrap.classList.toggle("overrun", !!overrun);
+    if (holeLabel !== null){
+      const label = wrap.querySelector(".pie-label");
+      if (label) label.textContent = holeLabel;
+    }
+  }
+  function renderTickLite(){
+    const cur = getCurrentBlock();
+    if (!cur) return;
+    const { remaining, fraction, overrun } = timeInfo(cur);
+    const holeLabel = overrun ? "Time's up" : (Math.ceil(remaining) + "m");
+
+    if (state.showTimer){
+      updatePieEl(document.getElementById("focusPie"), fraction, overrun, holeLabel);
+      updatePieEl(document.getElementById("timelineMiniPie"), fraction, overrun, null);
+    } else {
+      const off = document.querySelector(".timer-off-display");
+      if (off) off.textContent = holeLabel;
+    }
+
+    const remainText = document.getElementById("focusRemainingText");
+    if (remainText) remainText.textContent = remainingSentence(cur, remaining, overrun);
+
+    if (!cur.isBuffer && cur.soundtrackEnabled){
+      const bar = document.querySelector(".soundtrack-bar > span");
+      if (bar) bar.style.width = (clamp(1 - fraction, 0, 1) * 100).toFixed(1) + "%";
+    }
+  }
+
+  function renderTodos(){
+    renderSpoonBudget();
+    const list = document.getElementById("todoList");
+    if (!list) return;
+    list.innerHTML = state.todos.map(t => {
+      const cost = todoSpoonCost(t);
+      const gain = todoSpoonGain(t);
+      const badgeLabel = "-" + cost + "🥄" + (gain ? " +" + gain + "🥄" : "");
+      return '<li class="' + (t.done ? "done" : "") + '">' +
+        '<input type="checkbox" id="todo_' + t.id + '" data-action="toggle-todo" data-id="' + t.id + '" ' + (t.done ? "checked" : "") + ' aria-label="Mark \'' + escapeAttr(t.title) + '\' done">' +
+        '<label class="subtask-title" for="todo_' + t.id + '">' + escapeHtml(t.title) + '</label>' +
+        '<button type="button" class="todo-spoon-badge" data-action="edit-todo-spoons" data-id="' + t.id + '" style="margin-left:auto;" aria-label="Set spoon cost for ' + escapeAttr(t.title) + '">' + badgeLabel + '</button>' +
+        '<button type="button" class="icon-mini" data-action="delete-todo" data-id="' + t.id + '" aria-label="Delete ' + escapeAttr(t.title) + '">🗑️</button>' +
+      '</li>';
+    }).join("") || '<p style="color:var(--muted);font-size:13px;margin:0;">Nothing on the list yet.</p>';
   }
 
   // Structural changes (add/edit/delete/reflow/etc) need to be saved and
@@ -952,19 +1491,30 @@
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === "suspended") audioCtx.resume();
       const now = audioCtx.currentTime;
-      [523.25, 659.25].forEach((freq, i) => { // soft two-note rise (C5 → E5)
+      const peakBase = clamp(state.soundVolume, 0, 1) * 0.32; // gentle even at "full" volume
+      // A short, cute little sparkle: a four-note rising arpeggio
+      // (C5 → E5 → G5 → C6) on a soft triangle wave, which reads as more
+      // of a toy-bell "ta-da" than a plain two-note doorbell chime. Each
+      // note still fades in over ~20ms (never a hard onset) and the whole
+      // thing is done in under a second — informative, not startling.
+      [
+        { freq: 523.25, at: 0.00, peak: 1.00 },
+        { freq: 659.25, at: 0.11, peak: 0.95 },
+        { freq: 783.99, at: 0.22, peak: 0.95 },
+        { freq: 1046.50, at: 0.34, peak: 1.05 }
+      ].forEach((note) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.type = "sine";
-        osc.frequency.value = freq;
-        const start = now + i * 0.18;
-        const peak = clamp(state.soundVolume, 0, 1) * 0.35; // gentle even at "full" volume
+        osc.type = "triangle";
+        osc.frequency.value = note.freq;
+        const start = now + note.at;
+        const peak = peakBase * note.peak;
         gain.gain.setValueAtTime(0, start);
-        gain.gain.linearRampToValueAtTime(peak, start + 0.08); // fade in — no sudden onset
-        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.5);
+        gain.gain.linearRampToValueAtTime(peak, start + 0.02); // soft pluck, not sudden
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.32);
         osc.connect(gain).connect(audioCtx.destination);
         osc.start(start);
-        osc.stop(start + 0.55);
+        osc.stop(start + 0.34);
       });
     } catch (e) { /* the visual timer still communicates state without sound */ }
   }
@@ -1001,6 +1551,9 @@
   }
 
   let lastCurrentBlockId; // undefined until first tick after boot (no chime for a block already in progress at launch)
+  let lastOverrun = false;
+  let ticksSinceStructuralRender = 0;
+  const STRUCTURAL_RENDER_EVERY_TICKS = 150; // ~30s safety-net resync (e.g. "Upcoming" -> "Waiting" labels)
   let lastTickMs = performance.now();
   function tick(){
     if (!appBooted) return;
@@ -1015,23 +1568,42 @@
     state.simNow = actualNowMinutes() + state.demoOffset;
     if (state.simNow >= 1440) { state.simNow -= 1440; }
     updateSimClock();
-    render();
-    checkWebNotifyFallback();
 
     const nowCurrent = getCurrentBlock();
     const nowCurrentId = nowCurrent ? nowCurrent.id : null;
+    const nowOverrun = nowCurrent ? timeInfo(nowCurrent).overrun : false;
+    // Only rebuild the timeline/focus panel's actual markup (buttons and
+    // all) when something structural changed, or every ~30s as a safety
+    // net — never on every 200ms tick. See renderTickLite() above for why.
+    const structuralChange =
+      lastCurrentBlockId === undefined ||
+      nowCurrentId !== lastCurrentBlockId ||
+      nowOverrun !== lastOverrun ||
+      ticksSinceStructuralRender >= STRUCTURAL_RENDER_EVERY_TICKS;
+    if (structuralChange){
+      render();
+      ticksSinceStructuralRender = 0;
+    } else {
+      renderTickLite();
+      ticksSinceStructuralRender++;
+    }
+    checkWebNotifyFallback();
+
     if (lastCurrentBlockId !== undefined && nowCurrentId && nowCurrentId !== lastCurrentBlockId){
       playAlarmChime();
       if (state.speakEnabled) setTimeout(speakNow, 650); // let the chime finish first
     }
     lastCurrentBlockId = nowCurrentId;
+    lastOverrun = nowOverrun;
 
     const today = todayStr();
     if (today !== state.savedForDate){
       state.blocks.forEach(b => { b.status = "pending"; });
+      state.todos.forEach(t => { t.done = false; });
       state.savedForDate = today;
       webNotifiedKeys.clear();
       commit();
+      ticksSinceStructuralRender = 0;
     }
   }
   setInterval(tick, 200);
@@ -1057,10 +1629,10 @@
     }
     if (action === "delete"){
       const b = state.blocks.find(x => x.id === t.dataset.id);
-      if (b && confirm('Delete "' + b.title + '"? This can\'t be undone.')){
+      if (b) showConfirm('Delete "' + b.title + '"? This can\'t be undone.', () => {
         state.blocks = state.blocks.filter(x => x.id !== b.id);
         commit();
-      }
+      });
       return;
     }
     if (action === "insert-buffer"){
@@ -1069,7 +1641,7 @@
     }
     if (action === "done"){
       const b = state.blocks.find(x => x.id === t.dataset.id);
-      if (b) { b.status = "done"; commit(); }
+      if (b) { b.status = "done"; commit(); celebrateBurst(e.clientX, e.clientY); playCompletionChime(); }
       return;
     }
     if (action === "extend"){
@@ -1108,9 +1680,86 @@
       clearLowCapacityDay();
       return;
     }
+    if (action === "delete-todo"){
+      const delId = t.dataset.id;
+      state.todos = state.todos.filter(td => td.id !== delId);
+      commit();
+      return;
+    }
+    if (action === "edit-todo-spoons"){
+      openTodoSpoonDialog(t.dataset.id);
+      return;
+    }
+  });
+
+  /* ---------------------------------------------------------------------
+     Per-todo spoon cost/gain editor — a small dialog (same pattern as
+     Settings) rather than an inline popover, since that's far more
+     reliable to tap accurately on a phone.
+  --------------------------------------------------------------------- */
+  const todoSpoonDialog = document.getElementById("todoSpoonDialog");
+  const SPOON_COST_OPTIONS = [0, 1, 2, 3, 5, 8, 10];
+  const SPOON_GAIN_OPTIONS = [0, 1, 2, 3, 5, 8];
+  function openTodoSpoonDialog(todoId){
+    const t = state.todos.find(x => x.id === todoId);
+    if (!t || !todoSpoonDialog) return;
+    renderTodoSpoonDialog(t);
+    todoSpoonDialog.showModal();
+  }
+  function renderTodoSpoonDialog(t){
+    const inner = document.getElementById("todoSpoonDialogInner");
+    const cost = todoSpoonCost(t);
+    const gain = todoSpoonGain(t);
+    inner.innerHTML =
+      '<h2 id="todoSpoonDialogTitle">' + escapeHtml(t.title) + '</h2>' +
+      '<p class="dialog-sub">How many spoons does this take, and does it give any back?</p>' +
+      '<div class="field"><label>Costs</label>' +
+        '<div class="duration-chips" id="tsCostRow" role="group" aria-label="Spoon cost">' +
+          SPOON_COST_OPTIONS.map(n => '<button type="button" class="duration-chip' + (cost === n ? ' active' : '') + '" data-cost="' + n + '">' + n + ' 🥄</button>').join('') +
+        '</div>' +
+      '</div>' +
+      '<div class="field"><label>Gives back (rest/restorative tasks)</label>' +
+        '<div class="duration-chips" id="tsGainRow" role="group" aria-label="Spoon gain">' +
+          SPOON_GAIN_OPTIONS.map(n => '<button type="button" class="duration-chip' + (gain === n ? ' active' : '') + '" data-gain="' + n + '">+' + n + ' 🥄</button>').join('') +
+        '</div>' +
+      '</div>' +
+      '<div class="dialog-actions"><div></div><div class="right-group"><button type="button" class="primary-btn" id="ts_done">Done</button></div></div>';
+
+    inner.querySelectorAll("#tsCostRow [data-cost]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        t.spoonCost = parseInt(btn.dataset.cost, 10);
+        commit();
+        renderTodoSpoonDialog(t);
+      });
+    });
+    inner.querySelectorAll("#tsGainRow [data-gain]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        t.spoonGain = parseInt(btn.dataset.gain, 10);
+        commit();
+        renderTodoSpoonDialog(t);
+      });
+    });
+    document.getElementById("ts_done").addEventListener("click", () => todoSpoonDialog.close());
+  }
+
+  const todoForm = document.getElementById("todoForm");
+  if (todoForm) todoForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const input = document.getElementById("todoInput");
+    const title = input.value.trim();
+    if (!title) return;
+    state.todos.push({ id: uid("todo"), title, done: false });
+    input.value = "";
+    commit();
   });
 
   document.addEventListener("change", function(e){
+    const todoChk = e.target.closest("[data-action='toggle-todo']");
+    if (todoChk){
+      const t = state.todos.find(x => x.id === todoChk.dataset.id);
+      if (t) { t.done = todoChk.checked; commit(); }
+      return;
+    }
     const t = e.target.closest("[data-action='toggle-subtask']");
     if (!t) return;
     const b = state.blocks.find(x => x.id === t.dataset.block);
@@ -1153,7 +1802,6 @@
   }
 
   let formCategoryId = null;
-  let formMoreOpen = false;
 
   function openBlockForm(block){
     formEditingId = block ? block.id : null;
@@ -1161,7 +1809,6 @@
     formSubtasks = block && block.subtasks ? block.subtasks.map(s => ({...s})) : [];
     formCategoryId = block ? block.categoryId : (state.categories[0] ? state.categories[0].id : null);
     formDismissedNudge = false;
-    formMoreOpen = false;
     renderBlockDialog(block);
     blockDialog.showModal();
     document.getElementById("bd_title").focus();
@@ -1170,40 +1817,69 @@
   function renderBlockDialog(block){
     const isEdit = !!block;
     const title = block ? block.title : "";
-    const startStr = fmtClock24(block ? block.start : suggestedNewStart());
+    const startStr = fmtClock(block ? block.start : suggestedNewStart());
     const activeCat = state.categories.find(c => c.id === formCategoryId);
     const duration = block ? block.duration : (activeCat ? (activeCat.defaultMinutes || 30) : 30);
     const soundtrackEnabled = block ? !!block.soundtrackEnabled : false;
 
     let bodyFields = "";
     if (!formIsBuffer){
-      const chips = state.categories.map(c =>
-        '<button type="button" class="template-chip' + (c.id === formCategoryId ? " selected" : "") + '" data-cat="' + c.id + '" style="--chip-color:' + c.color + ';">' +
-          c.icon + ' ' + escapeHtml(c.name) + ' &middot; ' + (c.defaultMinutes || 30) + 'm' +
-        '</button>'
+      const catOptions = state.categories.map(c =>
+        '<option value="' + c.id + '"' + (c.id === formCategoryId ? " selected" : "") + '>' +
+          c.icon + ' ' + escapeHtml(c.name) + ' &middot; ' + (c.defaultMinutes || 30) + 'm default' +
+        '</option>'
       ).join("");
 
+      const hasExtrasAlready = formSubtasks.length > 0 || soundtrackEnabled;
       bodyFields =
-        '<div class="field"><label id="bd_templateLabel">Template</label>' +
-          '<div class="template-chips" id="bd_templates" role="group" aria-labelledby="bd_templateLabel">' + chips + '</div>' +
+        '<div class="field"><label for="bd_category">Category <span style="font-weight:400;color:var(--muted);">(also sets a default length)</span></label>' +
+          '<select id="bd_category">' + catOptions + '</select>' +
         '</div>' +
         '<div id="bd_nudge"></div>' +
-        '<button type="button" class="text-btn" id="bd_moreToggle">' + (formMoreOpen ? "Fewer options ▲" : "More options ▾") + '</button>' +
-        '<div id="bd_moreWrap" style="display:' + (formMoreOpen ? "" : "none") + '; margin-top:10px;">' +
-          '<div class="field"><button type="button" class="text-btn" id="bd_addStepLink">+ Add a step</button></div>' +
-          '<div id="bd_subtasks"></div>' +
-          '<div class="checkbox-field">' +
-            '<input type="checkbox" id="bd_soundtrack" ' + (soundtrackEnabled ? "checked" : "") + '>' +
-            '<label for="bd_soundtrack">Play a timer-length soundtrack for this block (prototype stub)</label>' +
+        '<div class="field-row">' +
+          '<div class="field"><label for="bd_start">Start time</label><input type="text" id="bd_start" value="' + startStr + '" placeholder="e.g. 9:30 AM" inputmode="text"><p id="bd_startError" style="margin:5px 0 0;font-size:11.5px;color:var(--danger-quiet);display:none;">Type a time like 9:30 AM or 14:30.</p></div>' +
+          '<div class="field"><label for="bd_duration">Duration</label><input type="text" id="bd_duration" value="' + duration + 'm" placeholder="e.g. 45m or 1h 30m" inputmode="text">' +
+            '<div class="duration-chips" role="group" aria-label="Quick duration">' +
+              [15, 30, 45, 60, 90].map(m =>
+                '<button type="button" class="duration-chip" data-min="' + m + '">' + (m >= 60 ? Math.floor(m / 60) + "h" + (m % 60 ? " " + (m % 60) + "m" : "") : m + "m") + '</button>'
+              ).join("") +
+            '</div>' +
+            '<p id="bd_durationError" style="margin:5px 0 0;font-size:11.5px;color:var(--danger-quiet);display:none;">Type a length like 45m, 1h, or 1h 30m.</p></div>' +
+        '</div>' +
+        '<details class="more-options" id="bd_moreOptions"' + (hasExtrasAlready ? " open" : "") + '>' +
+          '<summary>More options <span>(steps, soundtrack, buffer)</span></summary>' +
+          '<div class="more-options-body">' +
+            '<h3 style="font-size:13px;margin:14px 0 8px;color:var(--muted);">Steps (optional)</h3>' +
+            '<div class="field"><button type="button" class="text-btn" id="bd_addStepLink">+ Add a step</button></div>' +
+            '<div id="bd_subtasks"></div>' +
+            '<h3 style="font-size:13px;margin:16px 0 8px;color:var(--muted);">Extras (optional)</h3>' +
+            '<div class="checkbox-field">' +
+              '<input type="checkbox" id="bd_soundtrack" ' + (soundtrackEnabled ? "checked" : "") + '>' +
+              '<label for="bd_soundtrack">Play a timer-length soundtrack for this block (prototype stub)</label>' +
+            '</div>' +
+            '<div class="checkbox-field">' +
+              '<input type="checkbox" id="bd_addBuffer">' +
+              '<label for="bd_addBuffer">Add a short buffer right after this block</label>' +
+            '</div>' +
+            '<div class="field" id="bd_bufferMinWrap" style="display:none;">' +
+              '<label for="bd_bufferMin">Buffer length</label>' +
+              '<input type="text" id="bd_bufferMin" value="5m" placeholder="e.g. 5m" inputmode="text">' +
+            '</div>' +
           '</div>' +
-          '<div class="checkbox-field">' +
-            '<input type="checkbox" id="bd_addBuffer">' +
-            '<label for="bd_addBuffer">Add a short buffer right after this block</label>' +
-          '</div>' +
-          '<div class="field" id="bd_bufferMinWrap" style="display:none;">' +
-            '<label for="bd_bufferMin">Buffer length (minutes)</label>' +
-            '<input type="number" id="bd_bufferMin" min="5" max="20" step="5" value="5">' +
-          '</div>' +
+        '</details>';
+    } else {
+      // Buffers skip category/steps/extras entirely, but still need a
+      // start time and length.
+      bodyFields =
+        '<div class="field-row">' +
+          '<div class="field"><label for="bd_start">Start time</label><input type="text" id="bd_start" value="' + startStr + '" placeholder="e.g. 9:30 AM" inputmode="text"><p id="bd_startError" style="margin:5px 0 0;font-size:11.5px;color:var(--danger-quiet);display:none;">Type a time like 9:30 AM or 14:30.</p></div>' +
+          '<div class="field"><label for="bd_duration">Duration</label><input type="text" id="bd_duration" value="' + duration + 'm" placeholder="e.g. 45m or 1h 30m" inputmode="text">' +
+            '<div class="duration-chips" role="group" aria-label="Quick duration">' +
+              [15, 30, 45, 60, 90].map(m =>
+                '<button type="button" class="duration-chip" data-min="' + m + '">' + (m >= 60 ? Math.floor(m / 60) + "h" + (m % 60 ? " " + (m % 60) + "m" : "") : m + "m") + '</button>'
+              ).join("") +
+            '</div>' +
+            '<p id="bd_durationError" style="margin:5px 0 0;font-size:11.5px;color:var(--danger-quiet);display:none;">Type a length like 45m, 1h, or 1h 30m.</p></div>' +
         '</div>';
     }
 
@@ -1213,10 +1889,6 @@
       '<div class="field"><label for="bd_title">Title</label>' +
         '<input type="text" id="bd_title" value="' + escapeAttr(title) + '" placeholder="' + (formIsBuffer ? "Buffer" : "e.g. Write report") + '"></div>' +
       bodyFields +
-      '<div class="field-row" style="margin-top:14px;">' +
-        '<div class="field"><label for="bd_start">Start time</label><input type="time" id="bd_start" value="' + startStr + '"></div>' +
-        '<div class="field"><label for="bd_duration">Duration (minutes)</label><input type="number" id="bd_duration" min="5" step="5" value="' + duration + '"></div>' +
-      '</div>' +
       '<div class="dialog-actions">' +
         '<div>' + (isEdit ? '<button type="button" class="quiet-btn" id="bd_delete">Delete</button>' : '') + '</div>' +
         '<div class="right-group">' +
@@ -1229,29 +1901,26 @@
     document.getElementById("bd_save").addEventListener("click", () => saveBlockForm());
     const delBtn = document.getElementById("bd_delete");
     if (delBtn) delBtn.addEventListener("click", () => {
-      if (confirm("Delete this block? This can't be undone.")){
+      showConfirm("Delete this block? This can't be undone.", () => {
         state.blocks = state.blocks.filter(b => b.id !== formEditingId);
         blockDialog.close();
         commit();
-      }
+      });
     });
 
     if (!formIsBuffer){
-      document.getElementById("bd_templates").querySelectorAll(".template-chip").forEach(chip => {
-        chip.addEventListener("click", () => {
-          formCategoryId = chip.dataset.cat;
-          const cat = state.categories.find(c => c.id === formCategoryId);
-          if (cat) document.getElementById("bd_duration").value = cat.defaultMinutes || 30;
-          document.getElementById("bd_templates").querySelectorAll(".template-chip").forEach(c =>
-            c.classList.toggle("selected", c.dataset.cat === formCategoryId));
-          renderNudge();
-        });
+      document.getElementById("bd_category").addEventListener("change", (e) => {
+        const cat = state.categories.find(c => c.id === e.target.value);
+        if (cat) document.getElementById("bd_duration").value = (cat.defaultMinutes || 30) + "m";
+        renderNudge();
       });
       document.getElementById("bd_duration").addEventListener("input", renderNudge);
-      document.getElementById("bd_moreToggle").addEventListener("click", () => {
-        formMoreOpen = !formMoreOpen;
-        document.getElementById("bd_moreWrap").style.display = formMoreOpen ? "" : "none";
-        document.getElementById("bd_moreToggle").textContent = formMoreOpen ? "Fewer options ▲" : "More options ▾";
+      document.querySelectorAll(".duration-chip").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.getElementById("bd_duration").value = btn.dataset.min + "m";
+          renderNudge();
+          document.getElementById("bd_duration").focus();
+        });
       });
       renderSubtaskEditor();
       renderNudge();
@@ -1269,7 +1938,7 @@
   function renderNudge(){
     const wrap = document.getElementById("bd_nudge");
     if (!wrap) return;
-    const duration = parseInt(document.getElementById("bd_duration").value, 10) || 0;
+    const duration = parseDurationFlexible(document.getElementById("bd_duration").value) || 0;
     if (duration > state.nudgeThreshold && formSubtasks.length === 0 && !formDismissedNudge){
       wrap.innerHTML =
         '<div class="nudge-box">' +
@@ -1282,9 +1951,6 @@
       document.getElementById("bd_nudgeYes").addEventListener("click", () => {
         formSubtasks.push({ id: uid("st"), title: "", est: 15, done: false });
         formSubtasks.push({ id: uid("st"), title: "", est: 15, done: false });
-        formMoreOpen = true; // steps live under "More options" — open it so the new rows are visible
-        document.getElementById("bd_moreWrap").style.display = "";
-        document.getElementById("bd_moreToggle").textContent = "Fewer options ▲";
         renderSubtaskEditor();
         renderNudge();
       });
@@ -1324,9 +1990,23 @@
   }
 
   function saveBlockForm(){
+    const startVal = parseTimeFlexible(document.getElementById("bd_start").value);
+    if (startVal === null){
+      document.getElementById("bd_startError").style.display = "";
+      document.getElementById("bd_start").focus();
+      return;
+    }
+    document.getElementById("bd_startError").style.display = "none";
+
+    const durationVal = parseDurationFlexible(document.getElementById("bd_duration").value);
+    if (durationVal === null){
+      document.getElementById("bd_durationError").style.display = "";
+      document.getElementById("bd_duration").focus();
+      return;
+    }
+    document.getElementById("bd_durationError").style.display = "none";
+
     const titleVal = document.getElementById("bd_title").value.trim() || (formIsBuffer ? "Buffer" : "Untitled block");
-    const startVal = parseTime24(document.getElementById("bd_start").value);
-    const durationVal = Math.max(5, parseInt(document.getElementById("bd_duration").value, 10) || 5);
 
     let block;
     if (formEditingId){
@@ -1340,13 +2020,13 @@
     }
 
     if (!formIsBuffer){
-      block.categoryId = formCategoryId || (state.categories[0] ? state.categories[0].id : null);
+      block.categoryId = document.getElementById("bd_category").value || (state.categories[0] ? state.categories[0].id : null);
       block.soundtrackEnabled = document.getElementById("bd_soundtrack").checked;
       block.subtasks = formSubtasks.filter(s => s.title.trim().length > 0).map(s => ({ id: s.id, title: s.title.trim(), est: s.est, done: !!s.done }));
 
       const addBufferChk = document.getElementById("bd_addBuffer");
       if (addBufferChk && addBufferChk.checked){
-        const bufMin = parseInt(document.getElementById("bd_bufferMin").value, 10) || 5;
+        const bufMin = parseDurationFlexible(document.getElementById("bd_bufferMin").value) || 5;
         const point = block.start + block.duration;
         const buf = mkBuffer(point, bufMin);
         state.blocks.push(buf);
@@ -1373,42 +2053,102 @@
       '<h2 id="settingsDialogTitle">Settings</h2>' +
       '<p class="dialog-sub">Saved on this device' + (cloudEnabled && currentUser && !offlineMode ? ' and synced to your account.' : '.') + '</p>' +
 
-      '<h3 style="font-size:13.5px;margin:0 0 8px;">Alarm sound</h3>' +
-      '<div class="checkbox-field">' +
-        '<input type="checkbox" id="st_soundEnabled" ' + (state.soundEnabled ? "checked" : "") + '>' +
-        '<label for="st_soundEnabled">Play a soft chime when a block starts</label>' +
+      '<h3 style="font-size:13.5px;margin:0 0 8px;">View</h3>' +
+      '<p class="dialog-sub" style="margin-bottom:8px;">Simple shows just the to-do &amp; spoon list. Full adds today\'s timed timeline and the shrinking timer.</p>' +
+      '<div class="seg" id="st_modeSeg" style="border:1px solid var(--border); border-radius:999px; padding:4px; width:max-content; margin-bottom:16px;">' +
+        '<button type="button" data-mode="simple" class="' + (state.appMode !== "full" ? "active" : "") + '">Simple</button>' +
+        '<button type="button" data-mode="full" class="' + (state.appMode === "full" ? "active" : "") + '">Full</button>' +
       '</div>' +
-      '<div class="field">' +
-        '<label for="st_soundVolume">Volume</label>' +
-        '<input type="range" id="st_soundVolume" min="0" max="1" step="0.1" value="' + state.soundVolume + '" style="width:100%;">' +
-      '</div>' +
-      '<div class="field"><button type="button" class="quiet-btn" id="st_testSound">Test sound</button></div>' +
-      (speechSupported ?
-        '<div class="checkbox-field">' +
-          '<input type="checkbox" id="st_speakEnabled" ' + (state.speakEnabled ? "checked" : "") + '>' +
-          '<label for="st_speakEnabled">Also say the time and plan out loud when a block starts</label>' +
-        '</div>' +
-        '<div class="field"><button type="button" class="quiet-btn" id="st_testSpeak">Test voice</button></div>'
-      : '') +
 
-      '<h3 style="font-size:13.5px;margin:16px 0 8px;">Task breakdown</h3>' +
-      '<div class="field"><label for="st_threshold">Nudge threshold (minutes)</label>' +
-        '<input type="number" id="st_threshold" min="10" step="5" value="' + state.nudgeThreshold + '"></div>' +
+      '<h3 style="font-size:13.5px;margin:16px 0 8px;">Spoons</h3>' +
+      '<p class="dialog-sub" style="margin-bottom:8px;">Your daily energy budget. Each to-do spends spoons when checked off &mdash; tap its 🥄 badge in the list to set how many it costs (and how many it gives back, for restful tasks).</p>' +
+      '<div class="field"><label for="st_spoonBudget">Daily spoon budget</label>' +
+        '<input type="number" id="st_spoonBudget" min="1" step="1" value="' + state.dailySpoonBudget + '" style="max-width:100px;"></div>' +
+
+      '<div class="field"><label for="st_firstName">Your name</label>' +
+        '<input type="text" id="st_firstName" value="' + escapeAttr(state.firstName) + '" placeholder="e.g. Sam"></div>' +
+
+      '<div class="checkbox-field">' +
+        '<input type="checkbox" id="st_showTimer" ' + (state.showTimer ? "checked" : "") + '>' +
+        '<label for="st_showTimer">Show the shrinking timer shape (turn off for just the number)</label>' +
+      '</div>' +
+
+      '<h3 style="font-size:13.5px;margin:16px 0 8px;">Color theme</h3>' +
+      '<p class="dialog-sub" style="margin-bottom:8px;">Recolors all categories at once &mdash; you can still fine-tune individual colors below afterward.</p>' +
+      '<div id="st_themeRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">' +
+        Object.keys(COLOR_THEMES).map(key => {
+          const t = COLOR_THEMES[key];
+          const active = state.colorTheme === key;
+          return '<button type="button" class="ghost-btn" data-theme="' + key + '" style="display:flex;align-items:center;gap:6px;' + (active ? 'border-color:' + t.accent + ';box-shadow:0 0 0 2px ' + t.accent + ';' : '') + '">' +
+            '<span style="width:14px;height:14px;border-radius:50%;background:' + t.colors[0] + ';display:inline-block;"></span>' +
+            escapeHtml(t.label) +
+          '</button>';
+        }).join('') +
+      '</div>' +
 
       '<h3 style="font-size:13.5px;margin:16px 0 8px;">Categories</h3>' +
       '<div id="st_catRows"></div>' +
       '<div class="field"><button type="button" class="text-btn" id="st_addCat">+ Add category</button></div>' +
 
-      '<h3 style="font-size:13.5px;margin:16px 0 8px;">Testing tools</h3>' +
-      '<p class="dialog-sub" style="margin-bottom:8px;">Speeds up the on-screen clock so you can see timers shrink without waiting — not a real feature, and it never changes when real reminders fire.</p>' +
-      '<div class="seg" id="speedSeg" style="border:1px solid var(--border); border-radius:999px; padding:4px; width:max-content;">' +
-        '<button type="button" data-action="speed" data-speed="1">1x</button>' +
-        '<button type="button" data-action="speed" data-speed="10">10x</button>' +
-        '<button type="button" data-action="speed" data-speed="60">60x</button>' +
-      '</div>' +
+      '<details class="more-options" id="st_soundDetails"' + (state.soundEnabled || state.speakEnabled ? " open" : "") + '>' +
+        '<summary>Sound &amp; voice</summary>' +
+        '<div class="more-options-body">' +
+          '<div class="checkbox-field">' +
+            '<input type="checkbox" id="st_soundEnabled" ' + (state.soundEnabled ? "checked" : "") + '>' +
+            '<label for="st_soundEnabled">Play a soft chime when a block starts or a task is marked done</label>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="st_soundVolume">Volume</label>' +
+            '<input type="range" id="st_soundVolume" min="0" max="1" step="0.1" value="' + state.soundVolume + '" style="width:100%;">' +
+          '</div>' +
+          '<div class="field" style="display:flex;gap:8px;">' +
+            '<button type="button" class="quiet-btn" id="st_testSound">Test start chime</button>' +
+            '<button type="button" class="quiet-btn" id="st_testDoneChime">Test done chime</button>' +
+          '</div>' +
+          (speechSupported ?
+            '<div class="checkbox-field">' +
+              '<input type="checkbox" id="st_speakEnabled" ' + (state.speakEnabled ? "checked" : "") + '>' +
+              '<label for="st_speakEnabled">Also say the time and plan out loud when a block starts</label>' +
+            '</div>' +
+            '<div class="field"><button type="button" class="quiet-btn" id="st_testSpeak">Test voice</button></div>'
+          : '') +
+        '</div>' +
+      '</details>' +
 
-      '<div class="dialog-actions"><div></div><div class="right-group"><button type="button" class="primary-btn" id="st_done">Done</button></div></div>';
+      '<details class="more-options" id="st_nudgeDetails">' +
+        '<summary>Task breakdown</summary>' +
+        '<div class="more-options-body">' +
+          '<div class="field"><label for="st_threshold">Nudge threshold (minutes)</label>' +
+            '<input type="number" id="st_threshold" min="10" step="5" value="' + state.nudgeThreshold + '"></div>' +
+        '</div>' +
+      '</details>' +
 
+      '<details class="more-options" id="st_testingDetails">' +
+        '<summary>Testing tools</summary>' +
+        '<div class="more-options-body">' +
+          '<p class="dialog-sub" style="margin-bottom:8px;">Speeds up the on-screen clock so you can see timers shrink without waiting — not a real feature, and it never changes when real reminders fire.</p>' +
+          '<div class="seg" id="speedSeg" style="border:1px solid var(--border); border-radius:999px; padding:4px; width:max-content;">' +
+            '<button type="button" data-action="speed" data-speed="1">1x</button>' +
+            '<button type="button" data-action="speed" data-speed="10">10x</button>' +
+            '<button type="button" data-action="speed" data-speed="60">60x</button>' +
+          '</div>' +
+        '</div>' +
+      '</details>' +
+
+      '<div class="dialog-actions"><div></div><div class="right-group"><button type="button" class="primary-btn" id="st_done">Save &amp; close</button></div></div>';
+
+    document.getElementById("st_modeSeg").querySelectorAll("button[data-mode]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        state.appMode = btn.dataset.mode;
+        commit();
+        renderSettingsDialog();
+      });
+    });
+    document.getElementById("st_spoonBudget").addEventListener("input", (e) => {
+      const n = parseInt(e.target.value, 10);
+      state.dailySpoonBudget = Number.isFinite(n) && n > 0 ? n : 1;
+      renderSpoonBudget();
+    });
     document.getElementById("st_soundEnabled").addEventListener("change", (e) => {
       state.soundEnabled = e.target.checked;
     });
@@ -1419,6 +2159,12 @@
       const was = state.soundEnabled;
       state.soundEnabled = true;
       playAlarmChime();
+      state.soundEnabled = was;
+    });
+    document.getElementById("st_testDoneChime").addEventListener("click", () => {
+      const was = state.soundEnabled;
+      state.soundEnabled = true;
+      playCompletionChime();
       state.soundEnabled = was;
     });
     if (speechSupported){
@@ -1433,6 +2179,20 @@
     document.getElementById("st_addCat").addEventListener("click", () => {
       state.categories.push({ id: uid("cat"), name: "New category", color: "#84a0ab", icon: "•" });
       renderCatRows();
+    });
+    document.getElementById("st_themeRow").querySelectorAll("button[data-theme]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        applyColorTheme(btn.dataset.theme);
+        renderSettingsDialog();
+      });
+    });
+    document.getElementById("st_firstName").addEventListener("input", (e) => {
+      state.firstName = e.target.value.trim();
+      updateGreeting();
+    });
+    document.getElementById("st_showTimer").addEventListener("change", (e) => {
+      state.showTimer = e.target.checked;
+      render();
     });
     document.getElementById("st_done").addEventListener("click", () => {
       settingsDialog.close();
@@ -1501,6 +2261,12 @@
       : "Your schedule is saved on this device only (no account, no cloud sync).";
   }
 
+  function updateGreeting(){
+    const el = document.getElementById("brandTagline");
+    if (!el) return;
+    el.textContent = state.firstName ? "Hi, " + state.firstName : "TimeAnchor";
+  }
+
   function finishBoot(){
     appBooted = true;
     showMainApp();
@@ -1508,6 +2274,7 @@
     const already = getCurrentBlock();
     lastCurrentBlockId = already ? already.id : null; // don't chime for a block already in progress at launch
     updateSimClock();
+    updateGreeting();
     render();
     initNotifications();
   }
@@ -1526,7 +2293,10 @@
       const payload = {
         nudgeThreshold: state.nudgeThreshold, categories: state.categories,
         blocks: state.blocks, savedForDate: state.savedForDate,
-        soundEnabled: state.soundEnabled, soundVolume: state.soundVolume, speakEnabled: state.speakEnabled
+        soundEnabled: state.soundEnabled, soundVolume: state.soundVolume, speakEnabled: state.speakEnabled,
+        firstName: state.firstName, showTimer: state.showTimer,
+        colorTheme: state.colorTheme, todos: state.todos,
+        appMode: state.appMode, dailySpoonBudget: state.dailySpoonBudget
       };
       const { error } = await sb.from("timeanchor_state").upsert({
         user_id: currentUser.id, data: payload, updated_at: new Date().toISOString()
@@ -1550,10 +2320,16 @@
       const local = loadPersisted();
       Object.assign(state, local || {
         nudgeThreshold: 45, categories: defaultCategories(), blocks: defaultBlocks(), savedForDate: todayStr(),
-        soundEnabled: true, soundVolume: 0.6, speakEnabled: false
+        soundEnabled: true, soundVolume: 0.6, speakEnabled: false, firstName: "", showTimer: true,
+        colorTheme: "mixed", todos: [], appMode: "simple", dailySpoonBudget: 12
       });
+      // The name typed at signup only fills in if nothing's already set
+      // (e.g. no leftover local-only data on this device/browser already
+      // has one) — never silently overwrites a name someone chose.
+      if (!state.firstName) state.firstName = (user.user_metadata && user.user_metadata.full_name) || "";
       await saveCloudState();
     }
+    restoreThemeVars();
     finishBoot();
     setCloudStatus("synced", "Synced");
   }
@@ -1567,6 +2343,10 @@
     document.getElementById("authTabSignup").setAttribute("aria-selected", String(mode === "signup"));
     document.getElementById("authSubmit").textContent = mode === "login" ? "Log in" : "Sign up";
     document.getElementById("authPassword").autocomplete = mode === "login" ? "current-password" : "new-password";
+    document.getElementById("authNameField").style.display = mode === "signup" ? "" : "none";
+    document.getElementById("authName").required = mode === "signup";
+    document.getElementById("authConfirmField").style.display = mode === "signup" ? "" : "none";
+    document.getElementById("authConfirm").required = mode === "signup";
     document.getElementById("authError").textContent = "";
   }
   document.getElementById("authTabLogin").addEventListener("click", () => setAuthMode("login"));
@@ -1576,14 +2356,30 @@
     e.preventDefault();
     const email = document.getElementById("authEmail").value.trim();
     const password = document.getElementById("authPassword").value;
+    const name = document.getElementById("authName").value.trim();
+    const confirm = document.getElementById("authConfirm").value;
     const errEl = document.getElementById("authError");
     const submitBtn = document.getElementById("authSubmit");
     errEl.textContent = "";
+
+    if (authMode === "signup"){
+      if (!name){
+        errEl.textContent = "Enter your name.";
+        document.getElementById("authName").focus();
+        return;
+      }
+      if (password !== confirm){
+        errEl.textContent = "Passwords don't match.";
+        document.getElementById("authConfirm").focus();
+        return;
+      }
+    }
+
     submitBtn.disabled = true;
     try {
       const { data, error } = authMode === "login"
         ? await sb.auth.signInWithPassword({ email, password })
-        : await sb.auth.signUp({ email, password });
+        : await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
       if (error) { errEl.textContent = error.message; return; }
       if (authMode === "signup" && !data.session){
         errEl.textContent = "Check your email to confirm your account, then log in.";
@@ -1632,6 +2428,21 @@
     }
   }
   boot();
+
+  // Installable-app support: register the service worker so "Add to Home
+  // Screen" behaves like a real app (own icon, opens full-screen, keeps
+  // working offline). It fetches fresh content over the network whenever
+  // possible and only falls back to its cache when offline, so edits show
+  // up on next load rather than getting stuck on an old cached copy.
+  if ("serviceWorker" in navigator){
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").then((reg) => {
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") reg.update();
+        });
+      }).catch(() => {});
+    });
+  }
 })();
 </script>
 </body>
