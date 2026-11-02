@@ -168,7 +168,14 @@
      so finishing a task reads as a real moment even glanced at quickly or
      tapped from way down in the timeline. */
   .celebrate-flash{
-    position:fixed; inset:0; z-index:45; pointer-events:none; opacity:0;
+    /* opacity defaults to the animation's own peak value, not 0 — unlike
+       .celebrate-message (which also defaults to visible), this element
+       used to START invisible and depend entirely on its animation to
+       ever become visible at all; if that animation failed to apply for
+       any reason, the celebration was permanently blank rather than just
+       unanimated. The animation below still fully controls opacity for
+       its duration either way — this only matters as the fallback. */
+    position:fixed; inset:0; z-index:45; pointer-events:none; opacity:.85;
     background: radial-gradient(circle at var(--fx,50%) var(--fy,40%),
       rgba(255,209,102,.85) 0%, rgba(244,114,182,.7) 30%, rgba(192,132,252,.5) 55%, transparent 78%);
   }
