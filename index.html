@@ -1169,7 +1169,40 @@
     const container = document.getElementById(containerId);
     if (!container) return;
     const THRESHOLD = 56;
-    let a = null; // active swipe: { row, content, startX, startY, dx, pointerId, locked }
+    let a = null; // active, unresolved swipe: { row, content, startX, startY, dx, pointerId, locked }
+
+    function resetRow(row, content){
+      content.style.transition = "transform 160ms ease";
+      content.style.transform = "translateX(0)";
+      row.classList.remove("swipe-right", "swipe-left", "swipe-armed-right", "swipe-armed-left");
+      setTimeout(() => { content.style.transition = ""; }, 220);
+    }
+
+    // Fires the instant a drag crosses the threshold — not on release.
+    // Deciding the action from wherever a finger happened to be AT THE
+    // MOMENT it lifted (the old design) meant a completely normal flick —
+    // drag right past the threshold, finger eases back a little as it
+    // lifts, the kind of motion nobody can fully avoid — could land back
+    // past the delete threshold at that exact instant and fire the
+    // opposite action from the one that had clearly, visibly armed a
+    // moment before. Committing the moment the threshold is first crossed
+    // removes that ambiguity outright: once you've dragged far enough, it
+    // just happens, and whatever the finger does afterward is irrelevant.
+    function resolve(dir, row, content, id){
+      a = null;
+      swipeGestureActive = false;
+      content.style.transition = "transform 140ms ease";
+      if (dir === "complete"){
+        content.style.transform = "translateX(140%)";
+        const item = findItem(id);
+        const [cx, cy] = rowCenter(row);
+        setTimeout(() => onComplete(item, cx, cy), 110);
+      } else {
+        const item = findItem(id);
+        if (onDelete) onDelete(item, row, content, () => resetRow(row, content));
+        else resetRow(row, content);
+      }
+    }
 
     container.addEventListener("pointerdown", (e) => {
       // Deliberately NOT excluding <label> here — the to-do row's title is
@@ -1184,15 +1217,18 @@
       const started = { row, content, startX: e.clientX, startY: e.clientY, dx: 0, pointerId: e.pointerId, locked: null };
       a = started;
       swipeGestureActive = true;
-      // Self-healing safety net: a real touch gesture can be cancelled by
-      // the OS (another app switch, an incoming call, iOS deciding it's
-      // actually a scroll) in ways that don't always reach pointerup or
-      // pointercancel. Without this, that single missed event leaves the
-      // row stuck mid-drag and (because swipeGestureActive never clears)
-      // quietly pauses the whole page's clock/timer forever. If nothing
-      // has resolved this exact gesture in 2.5s, force it back to rest.
+      // Self-healing safety net: a real touch gesture can be interrupted
+      // (another app switch, an incoming call) in ways that don't always
+      // reach pointerup or pointercancel. Without this, one missed event
+      // leaves the row stuck mid-drag forever. If this exact gesture
+      // hasn't resolved (by crossing a threshold) or been released within
+      // 2.5s, just snap it back rather than guess at an action.
       setTimeout(() => {
-        if (a === started) endSwipe({ pointerId: started.pointerId });
+        if (a === started){
+          a = null;
+          swipeGestureActive = false;
+          resetRow(started.row, started.content);
+        }
       }, 2500);
     }, { passive: false });
 
@@ -1203,11 +1239,7 @@
       if (a.locked === null){
         if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
         // Only needs to lean horizontal, not be purely horizontal — a
-        // real finger rarely moves in a straight line, and too strict a
-        // ratio here either kills the swipe outright or (more subtly)
-        // delays when it locks in, which eats into the drag distance
-        // before anything visibly responds and makes the whole gesture
-        // feel like it needs way more travel than it actually does.
+        // real finger rarely moves in a straight line.
         a.locked = Math.abs(dx) > Math.abs(dy) * 1.15 ? "x" : "y";
         if (a.locked === "x") { try { a.content.setPointerCapture(e.pointerId); } catch (err) {} }
       }
@@ -1219,39 +1251,26 @@
       a.row.classList.toggle("swipe-left", a.dx < 0);
       a.row.classList.toggle("swipe-armed-right", a.dx > THRESHOLD);
       a.row.classList.toggle("swipe-armed-left", a.dx < -THRESHOLD);
+      if (a.dx > THRESHOLD) resolve("complete", a.row, a.content, a.row.dataset.id);
+      else if (a.dx < -THRESHOLD) resolve("delete", a.row, a.content, a.row.dataset.id);
     }, { passive: false });
 
-    function resetRow(row, content){
-      content.style.transform = "translateX(0)";
-      row.classList.remove("swipe-right", "swipe-left", "swipe-armed-right", "swipe-armed-left");
-    }
-
-    function endSwipe(e){
+    // Released (or the gesture was cancelled) before ever crossing a
+    // threshold — just snap back. Anything that DID cross already
+    // resolved and nulled `a` out in pointermove above, so these are
+    // no-ops for it.
+    function cancel(e){
       if (!a || e.pointerId !== a.pointerId) return;
-      const done = a;
+      const dropped = a;
       a = null;
       swipeGestureActive = false;
-      done.content.style.transition = "transform 160ms ease";
-      if (done.dx > THRESHOLD){
-        done.content.style.transform = "translateX(140%)";
-        const item = findItem(done.row.dataset.id);
-        const [cx, cy] = rowCenter(done.row);
-        setTimeout(() => onComplete(item, cx, cy), 120);
-      } else if (done.dx < -THRESHOLD){
-        const item = findItem(done.row.dataset.id);
-        if (onDelete) onDelete(item, done.row, done.content, () => resetRow(done.row, done.content));
-        else resetRow(done.row, done.content);
-      } else {
-        resetRow(done.row, done.content);
-      }
-      setTimeout(() => { done.content.style.transition = ""; }, 220);
+      resetRow(dropped.row, dropped.content);
     }
-    container.addEventListener("pointerup", endSwipe);
-    container.addEventListener("pointercancel", endSwipe);
-    // Pointer capture events bubble, so this catches capture being
-    // revoked out from under a gesture (another extra safety net
-    // alongside the 2.5s timeout above) and resolves it the same way.
-    container.addEventListener("lostpointercapture", endSwipe);
+    container.addEventListener("pointerup", cancel);
+    container.addEventListener("pointercancel", cancel);
+    // Pointer capture events bubble, so this also catches capture being
+    // revoked out from under a gesture that's still mid-drag.
+    container.addEventListener("lostpointercapture", cancel);
   }
 
   /* ---------------------------------------------------------------------
