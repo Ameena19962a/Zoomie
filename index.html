@@ -352,7 +352,24 @@
   .subtask-list li.done{ color:var(--muted); }
   .subtask-list li.done .subtask-title{ text-decoration: line-through; text-decoration-color:var(--muted-2); }
   .subtask-list input[type=checkbox]{ width:16px;height:16px; }
+  .subtask-list .subtask-title{ flex:1; min-width:0; }
   .subtask-est{ margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
+
+  /* Swipe-to-complete (to-do rows only — block "steps" checklists keep the
+     plain .subtask-list li look above). Swiping right reveals this green
+     layer; releasing past the threshold marks it done. The sliding
+     foreground carries the row's normal look so at rest it's unchanged. */
+  #todoList li{ position:relative; overflow:hidden; padding:0; border:none; background:transparent; border-radius:8px; }
+  #todoList .swipe-bg{
+    position:absolute; inset:0; display:flex; align-items:center; gap:6px;
+    padding-left:14px; background:#5c9c76; color:#fff; font-weight:700; font-size:12.5px; border-radius:8px;
+  }
+  #todoList li.swipe-armed .swipe-bg{ background:#4a8863; }
+  #todoList .swipe-content{
+    position:relative; display:flex; align-items:center; gap:8px; font-size:13px;
+    padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:var(--bg);
+    touch-action:pan-y;
+  }
 
   .soundtrack-stub{
     width:100%; margin-top:4px; display:flex; align-items:center; gap:10px;
@@ -374,17 +391,23 @@
   }
   .tl-gap button:hover, .tl-gap button:focus-visible{ color:var(--text); border-color:var(--accent); }
 
-  .block-row{
-    display:flex; gap:12px; align-items:flex-start;
+  .block-row{ position:relative; overflow:hidden; border-radius:var(--radius-md); margin:6px 0; }
+  .block-row .swipe-bg{
+    position:absolute; inset:0; display:flex; align-items:center; gap:6px;
+    padding-left:20px; background:#5c9c76; color:#fff; font-weight:700; font-size:13px; border-radius:var(--radius-md);
+  }
+  .block-row.swipe-armed .swipe-bg{ background:#4a8863; }
+  .block-row .swipe-content{
+    position:relative; display:flex; gap:12px; align-items:flex-start;
     background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
-    padding:12px 14px; margin:6px 0; border-left-width:6px; border-left-style:solid;
+    padding:12px 14px; border-left-width:6px; border-left-style:solid;
+    touch-action:pan-y;
   }
-  .block-row.is-buffer{
+  .block-row .swipe-content.is-buffer{
     background-image: repeating-linear-gradient(135deg, color-mix(in srgb, var(--cat-buffer) 12%, transparent) 0 7px, transparent 7px 14px);
-    border-left-color: var(--cat-buffer);
   }
-  .block-row.is-current{ box-shadow: 0 0 0 2px var(--accent); }
-  .block-row.is-done{ opacity:.68; }
+  .block-row.is-current .swipe-content{ box-shadow: 0 0 0 2px var(--accent); }
+  .block-row.is-done .swipe-content{ opacity:.68; }
   .block-main{ flex:1; min-width:0; }
   .block-top-line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .block-title{ font-weight:700; font-size:14px; margin:0; }
@@ -521,6 +544,10 @@
     <div class="timeline-toolbar">
       <h2 id="timelineHeading" style="margin:0;">Today's timeline</h2>
     </div>
+    <form id="quickBlockForm" style="display:flex;gap:8px;margin-bottom:14px;">
+      <input type="text" id="quickBlockInput" placeholder="Add a task…" style="flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
+      <button type="submit" class="primary-btn">Add</button>
+    </form>
     <div class="timeline-list" id="timelineList"></div>
   </section>
 
@@ -793,7 +820,8 @@
         showTimer: state.showTimer,
         colorTheme: state.colorTheme,
         todos: state.todos,
-        features: state.features
+        features: state.features,
+        lastCategoryId: state.lastCategoryId
       }));
     } catch (e) { /* storage unavailable — app still works for this session */ }
   }
@@ -815,6 +843,7 @@
     colorTheme: persisted.colorTheme || "mixed",
     todos: Array.isArray(persisted.todos) ? persisted.todos : [],
     features: persisted.features || { timeline: true, todoList: true },
+    lastCategoryId: persisted.lastCategoryId || null,
     demoOffset: 0,
     speed: 1
   } : {
@@ -830,6 +859,7 @@
     colorTheme: "mixed",
     todos: [],
     features: { timeline: true, todoList: true },
+    lastCategoryId: null,
     demoOffset: 0,
     speed: 1
   };
@@ -1072,6 +1102,84 @@
     } catch (e) { /* the visual celebration still communicates completion without sound */ }
   }
 
+  function completeBlock(b, x, y){
+    if (!b || b.status === "done" || b.status === "skipped") return;
+    b.status = "done";
+    commit();
+    celebrateBurst(x, y);
+    playCompletionChime();
+  }
+  function completeTodo(t, x, y){
+    if (!t || t.done) return;
+    t.done = true;
+    commit();
+    celebrateBurst(x, y);
+    playCompletionChime();
+  }
+
+  /* ---------------------------------------------------------------------
+     Swipe-to-complete — the single way to mark a block or to-do done (the
+     to-do checkbox stays too, as a tap alternative; it just doesn't
+     celebrate the way completing something via swipe does). Delegated
+     Pointer Events on the stable list containers (never replaced, only
+     their children are, on re-render) so the listeners survive renders.
+     A short pointer-move before locking onto horizontal vs. vertical means
+     a normal scroll gesture never gets mistaken for a swipe.
+  --------------------------------------------------------------------- */
+  function setupSwipeToComplete(containerId, rowSelector, findItem, onComplete){
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const THRESHOLD = 88;
+    let a = null; // active swipe: { row, content, startX, startY, dx, pointerId, locked }
+
+    container.addEventListener("pointerdown", (e) => {
+      // Deliberately NOT excluding <label> here — the to-do row's title is
+      // a label tied to its checkbox, and a plain tap on it (no real drag)
+      // still reaches the checkbox normally below, since preventDefault
+      // only fires once a horizontal drag is actually locked in.
+      if (e.target.closest("button, a, input")) return;
+      const row = e.target.closest(rowSelector);
+      if (!row) return;
+      const content = row.querySelector(".swipe-content");
+      if (!content) return;
+      a = { row, content, startX: e.clientX, startY: e.clientY, dx: 0, pointerId: e.pointerId, locked: null };
+    });
+
+    container.addEventListener("pointermove", (e) => {
+      if (!a || e.pointerId !== a.pointerId) return;
+      const dx = e.clientX - a.startX;
+      const dy = e.clientY - a.startY;
+      if (a.locked === null){
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        a.locked = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+        if (a.locked === "x") { try { a.content.setPointerCapture(e.pointerId); } catch (err) {} }
+      }
+      if (a.locked !== "x") return;
+      e.preventDefault();
+      a.dx = Math.max(0, dx);
+      a.content.style.transform = "translateX(" + a.dx + "px)";
+      a.row.classList.toggle("swipe-armed", a.dx > THRESHOLD);
+    });
+
+    function endSwipe(e){
+      if (!a || e.pointerId !== a.pointerId) return;
+      const done = a;
+      a = null;
+      done.content.style.transition = "transform 160ms ease";
+      if (done.dx > THRESHOLD){
+        done.content.style.transform = "translateX(140%)";
+        const item = findItem(done.row.dataset.id);
+        setTimeout(() => onComplete(item, e.clientX, e.clientY), 120);
+      } else {
+        done.content.style.transform = "translateX(0)";
+        done.row.classList.remove("swipe-armed");
+      }
+      setTimeout(() => { done.content.style.transition = ""; }, 220);
+    }
+    container.addEventListener("pointerup", endSwipe);
+    container.addEventListener("pointercancel", endSwipe);
+  }
+
   /* ---------------------------------------------------------------------
      In-app confirm dialog — used instead of the browser's native confirm(),
      which some embedded/sandboxed viewers block or silently no-op, making
@@ -1279,26 +1387,27 @@
         subtaskBadge = '<span class="subtask-badge">' + done + '/' + block.subtasks.length + ' steps</span>';
       }
 
+      const swipeable = block.status !== "done" && block.status !== "skipped";
       html +=
-        '<div class="block-row' + (block.isBuffer ? " is-buffer" : "") + (isCurrent ? " is-current" : "") + ((block.status === "done" || block.status === "skipped") ? " is-done" : "") + '" style="border-left-color:' + cat.color + ';">' +
-          (miniTimer ? miniTimer : "") +
-          '<div class="block-main">' +
-            '<div class="block-top-line">' +
-              '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
-              '<p class="block-title">' + escapeHtml(block.title) + '</p>' +
+        '<div class="block-row' + (isCurrent ? " is-current" : "") + (swipeable ? "" : " is-done") + '" data-id="' + block.id + '">' +
+          (swipeable ? '<div class="swipe-bg">✓ Done — swipe to complete</div>' : "") +
+          '<div class="swipe-content' + (block.isBuffer ? " is-buffer" : "") + '" style="border-left-color:' + cat.color + ';">' +
+            (miniTimer ? miniTimer : "") +
+            '<div class="block-main">' +
+              '<div class="block-top-line">' +
+                '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
+                '<p class="block-title">' + escapeHtml(block.title) + '</p>' +
+              '</div>' +
+              '<div class="block-meta">' +
+                '<span>' + fmtClock(block.start) + '&ndash;' + fmtClock(block.start + block.duration) + ' &middot; ' + fmtDuration(block.duration) + '</span>' +
+                (st ? '<span class="status-tag ' + st.cls + '">' + st.label + '</span>' : "") +
+                subtaskBadge +
+              '</div>' +
             '</div>' +
-            '<div class="block-meta">' +
-              '<span>' + fmtClock(block.start) + '&ndash;' + fmtClock(block.start + block.duration) + ' &middot; ' + fmtDuration(block.duration) + '</span>' +
-              (st ? '<span class="status-tag ' + st.cls + '">' + st.label + '</span>' : "") +
-              subtaskBadge +
+            '<div class="block-actions">' +
+              '<button type="button" class="icon-mini" data-action="edit" data-id="' + block.id + '" aria-label="Edit ' + escapeAttr(block.title) + '">✏️</button>' +
+              '<button type="button" class="icon-mini" data-action="delete" data-id="' + block.id + '" aria-label="Delete ' + escapeAttr(block.title) + '">🗑️</button>' +
             '</div>' +
-          '</div>' +
-          '<div class="block-actions">' +
-            (block.status !== "done" && block.status !== "skipped"
-              ? '<button type="button" class="icon-mini" data-action="done" data-id="' + block.id + '" aria-label="Mark ' + escapeAttr(block.title) + ' done">✅</button>'
-              : "") +
-            '<button type="button" class="icon-mini" data-action="edit" data-id="' + block.id + '" aria-label="Edit ' + escapeAttr(block.title) + '">✏️</button>' +
-            '<button type="button" class="icon-mini" data-action="delete" data-id="' + block.id + '" aria-label="Delete ' + escapeAttr(block.title) + '">🗑️</button>' +
           '</div>' +
         '</div>';
 
@@ -1372,10 +1481,13 @@
     const list = document.getElementById("todoList");
     if (!list) return;
     list.innerHTML = state.todos.map(t =>
-      '<li class="' + (t.done ? "done" : "") + '">' +
-        '<input type="checkbox" id="todo_' + t.id + '" data-action="toggle-todo" data-id="' + t.id + '" ' + (t.done ? "checked" : "") + ' aria-label="Mark \'' + escapeAttr(t.title) + '\' done">' +
-        '<label class="subtask-title" for="todo_' + t.id + '">' + escapeHtml(t.title) + '</label>' +
-        '<button type="button" class="icon-mini" data-action="delete-todo" data-id="' + t.id + '" style="margin-left:auto;" aria-label="Delete ' + escapeAttr(t.title) + '">🗑️</button>' +
+      '<li class="' + (t.done ? "done" : "") + '" data-id="' + t.id + '">' +
+        (t.done ? "" : '<div class="swipe-bg">✓ Done — swipe to complete</div>') +
+        '<div class="swipe-content">' +
+          '<input type="checkbox" id="todo_' + t.id + '" data-action="toggle-todo" data-id="' + t.id + '" ' + (t.done ? "checked" : "") + ' aria-label="Mark \'' + escapeAttr(t.title) + '\' done">' +
+          '<label class="subtask-title" for="todo_' + t.id + '">' + escapeHtml(t.title) + '</label>' +
+          '<button type="button" class="icon-mini" data-action="delete-todo" data-id="' + t.id + '" style="margin-left:auto;" aria-label="Delete ' + escapeAttr(t.title) + '">🗑️</button>' +
+        '</div>' +
       '</li>'
     ).join("") || '<p style="color:var(--muted);font-size:13px;margin:0;">Nothing on the list yet.</p>';
   }
@@ -1574,7 +1686,7 @@
     }
     if (action === "done"){
       const b = state.blocks.find(x => x.id === t.dataset.id);
-      if (b) { b.status = "done"; commit(); celebrateBurst(e.clientX, e.clientY); playCompletionChime(); }
+      if (b) completeBlock(b, e.clientX, e.clientY);
       return;
     }
     if (action === "extend"){
@@ -1632,11 +1744,42 @@
     commit();
   });
 
+  setupSwipeToComplete("timelineList", ".block-row", (id) => state.blocks.find(b => b.id === id), completeBlock);
+  setupSwipeToComplete("todoList", "li", (id) => state.todos.find(t => t.id === id), completeTodo);
+
+  // Quick-add for blocks — just a title, no dialog. Everything else
+  // (category, start time, duration) gets a sensible default so the block
+  // exists immediately; tap it afterward (the ✏️ edit button) to change
+  // any of that. "+ New block" still opens the full dialog for anyone who
+  // wants to set those deliberately before it's created.
+  const quickBlockForm = document.getElementById("quickBlockForm");
+  if (quickBlockForm) quickBlockForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const input = document.getElementById("quickBlockInput");
+    const title = input.value.trim();
+    if (!title) return;
+    const catId = state.lastCategoryId || (state.categories[0] ? state.categories[0].id : null);
+    const cat = state.categories.find(c => c.id === catId);
+    const start = suggestedNewStart();
+    const duration = (cat && cat.defaultMinutes) || 30;
+    state.blocks.push(mkBlock(title, catId, start, duration, false, [], false));
+    input.value = "";
+    commit();
+  });
+
   document.addEventListener("change", function(e){
     const todoChk = e.target.closest("[data-action='toggle-todo']");
     if (todoChk){
       const t = state.todos.find(x => x.id === todoChk.dataset.id);
-      if (t) { t.done = todoChk.checked; commit(); }
+      if (t){
+        if (todoChk.checked){
+          const r = todoChk.getBoundingClientRect();
+          completeTodo(t, r.left + r.width / 2, r.top + r.height / 2);
+        } else {
+          t.done = false;
+          commit();
+        }
+      }
       return;
     }
     const t = e.target.closest("[data-action='toggle-subtask']");
@@ -1900,6 +2043,7 @@
 
     if (!formIsBuffer){
       block.categoryId = document.getElementById("bd_category").value || (state.categories[0] ? state.categories[0].id : null);
+      state.lastCategoryId = block.categoryId;
       block.soundtrackEnabled = document.getElementById("bd_soundtrack").checked;
       block.subtasks = formSubtasks.filter(s => s.title.trim().length > 0).map(s => ({ id: s.id, title: s.title.trim(), est: s.est, done: !!s.done }));
 
@@ -2169,7 +2313,7 @@
         blocks: state.blocks, savedForDate: state.savedForDate,
         soundEnabled: state.soundEnabled, soundVolume: state.soundVolume, speakEnabled: state.speakEnabled,
         firstName: state.firstName, showTimer: state.showTimer,
-        colorTheme: state.colorTheme, todos: state.todos, features: state.features
+        colorTheme: state.colorTheme, todos: state.todos, features: state.features, lastCategoryId: state.lastCategoryId
       };
       const { error } = await sb.from("timeanchor_state").upsert({
         user_id: currentUser.id, data: payload, updated_at: new Date().toISOString()
@@ -2194,7 +2338,7 @@
       Object.assign(state, local || {
         nudgeThreshold: 45, categories: defaultCategories(), blocks: defaultBlocks(), savedForDate: todayStr(),
         soundEnabled: true, soundVolume: 0.6, speakEnabled: false, firstName: "", showTimer: true,
-        colorTheme: "mixed", todos: [], features: { timeline: true, todoList: true }
+        colorTheme: "mixed", todos: [], features: { timeline: true, todoList: true }, lastCategoryId: null
       });
       // The name typed at signup only fills in if nothing's already set
       // (e.g. no leftover local-only data on this device/browser already
