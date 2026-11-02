@@ -241,6 +241,14 @@
   }
   .duration-chip:hover{ background:var(--accent); color:#fff; border-color:var(--accent); }
 
+  /* Independent feature toggles — each one hides its section outright, not
+     just visually de-emphasized, so "off" really means off. No markup is
+     removed, just hidden, so flipping it back on needs no rebuild. */
+  body.feat-timeline-off #focusPanelSection,
+  body.feat-timeline-off #timelinePanelSection,
+  body.feat-timeline-off #newBlockBtn{ display:none; }
+  body.feat-todo-off #todoPanelSection{ display:none; }
+
   /* Progressive disclosure for the New block form: steps and extras stay
      tucked away until asked for, so the form that opens by default is
      just Title / Category / When / How long. */
@@ -469,7 +477,7 @@
     <span class="cloud-status" id="cloudStatus" style="display:none;"><span class="dot"></span><span id="cloudStatusText">Local only</span></span>
     <button type="button" class="icon-btn" id="signOutBtn" aria-label="Sign out" title="Sign out" style="display:none;">↩️</button>
     <button type="button" class="icon-btn" id="settingsBtn" aria-label="Settings: categories, sound, and more" title="Settings">⚙️</button>
-    <button type="button" class="primary-btn" data-action="new-block">+ New block</button>
+    <button type="button" class="primary-btn" id="newBlockBtn" data-action="new-block">+ New block</button>
   </div>
 </header>
 
@@ -504,19 +512,19 @@
 </div>
 
 <main class="layout" id="mainApp" style="display:none;">
-  <section class="panel focus-panel" aria-labelledby="focusHeading">
+  <section class="panel focus-panel" id="focusPanelSection" aria-labelledby="focusHeading">
     <h2 id="focusHeading">Right now</h2>
     <div id="focusPanelBody"></div>
   </section>
 
-  <section class="panel" aria-labelledby="timelineHeading">
+  <section class="panel" id="timelinePanelSection" aria-labelledby="timelineHeading">
     <div class="timeline-toolbar">
       <h2 id="timelineHeading" style="margin:0;">Today's timeline</h2>
     </div>
     <div class="timeline-list" id="timelineList"></div>
   </section>
 
-  <section class="panel" aria-labelledby="todoHeading" style="grid-column:1 / -1;">
+  <section class="panel" id="todoPanelSection" aria-labelledby="todoHeading" style="grid-column:1 / -1;">
     <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
     <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
     <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
@@ -784,7 +792,8 @@
         firstName: state.firstName,
         showTimer: state.showTimer,
         colorTheme: state.colorTheme,
-        todos: state.todos
+        todos: state.todos,
+        features: state.features
       }));
     } catch (e) { /* storage unavailable — app still works for this session */ }
   }
@@ -805,6 +814,7 @@
     showTimer: persisted.showTimer !== false,
     colorTheme: persisted.colorTheme || "mixed",
     todos: Array.isArray(persisted.todos) ? persisted.todos : [],
+    features: persisted.features || { timeline: true, todoList: true },
     demoOffset: 0,
     speed: 1
   } : {
@@ -819,6 +829,7 @@
     showTimer: true,
     colorTheme: "mixed",
     todos: [],
+    features: { timeline: true, todoList: true },
     demoOffset: 0,
     speed: 1
   };
@@ -1306,9 +1317,16 @@
      Full render + tick loop
   --------------------------------------------------------------------- */
   function render(){
+    applyFeatureVisibility();
     renderFocusPanel();
     renderTimeline();
     renderTodos();
+  }
+
+  function applyFeatureVisibility(){
+    const f = state.features || {};
+    document.body.classList.toggle("feat-timeline-off", f.timeline === false);
+    document.body.classList.toggle("feat-todo-off", f.todoList === false);
   }
 
   // Runs every 200ms (tick) without touching any button/row markup — only
@@ -1914,6 +1932,17 @@
       '<h2 id="settingsDialogTitle">Settings</h2>' +
       '<p class="dialog-sub">Saved on this device' + (cloudEnabled && currentUser && !offlineMode ? ' and synced to your account.' : '.') + '</p>' +
 
+      '<h3 style="font-size:13.5px;margin:0 0 8px;">Features</h3>' +
+      '<p class="dialog-sub" style="margin-bottom:8px;">Turn off anything you don\'t need.</p>' +
+      '<div class="checkbox-field">' +
+        '<input type="checkbox" id="st_featTimeline" ' + (state.features.timeline !== false ? "checked" : "") + '>' +
+        '<label for="st_featTimeline">Timed schedule — today\'s timeline, the focus panel, and the shrinking timer</label>' +
+      '</div>' +
+      '<div class="checkbox-field" style="margin-bottom:16px;">' +
+        '<input type="checkbox" id="st_featTodo" ' + (state.features.todoList !== false ? "checked" : "") + '>' +
+        '<label for="st_featTodo">To-do list</label>' +
+      '</div>' +
+
       '<div class="field"><label for="st_firstName">Your name</label>' +
         '<input type="text" id="st_firstName" value="' + escapeAttr(state.firstName) + '" placeholder="e.g. Sam"></div>' +
 
@@ -2022,6 +2051,14 @@
         applyColorTheme(btn.dataset.theme);
         renderSettingsDialog();
       });
+    });
+    document.getElementById("st_featTimeline").addEventListener("change", (e) => {
+      state.features.timeline = e.target.checked;
+      commit();
+    });
+    document.getElementById("st_featTodo").addEventListener("change", (e) => {
+      state.features.todoList = e.target.checked;
+      commit();
     });
     document.getElementById("st_firstName").addEventListener("input", (e) => {
       state.firstName = e.target.value.trim();
@@ -2132,7 +2169,7 @@
         blocks: state.blocks, savedForDate: state.savedForDate,
         soundEnabled: state.soundEnabled, soundVolume: state.soundVolume, speakEnabled: state.speakEnabled,
         firstName: state.firstName, showTimer: state.showTimer,
-        colorTheme: state.colorTheme, todos: state.todos
+        colorTheme: state.colorTheme, todos: state.todos, features: state.features
       };
       const { error } = await sb.from("timeanchor_state").upsert({
         user_id: currentUser.id, data: payload, updated_at: new Date().toISOString()
@@ -2157,7 +2194,7 @@
       Object.assign(state, local || {
         nudgeThreshold: 45, categories: defaultCategories(), blocks: defaultBlocks(), savedForDate: todayStr(),
         soundEnabled: true, soundVolume: 0.6, speakEnabled: false, firstName: "", showTimer: true,
-        colorTheme: "mixed", todos: []
+        colorTheme: "mixed", todos: [], features: { timeline: true, todoList: true }
       });
       // The name typed at signup only fills in if nothing's already set
       // (e.g. no leftover local-only data on this device/browser already
