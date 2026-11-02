@@ -1283,7 +1283,14 @@
         if (Math.abs(dx) < Math.abs(dy)) return;
         a.locked = "x";
         swipeDebugLog("LOCKED x (swipe) container=" + containerId + " dx=" + Math.round(dx) + " dy=" + Math.round(dy));
-        try { a.content.setPointerCapture(e.pointerId); } catch (err) { swipeDebugLog("setPointerCapture threw: " + err.message); }
+        // Deliberately NOT calling setPointerCapture here. It isn't needed
+        // — the container-level delegated listeners keep receiving this
+        // pointer's move/up events regardless — and on real iOS Safari it
+        // was actively harmful: granting capture was immediately followed
+        // by a lostpointercapture event (sometimes in the same
+        // millisecond), which this code used to treat as "the gesture
+        // ended" and cancel an otherwise perfectly fine swipe mid-drag.
+        // That was the actual bug behind "barely moves, then snaps back."
       }
       e.preventDefault();
       a.dx = dx;
@@ -1310,9 +1317,6 @@
     }
     container.addEventListener("pointerup", cancel);
     container.addEventListener("pointercancel", (e) => { swipeDebugLog("POINTERCANCEL container=" + containerId); cancel(e); });
-    // Pointer capture events bubble, so this also catches capture being
-    // revoked out from under a gesture that's still mid-drag.
-    container.addEventListener("lostpointercapture", (e) => { swipeDebugLog("LOSTPOINTERCAPTURE container=" + containerId); cancel(e); });
   }
 
   /* ---------------------------------------------------------------------
