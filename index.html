@@ -1183,8 +1183,19 @@
       if (!row) return;
       const content = row.querySelector(".swipe-content");
       if (!content) return;
-      a = { row, content, startX: e.clientX, startY: e.clientY, dx: 0, pointerId: e.pointerId, locked: null };
+      const started = { row, content, startX: e.clientX, startY: e.clientY, dx: 0, pointerId: e.pointerId, locked: null };
+      a = started;
       swipeGestureActive = true;
+      // Self-healing safety net: a real touch gesture can be cancelled by
+      // the OS (another app switch, an incoming call, iOS deciding it's
+      // actually a scroll) in ways that don't always reach pointerup or
+      // pointercancel. Without this, that single missed event leaves the
+      // row stuck mid-drag and (because swipeGestureActive never clears)
+      // quietly pauses the whole page's clock/timer forever. If nothing
+      // has resolved this exact gesture in 2.5s, force it back to rest.
+      setTimeout(() => {
+        if (a === started) endSwipe({ pointerId: started.pointerId });
+      }, 2500);
     });
 
     container.addEventListener("pointermove", (e) => {
@@ -1233,6 +1244,10 @@
     }
     container.addEventListener("pointerup", endSwipe);
     container.addEventListener("pointercancel", endSwipe);
+    // Pointer capture events bubble, so this catches capture being
+    // revoked out from under a gesture (another extra safety net
+    // alongside the 2.5s timeout above) and resolves it the same way.
+    container.addEventListener("lostpointercapture", endSwipe);
   }
 
   /* ---------------------------------------------------------------------
@@ -1657,7 +1672,7 @@
   const STRUCTURAL_RENDER_EVERY_TICKS = 150; // ~30s safety-net resync (e.g. "Upcoming" -> "Waiting" labels)
   let lastTickMs = performance.now();
   function tick(){
-    if (!appBooted || swipeGestureActive) return;
+    if (!appBooted) return;
     const now = performance.now();
     const deltaSec = (now - lastTickMs) / 1000;
     lastTickMs = now;
@@ -1669,6 +1684,13 @@
     state.simNow = actualNowMinutes() + state.demoOffset;
     if (state.simNow >= 1440) { state.simNow -= 1440; }
     updateSimClock();
+
+    // A swipe gesture mid-drag owns its row's markup right now — skip
+    // anything below that could rebuild or react to list content until it
+    // resolves (normally under a second; self-heals within 2.5s even in
+    // the worst case). The header clock above keeps ticking regardless,
+    // so the page never looks fully frozen even in that brief window.
+    if (swipeGestureActive) return;
 
     const nowCurrent = getCurrentBlock();
     const nowCurrentId = nowCurrent ? nowCurrent.id : null;
