@@ -1196,7 +1196,7 @@
       setTimeout(() => {
         if (a === started) endSwipe({ pointerId: started.pointerId });
       }, 2500);
-    });
+    }, { passive: false });
 
     container.addEventListener("pointermove", (e) => {
       if (!a || e.pointerId !== a.pointerId) return;
@@ -1204,7 +1204,12 @@
       const dy = e.clientY - a.startY;
       if (a.locked === null){
         if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-        a.locked = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+        // Needs to be CLEARLY more horizontal than vertical to lock in as
+        // a swipe — a real finger rarely moves in a perfectly straight
+        // line, and a strict dx > dy comparison was locking "y" (i.e.
+        // giving up on the swipe for good) on completely normal swipes
+        // that had even a little vertical wobble in their first few px.
+        a.locked = Math.abs(dx) > Math.abs(dy) * 1.3 ? "x" : "y";
         if (a.locked === "x") { try { a.content.setPointerCapture(e.pointerId); } catch (err) {} }
       }
       if (a.locked !== "x") return;
@@ -1215,7 +1220,7 @@
       a.row.classList.toggle("swipe-left", a.dx < 0);
       a.row.classList.toggle("swipe-armed-right", a.dx > THRESHOLD);
       a.row.classList.toggle("swipe-armed-left", a.dx < -THRESHOLD);
-    });
+    }, { passive: false });
 
     function resetRow(row, content){
       content.style.transform = "translateX(0)";
