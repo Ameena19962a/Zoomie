@@ -168,7 +168,14 @@
      so finishing a task reads as a real moment even glanced at quickly or
      tapped from way down in the timeline. */
   .celebrate-flash{
-    position:fixed; inset:0; z-index:45; pointer-events:none; opacity:0;
+    /* opacity defaults to the animation's own peak value, not 0 — unlike
+       .celebrate-message (which also defaults to visible), this element
+       used to START invisible and depend entirely on its animation to
+       ever become visible at all; if that animation failed to apply for
+       any reason, the celebration was permanently blank rather than just
+       unanimated. The animation below still fully controls opacity for
+       its duration either way — this only matters as the fallback. */
+    position:fixed; inset:0; z-index:45; pointer-events:none; opacity:.85;
     background: radial-gradient(circle at var(--fx,50%) var(--fy,40%),
       rgba(255,209,102,.85) 0%, rgba(244,114,182,.7) 30%, rgba(192,132,252,.5) 55%, transparent 78%);
   }
@@ -241,6 +248,42 @@
   }
   .duration-chip:hover{ background:var(--accent); color:#fff; border-color:var(--accent); }
 
+  /* Independent feature toggles — each one hides its section outright, not
+     just visually de-emphasized, so "off" really means off. No markup is
+     removed, just hidden, so flipping it back on needs no rebuild. */
+  body.feat-focus-off #focusPanelSection,
+  body.feat-timeline-off #timelinePanelSection,
+  body.feat-blocks-off #newBlockBtn,
+  body.feat-quickadd-off #quickBlockForm,
+  body.feat-buffers-off .tl-gap,
+  body.feat-buffers-off .bd-buffer-option,
+  body.feat-todo-off #todoPanelSection{ display:none; }
+  #allOffNotice{ display:none; text-align:center; color:var(--muted); font-size:14px; padding:28px 12px 4px; }
+  body.feat-all-off #allOffNotice{ display:block; }
+  .customize-row{ display:flex; justify-content:center; padding:4px 0 8px; }
+
+  /* Settings → Features: one switch per feature, big enough to tap. */
+  .feature-list{ border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:18px; }
+  .feature-row{ display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--card); cursor:pointer; }
+  .feature-row + .feature-row{ border-top:1px solid var(--border); }
+  .feature-row.sub{ padding-left:32px; }
+  .feature-row.is-disabled{ opacity:.45; cursor:default; }
+  .feature-text{ flex:1; min-width:0; }
+  .feature-name{ font-weight:600; font-size:14px; }
+  .feature-desc{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .switch{
+    appearance:none; -webkit-appearance:none; margin:0; flex-shrink:0; cursor:pointer;
+    width:46px; height:28px; border-radius:999px; background:var(--border); position:relative;
+    transition:background 150ms ease;
+  }
+  .switch::after{
+    content:""; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25); transition:transform 150ms ease;
+  }
+  .switch:checked{ background:var(--accent); }
+  .switch:checked::after{ transform:translateX(18px); }
+  .switch:disabled{ cursor:default; }
+
   /* Progressive disclosure for the New block form: steps and extras stay
      tucked away until asked for, so the form that opens by default is
      just Title / Category / When / How long. */
@@ -256,27 +299,25 @@
   .more-options-body{ padding-top:4px; }
 
   /* ---------- Layout ---------- */
+  /* Mobile only, deliberately: this app is a phone PWA, nobody's opening
+     it on a desktop, so there's no multi-column grid or breakpoint to
+     maintain — everything is just a single stacked column at phone width. */
   main.layout{
-    max-width:1120px; margin:0 auto; padding:20px;
-    display:grid; grid-template-columns: 380px 1fr; gap:20px; align-items:start;
-  }
-  @media (max-width: 880px){
-    main.layout{ grid-template-columns: 1fr; }
+    max-width:560px; margin:0 auto; padding:16px;
+    display:flex; flex-direction:column; gap:16px;
   }
   .panel{
     background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg);
     padding:18px;
   }
   .panel h2{ margin:0 0 10px 0; font-size:15px; }
-  .focus-panel{ position:sticky; top:78px; }
-  @media (max-width:880px){ .focus-panel{ position:static; } }
 
   footer.app-footer{
-    max-width:1120px; margin:0 auto; padding:8px 20px calc(40px + var(--safe-bottom)); color:var(--muted-2); font-size:12px;
+    max-width:560px; margin:0 auto; padding:8px 16px calc(40px + var(--safe-bottom)); color:var(--muted-2); font-size:12px;
   }
 
   .notice-banner{
-    max-width:1120px; margin:12px auto 0; padding:0 20px;
+    max-width:560px; margin:12px auto 0; padding:0 16px;
   }
   .notice-banner .inner{
     display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -326,7 +367,8 @@
   .focus-current{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; }
   .focus-current .big-pie{ margin:6px 0 2px; }
   .focus-title{ font-size:25px; font-weight:800; margin:0; line-height:1.25; }
-  .focus-time-range{ font-size:12.5px; color:var(--muted); }
+  .focus-time-range{ font-size:17px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; margin:4px 0; }
+  .focus-time-range .block-dur{ font-size:13px; font-weight:600; color:var(--muted); }
   .focus-remaining-text{ font-size:13.5px; margin:0; }
   .focus-actions{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:6px; }
 
@@ -344,7 +386,30 @@
   .subtask-list li.done{ color:var(--muted); }
   .subtask-list li.done .subtask-title{ text-decoration: line-through; text-decoration-color:var(--muted-2); }
   .subtask-list input[type=checkbox]{ width:16px;height:16px; }
+  .subtask-list .subtask-title{ flex:1; min-width:0; }
   .subtask-est{ margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
+
+  /* Swipe-to-complete / swipe-to-delete (to-do rows only — block "steps"
+     checklists keep the plain .subtask-list li look above). Swiping right
+     reveals the green layer (release past the threshold completes it);
+     swiping left reveals the red one (release past threshold deletes it).
+     Both bg layers sit stacked underneath; only the one being dragged
+     toward is opaque. The sliding foreground carries the row's normal
+     look so at rest it's unchanged. */
+  #todoList li{ position:relative; overflow:hidden; padding:0; border:none; background:transparent; border-radius:8px; }
+  #todoList .swipe-bg-right, #todoList .swipe-bg-left{
+    position:absolute; inset:0; display:flex; align-items:center; font-weight:700; font-size:12.5px; border-radius:8px; opacity:0;
+  }
+  #todoList .swipe-bg-right{ justify-content:flex-start; padding-left:14px; background:#5c9c76; color:#fff; }
+  #todoList .swipe-bg-left{ justify-content:flex-end; padding-right:14px; background:#c1595a; color:#fff; }
+  #todoList li.swipe-right .swipe-bg-right, #todoList li.swipe-left .swipe-bg-left{ opacity:1; }
+  #todoList li.swipe-armed-right .swipe-bg-right{ background:#4a8863; }
+  #todoList li.swipe-armed-left .swipe-bg-left{ background:#a84546; }
+  #todoList .swipe-content{
+    position:relative; display:flex; align-items:center; gap:8px; font-size:13px;
+    padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:var(--bg);
+    touch-action:pan-y;
+  }
 
   .soundtrack-stub{
     width:100%; margin-top:4px; display:flex; align-items:center; gap:10px;
@@ -366,20 +431,32 @@
   }
   .tl-gap button:hover, .tl-gap button:focus-visible{ color:var(--text); border-color:var(--accent); }
 
-  .block-row{
-    display:flex; gap:12px; align-items:flex-start;
+  .block-row{ position:relative; overflow:hidden; border-radius:var(--radius-md); margin:6px 0; }
+  .block-row .swipe-bg-right, .block-row .swipe-bg-left{
+    position:absolute; inset:0; display:flex; align-items:center; font-weight:700; font-size:13px; border-radius:var(--radius-md); opacity:0;
+  }
+  .block-row .swipe-bg-right{ justify-content:flex-start; padding-left:20px; background:#5c9c76; color:#fff; }
+  .block-row .swipe-bg-left{ justify-content:flex-end; padding-right:20px; background:#c1595a; color:#fff; }
+  .block-row.swipe-right .swipe-bg-right, .block-row.swipe-left .swipe-bg-left{ opacity:1; }
+  .block-row.swipe-armed-right .swipe-bg-right{ background:#4a8863; }
+  .block-row.swipe-armed-left .swipe-bg-left{ background:#a84546; }
+  .block-row .swipe-content{
+    position:relative; display:flex; gap:12px; align-items:flex-start;
     background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
-    padding:12px 14px; margin:6px 0; border-left-width:6px; border-left-style:solid;
+    padding:12px 14px; border-left-width:6px; border-left-style:solid;
+    touch-action:pan-y;
   }
-  .block-row.is-buffer{
+  .block-row .swipe-content.is-buffer{
     background-image: repeating-linear-gradient(135deg, color-mix(in srgb, var(--cat-buffer) 12%, transparent) 0 7px, transparent 7px 14px);
-    border-left-color: var(--cat-buffer);
   }
-  .block-row.is-current{ box-shadow: 0 0 0 2px var(--accent); }
-  .block-row.is-done{ opacity:.68; }
+  .block-row.is-current .swipe-content{ box-shadow: 0 0 0 2px var(--accent); }
+  .block-row.is-done .swipe-content{ opacity:.68; }
   .block-main{ flex:1; min-width:0; }
   .block-top-line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .block-title{ font-weight:700; font-size:14px; margin:0; }
+  .block-time{ font-size:15.5px; font-weight:800; margin:0 0 5px; font-variant-numeric:tabular-nums; color:var(--text); }
+  .block-time .block-dur{ font-size:12.5px; font-weight:600; color:var(--muted); white-space:nowrap; }
+  .is-done .block-time{ color:var(--muted); }
   .block-meta{ font-size:12px; color:var(--muted); margin-top:3px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .status-tag{ font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted); }
   .status-tag.now{ color:#fff; background:var(--accent); border-color:var(--accent); }
@@ -469,7 +546,7 @@
     <span class="cloud-status" id="cloudStatus" style="display:none;"><span class="dot"></span><span id="cloudStatusText">Local only</span></span>
     <button type="button" class="icon-btn" id="signOutBtn" aria-label="Sign out" title="Sign out" style="display:none;">↩️</button>
     <button type="button" class="icon-btn" id="settingsBtn" aria-label="Settings: categories, sound, and more" title="Settings">⚙️</button>
-    <button type="button" class="primary-btn" data-action="new-block">+ New block</button>
+    <button type="button" class="primary-btn" id="newBlockBtn" data-action="new-block">+ New block</button>
   </div>
 </header>
 
@@ -504,19 +581,23 @@
 </div>
 
 <main class="layout" id="mainApp" style="display:none;">
-  <section class="panel focus-panel" aria-labelledby="focusHeading">
+  <section class="panel focus-panel" id="focusPanelSection" aria-labelledby="focusHeading">
     <h2 id="focusHeading">Right now</h2>
     <div id="focusPanelBody"></div>
   </section>
 
-  <section class="panel" aria-labelledby="timelineHeading">
+  <section class="panel" id="timelinePanelSection" aria-labelledby="timelineHeading">
     <div class="timeline-toolbar">
       <h2 id="timelineHeading" style="margin:0;">Today's timeline</h2>
     </div>
+    <form id="quickBlockForm" style="display:flex;gap:8px;margin-bottom:14px;">
+      <input type="text" id="quickBlockInput" placeholder="Add a task…" style="flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
+      <button type="submit" class="primary-btn">Add</button>
+    </form>
     <div class="timeline-list" id="timelineList"></div>
   </section>
 
-  <section class="panel" aria-labelledby="todoHeading" style="grid-column:1 / -1;">
+  <section class="panel" id="todoPanelSection" aria-labelledby="todoHeading" style="grid-column:1 / -1;">
     <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
     <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
     <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
@@ -525,6 +606,11 @@
     </form>
     <ul class="subtask-list" id="todoList" style="margin:0;"></ul>
   </section>
+
+  <p id="allOffNotice">Everything's switched off right now.</p>
+  <div class="customize-row">
+    <button type="button" class="text-btn" id="customizeBtn">Customize what you see</button>
+  </div>
 </main>
 
 <footer class="app-footer" id="mainFooter" style="display:none;">
@@ -784,7 +870,9 @@
         firstName: state.firstName,
         showTimer: state.showTimer,
         colorTheme: state.colorTheme,
-        todos: state.todos
+        todos: state.todos,
+        features: state.features,
+        lastCategoryId: state.lastCategoryId
       }));
     } catch (e) { /* storage unavailable — app still works for this session */ }
   }
@@ -792,6 +880,15 @@
   /* ---------------------------------------------------------------------
      State
   --------------------------------------------------------------------- */
+  const DEFAULT_FEATURES = { focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, todoList: true, celebrations: true };
+  // Older saves only had { timeline, todoList }, where timeline:false also
+  // hid the focus card and timer — keep that meaning for them.
+  function normalizeFeatures(f){
+    const out = Object.assign({}, DEFAULT_FEATURES, f || {});
+    if (f && f.timeline === false && f.focus === undefined){ out.focus = false; out.timer = false; }
+    return out;
+  }
+
   const persisted = loadPersisted();
   const state = persisted ? {
     nudgeThreshold: persisted.nudgeThreshold || 45,
@@ -805,6 +902,8 @@
     showTimer: persisted.showTimer !== false,
     colorTheme: persisted.colorTheme || "mixed",
     todos: Array.isArray(persisted.todos) ? persisted.todos : [],
+    features: normalizeFeatures(persisted.features),
+    lastCategoryId: persisted.lastCategoryId || null,
     demoOffset: 0,
     speed: 1
   } : {
@@ -819,6 +918,8 @@
     showTimer: true,
     colorTheme: "mixed",
     todos: [],
+    features: normalizeFeatures(null),
+    lastCategoryId: null,
     demoOffset: 0,
     speed: 1
   };
@@ -1024,7 +1125,10 @@
     const msg = document.createElement("span");
     msg.className = "celebrate-message";
     msg.textContent = CELEBRATE_MESSAGES[Math.floor(Math.random() * CELEBRATE_MESSAGES.length)];
-    msg.style.left = x + "px";
+    // Clamped defensively — x is normally a row's center now, never a
+    // pointer's release position, but this keeps the message on-screen
+    // even if some future caller passes a near-edge coordinate.
+    msg.style.left = clamp(x, 70, (window.innerWidth || 1) - 70) + "px";
     msg.style.top = Math.max(8, y - 40) + "px";
     document.body.appendChild(msg);
     setTimeout(() => msg.remove(), 1500);
@@ -1059,6 +1163,194 @@
         osc.stop(start + note.dur + 0.02);
       });
     } catch (e) { /* the visual celebration still communicates completion without sound */ }
+  }
+
+  // Celebration is always centered on the row itself, never on wherever
+  // the pointer happened to end up — a swipe-right release sits right at
+  // the screen edge, which clipped the message before this.
+  function rowCenter(row){
+    const r = row.getBoundingClientRect();
+    return [r.left + r.width / 2, r.top + r.height / 2];
+  }
+  function completeBlock(b, x, y){
+    if (!b || b.status === "done" || b.status === "skipped") return;
+    b.status = "done";
+    commit();
+    if (state.features.celebrations) celebrateBurst(x, y);
+    playCompletionChime();
+  }
+  function completeTodo(t, x, y){
+    if (!t || t.done) return;
+    t.done = true;
+    commit();
+    if (state.features.celebrations) celebrateBurst(x, y);
+    playCompletionChime();
+  }
+  function deleteBlockWithConfirm(b){
+    if (!b) return;
+    showConfirm('Delete "' + b.title + '"? This can\'t be undone.', () => {
+      state.blocks = state.blocks.filter(x => x.id !== b.id);
+      commit();
+    });
+  }
+  function deleteTodo(t){
+    if (!t) return;
+    state.todos = state.todos.filter(x => x.id !== t.id);
+    commit();
+  }
+
+  /* ---------------------------------------------------------------------
+     Swipe-to-complete / swipe-to-delete — the single way to mark a block
+     or to-do done, or to remove it (the to-do checkbox stays too, as a
+     tap alternative for completing; it just doesn't celebrate the way
+     completing something via swipe does). Delegated Pointer Events on the
+     stable list containers (never replaced, only their children are, on
+     re-render) so the listeners survive renders. A short pointer-move
+     before locking onto horizontal vs. vertical means a normal scroll
+     gesture never gets mistaken for a swipe. Deleting a block asks first
+     (matching the old delete button); deleting a to-do doesn't, matching
+     how its delete button always worked.
+  --------------------------------------------------------------------- */
+  // While true, tick()'s periodic structural re-render is skipped — it
+  // rebuilds #timelineList's whole innerHTML, which would yank the very
+  // row a gesture is mid-drag on out of the DOM (and silently drop its
+  // pointer capture with it), losing the swipe. A render is never more
+  // than ~200ms late because of this, which a human can't perceive.
+  let swipeGestureActive = false;
+
+  function setupSwipeGestures(containerId, rowSelector, findItem, onComplete, onDelete){
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const THRESHOLD = 34;
+    let a = null; // active, unresolved swipe: { row, content, startX, startY, dx, pointerId, locked }
+
+    function resetRow(row, content){
+      content.style.transition = "transform 160ms ease";
+      content.style.transform = "translateX(0)";
+      row.classList.remove("swipe-right", "swipe-left", "swipe-armed-right", "swipe-armed-left");
+      setTimeout(() => { content.style.transition = ""; }, 220);
+    }
+
+    // Fires the instant a drag crosses the threshold — not on release.
+    // Deciding the action from wherever a finger happened to be AT THE
+    // MOMENT it lifted (the old design) meant a completely normal flick —
+    // drag right past the threshold, finger eases back a little as it
+    // lifts, the kind of motion nobody can fully avoid — could land back
+    // past the delete threshold at that exact instant and fire the
+    // opposite action from the one that had clearly, visibly armed a
+    // moment before. Committing the moment the threshold is first crossed
+    // removes that ambiguity outright: once you've dragged far enough, it
+    // just happens, and whatever the finger does afterward is irrelevant.
+    function resolve(dir, row, content, id){
+      a = null;
+      swipeGestureActive = false;
+      content.style.transition = "transform 140ms ease";
+      if (dir === "complete"){
+        content.style.transform = "translateX(140%)";
+        const item = findItem(id);
+        const [cx, cy] = rowCenter(row);
+        setTimeout(() => onComplete(item, cx, cy), 110);
+      } else {
+        const item = findItem(id);
+        if (onDelete) onDelete(item, row, content, () => resetRow(row, content));
+        else resetRow(row, content);
+      }
+    }
+
+    container.addEventListener("pointerdown", (e) => {
+      // Deliberately NOT excluding <label> here — the to-do row's title is
+      // a label tied to its checkbox, and a plain tap on it (no real drag)
+      // still reaches the checkbox normally below, since preventDefault
+      // only fires once a horizontal drag is actually locked in.
+      if (e.target.closest("button, a, input")) return;
+      const row = e.target.closest(rowSelector);
+      if (!row) return;
+      const content = row.querySelector(".swipe-content");
+      if (!content) return;
+      // An already-completed row has no "done" action left — only delete.
+      // Without this, swiping right still played the complete-and-slide-
+      // away animation even though onComplete's status guard silently did
+      // nothing, leaving the row's content permanently slid off-screen
+      // (blank) with no re-render ever bringing it back.
+      const alreadyDone = row.classList.contains("is-done") || row.classList.contains("done");
+      const started = { row, content, startX: e.clientX, startY: e.clientY, dx: 0, pointerId: e.pointerId, locked: null, alreadyDone };
+      a = started;
+      swipeGestureActive = true;
+      // Self-healing safety net: a real touch gesture can be interrupted
+      // (another app switch, an incoming call) in ways that don't always
+      // reach pointerup or pointercancel. Without this, one missed event
+      // leaves the row stuck mid-drag forever. If this exact gesture
+      // hasn't resolved (by crossing a threshold) or been released within
+      // 2.5s, just snap it back rather than guess at an action.
+      setTimeout(() => {
+        if (a === started){
+          a = null;
+          swipeGestureActive = false;
+          resetRow(started.row, started.content);
+        }
+      }, 2500);
+    }, { passive: false });
+
+    container.addEventListener("pointermove", (e) => {
+      if (!a || e.pointerId !== a.pointerId || a.locked === "y") return;
+      const dx = e.clientX - a.startX;
+      const dy = e.clientY - a.startY;
+      if (a.locked !== "x"){
+        // Deciding "this is a swipe" vs "this is a scroll" off a SINGLE
+        // early sample was the actual bug: real touch input's first
+        // reported point is often coarse/diagonal-looking even for a
+        // dead-straight intended swipe, since a finger's direction hasn't
+        // "settled" the instant it starts moving. That one unlucky sample
+        // used to lock this permanently as a scroll with no way back,
+        // which is exactly why it only ever worked with a long, careful,
+        // nearly edge-to-edge drag — that's the only kind of motion whose
+        // very first sample is unambiguous enough to survive a one-shot
+        // decision. Now: too small to call yet keeps waiting; genuinely,
+        // persistently more vertical commits to scroll; anything else —
+        // including "a bit of both, leaning horizontal" — commits to swipe.
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+        if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 24){
+          a.locked = "y";
+          return;
+        }
+        if (Math.abs(dx) < Math.abs(dy)) return;
+        a.locked = "x";
+        // Deliberately NOT calling setPointerCapture here. It isn't needed
+        // — the container-level delegated listeners keep receiving this
+        // pointer's move/up events regardless — and on real iOS Safari it
+        // was actively harmful: granting capture was immediately followed
+        // by a lostpointercapture event (sometimes in the same
+        // millisecond), which this code used to treat as "the gesture
+        // ended" and cancel an otherwise perfectly fine swipe mid-drag.
+        // That was the actual bug behind "barely moves, then snaps back."
+      }
+      e.preventDefault();
+      // Clamp to leftward-only (delete) once a row is already done — it
+      // never gets to visually arm, let alone resolve, a "complete" swipe
+      // it has no action for.
+      a.dx = a.alreadyDone ? Math.min(dx, 0) : dx;
+      a.content.style.transform = "translateX(" + a.dx + "px)";
+      a.row.classList.toggle("swipe-right", a.dx > 0);
+      a.row.classList.toggle("swipe-left", a.dx < 0);
+      a.row.classList.toggle("swipe-armed-right", a.dx > THRESHOLD);
+      a.row.classList.toggle("swipe-armed-left", a.dx < -THRESHOLD);
+      if (a.dx > THRESHOLD) resolve("complete", a.row, a.content, a.row.dataset.id);
+      else if (a.dx < -THRESHOLD) resolve("delete", a.row, a.content, a.row.dataset.id);
+    }, { passive: false });
+
+    // Released (or the gesture was cancelled) before ever crossing a
+    // threshold — just snap back. Anything that DID cross already
+    // resolved and nulled `a` out in pointermove above, so these are
+    // no-ops for it.
+    function cancel(e){
+      if (!a || e.pointerId !== a.pointerId) return;
+      const dropped = a;
+      a = null;
+      swipeGestureActive = false;
+      resetRow(dropped.row, dropped.content);
+    }
+    container.addEventListener("pointerup", cancel);
+    container.addEventListener("pointercancel", cancel);
   }
 
   /* ---------------------------------------------------------------------
@@ -1152,7 +1444,9 @@
     const cat = catFor(cur);
     const { remaining, fraction, overrun } = timeInfo(cur);
     const holeLabel = overrun ? "Time's up" : (Math.ceil(remaining) + "m");
-    const pie = state.showTimer
+    const timerOn = state.features.timer;
+    const pie = !timerOn ? ""
+      : state.showTimer
       ? pieMarkup(fraction, cat.color, 120, 0.62, holeLabel, overrun, "focusPie")
       : '<div class="timer-off-display" style="font-size:28px;font-weight:800;padding:8px 0;color:' + (overrun ? "var(--danger-quiet)" : readableChipText(cat.color)) + ';">' + holeLabel + '</div>';
 
@@ -1197,10 +1491,10 @@
     el.innerHTML =
       '<div class="focus-current">' +
         '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
-        '<div class="big-pie">' + pie + '</div>' +
+        (pie ? '<div class="big-pie">' + pie + '</div>' : '') +
         '<p class="focus-title">' + escapeHtml(cur.title) + '</p>' +
-        '<p class="focus-time-range">' + fmtClock(cur.start) + '&ndash;' + fmtClock(cur.start + cur.duration) + ' &middot; ' + fmtDuration(cur.duration) + (overrun ? " (running over)" : "") + '</p>' +
-        '<p class="focus-remaining-text" id="focusRemainingText">' + remainingSentence(cur, remaining, overrun) + '</p>' +
+        '<p class="focus-time-range">' + fmtClock(cur.start) + ' &ndash; ' + fmtClock(cur.start + cur.duration) + ' <span class="block-dur">&middot; ' + fmtDuration(cur.duration) + (overrun ? " (running over)" : "") + '</span></p>' +
+        (timerOn ? '<p class="focus-remaining-text" id="focusRemainingText">' + remainingSentence(cur, remaining, overrun) + '</p>' : '') +
         subtasksHtml +
         soundtrackHtml +
         overrunHtml +
@@ -1258,7 +1552,7 @@
       const st = statusFor(block, curId);
       const isCurrent = block.id === curId;
       let miniTimer = "";
-      if (isCurrent && state.showTimer){
+      if (isCurrent && state.showTimer && state.features.timer){
         const { fraction, overrun } = timeInfo(block);
         miniTimer = pieMarkup(fraction, cat.color, 40, 0.5, "", overrun, "timelineMiniPie");
       }
@@ -1268,26 +1562,27 @@
         subtaskBadge = '<span class="subtask-badge">' + done + '/' + block.subtasks.length + ' steps</span>';
       }
 
+      const swipeable = block.status !== "done" && block.status !== "skipped";
       html +=
-        '<div class="block-row' + (block.isBuffer ? " is-buffer" : "") + (isCurrent ? " is-current" : "") + ((block.status === "done" || block.status === "skipped") ? " is-done" : "") + '" style="border-left-color:' + cat.color + ';">' +
-          (miniTimer ? miniTimer : "") +
-          '<div class="block-main">' +
-            '<div class="block-top-line">' +
-              '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
-              '<p class="block-title">' + escapeHtml(block.title) + '</p>' +
+        '<div class="block-row' + (isCurrent ? " is-current" : "") + (swipeable ? "" : " is-done") + '" data-id="' + block.id + '">' +
+          (swipeable ? '<div class="swipe-bg-right">✓ Done</div>' : "") +
+          '<div class="swipe-bg-left">🗑 Delete</div>' +
+          '<div class="swipe-content' + (block.isBuffer ? " is-buffer" : "") + '" style="border-left-color:' + cat.color + ';">' +
+            (miniTimer ? miniTimer : "") +
+            '<div class="block-main">' +
+              '<p class="block-time"><span style="white-space:nowrap;">' + fmtClock(block.start) + ' &ndash; ' + fmtClock(block.start + block.duration) + '</span> <span class="block-dur">' + fmtDuration(block.duration) + '</span></p>' +
+              '<div class="block-top-line">' +
+                '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
+                '<p class="block-title">' + escapeHtml(block.title) + '</p>' +
+              '</div>' +
+              (st || subtaskBadge ? '<div class="block-meta">' +
+                (st ? '<span class="status-tag ' + st.cls + '">' + st.label + '</span>' : "") +
+                subtaskBadge +
+              '</div>' : '') +
             '</div>' +
-            '<div class="block-meta">' +
-              '<span>' + fmtClock(block.start) + '&ndash;' + fmtClock(block.start + block.duration) + ' &middot; ' + fmtDuration(block.duration) + '</span>' +
-              (st ? '<span class="status-tag ' + st.cls + '">' + st.label + '</span>' : "") +
-              subtaskBadge +
+            '<div class="block-actions">' +
+              '<button type="button" class="icon-mini" data-action="edit" data-id="' + block.id + '" aria-label="Edit ' + escapeAttr(block.title) + '">✏️</button>' +
             '</div>' +
-          '</div>' +
-          '<div class="block-actions">' +
-            (block.status !== "done" && block.status !== "skipped"
-              ? '<button type="button" class="icon-mini" data-action="done" data-id="' + block.id + '" aria-label="Mark ' + escapeAttr(block.title) + ' done">✅</button>'
-              : "") +
-            '<button type="button" class="icon-mini" data-action="edit" data-id="' + block.id + '" aria-label="Edit ' + escapeAttr(block.title) + '">✏️</button>' +
-            '<button type="button" class="icon-mini" data-action="delete" data-id="' + block.id + '" aria-label="Delete ' + escapeAttr(block.title) + '">🗑️</button>' +
           '</div>' +
         '</div>';
 
@@ -1306,9 +1601,22 @@
      Full render + tick loop
   --------------------------------------------------------------------- */
   function render(){
+    applyFeatureVisibility();
     renderFocusPanel();
     renderTimeline();
     renderTodos();
+  }
+
+  function applyFeatureVisibility(){
+    const f = state.features;
+    const cl = document.body.classList;
+    cl.toggle("feat-focus-off", !f.focus);
+    cl.toggle("feat-timeline-off", !f.timeline);
+    cl.toggle("feat-blocks-off", !f.focus && !f.timeline);
+    cl.toggle("feat-quickadd-off", !f.quickAdd);
+    cl.toggle("feat-buffers-off", !f.buffers);
+    cl.toggle("feat-todo-off", !f.todoList);
+    cl.toggle("feat-all-off", !f.focus && !f.timeline && !f.todoList);
   }
 
   // Runs every 200ms (tick) without touching any button/row markup — only
@@ -1354,10 +1662,13 @@
     const list = document.getElementById("todoList");
     if (!list) return;
     list.innerHTML = state.todos.map(t =>
-      '<li class="' + (t.done ? "done" : "") + '">' +
-        '<input type="checkbox" id="todo_' + t.id + '" data-action="toggle-todo" data-id="' + t.id + '" ' + (t.done ? "checked" : "") + ' aria-label="Mark \'' + escapeAttr(t.title) + '\' done">' +
-        '<label class="subtask-title" for="todo_' + t.id + '">' + escapeHtml(t.title) + '</label>' +
-        '<button type="button" class="icon-mini" data-action="delete-todo" data-id="' + t.id + '" style="margin-left:auto;" aria-label="Delete ' + escapeAttr(t.title) + '">🗑️</button>' +
+      '<li class="' + (t.done ? "done" : "") + '" data-id="' + t.id + '">' +
+        (t.done ? "" : '<div class="swipe-bg-right">✓ Done</div>') +
+        '<div class="swipe-bg-left">🗑 Delete</div>' +
+        '<div class="swipe-content">' +
+          '<input type="checkbox" id="todo_' + t.id + '" data-action="toggle-todo" data-id="' + t.id + '" ' + (t.done ? "checked" : "") + ' aria-label="Mark \'' + escapeAttr(t.title) + '\' done">' +
+          '<label class="subtask-title" for="todo_' + t.id + '">' + escapeHtml(t.title) + '</label>' +
+        '</div>' +
       '</li>'
     ).join("") || '<p style="color:var(--muted);font-size:13px;margin:0;">Nothing on the list yet.</p>';
   }
@@ -1485,6 +1796,13 @@
     if (state.simNow >= 1440) { state.simNow -= 1440; }
     updateSimClock();
 
+    // A swipe gesture mid-drag owns its row's markup right now — skip
+    // anything below that could rebuild or react to list content until it
+    // resolves (normally under a second; self-heals within 2.5s even in
+    // the worst case). The header clock above keeps ticking regardless,
+    // so the page never looks fully frozen even in that brief window.
+    if (swipeGestureActive) return;
+
     const nowCurrent = getCurrentBlock();
     const nowCurrentId = nowCurrent ? nowCurrent.id : null;
     const nowOverrun = nowCurrent ? timeInfo(nowCurrent).overrun : false;
@@ -1542,21 +1860,13 @@
       if (b) openBlockForm(b);
       return;
     }
-    if (action === "delete"){
-      const b = state.blocks.find(x => x.id === t.dataset.id);
-      if (b) showConfirm('Delete "' + b.title + '"? This can\'t be undone.', () => {
-        state.blocks = state.blocks.filter(x => x.id !== b.id);
-        commit();
-      });
-      return;
-    }
     if (action === "insert-buffer"){
       insertBufferAfter(t.dataset.after);
       return;
     }
     if (action === "done"){
       const b = state.blocks.find(x => x.id === t.dataset.id);
-      if (b) { b.status = "done"; commit(); celebrateBurst(e.clientX, e.clientY); playCompletionChime(); }
+      if (b) completeBlock(b, e.clientX, e.clientY);
       return;
     }
     if (action === "extend"){
@@ -1595,12 +1905,6 @@
       clearLowCapacityDay();
       return;
     }
-    if (action === "delete-todo"){
-      const delId = t.dataset.id;
-      state.todos = state.todos.filter(td => td.id !== delId);
-      commit();
-      return;
-    }
   });
 
   const todoForm = document.getElementById("todoForm");
@@ -1614,11 +1918,55 @@
     commit();
   });
 
+  setupSwipeGestures(
+    "timelineList", ".block-row",
+    (id) => state.blocks.find(b => b.id === id),
+    completeBlock,
+    (item, row, content, reset) => { reset(); deleteBlockWithConfirm(item); }
+  );
+  setupSwipeGestures(
+    "todoList", "li",
+    (id) => state.todos.find(t => t.id === id),
+    completeTodo,
+    (item, row, content, reset) => {
+      content.style.transform = "translateX(-140%)";
+      setTimeout(() => deleteTodo(item), 120);
+    }
+  );
+
+  // Quick-add for blocks — just a title, no dialog. Everything else
+  // (category, start time, duration) gets a sensible default so the block
+  // exists immediately; tap it afterward (the ✏️ edit button) to change
+  // any of that. "+ New block" still opens the full dialog for anyone who
+  // wants to set those deliberately before it's created.
+  const quickBlockForm = document.getElementById("quickBlockForm");
+  if (quickBlockForm) quickBlockForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const input = document.getElementById("quickBlockInput");
+    const title = input.value.trim();
+    if (!title) return;
+    const catId = state.lastCategoryId || (state.categories[0] ? state.categories[0].id : null);
+    const cat = state.categories.find(c => c.id === catId);
+    const start = suggestedNewStart();
+    const duration = (cat && cat.defaultMinutes) || 30;
+    state.blocks.push(mkBlock(title, catId, start, duration, false, [], false));
+    input.value = "";
+    commit();
+  });
+
   document.addEventListener("change", function(e){
     const todoChk = e.target.closest("[data-action='toggle-todo']");
     if (todoChk){
       const t = state.todos.find(x => x.id === todoChk.dataset.id);
-      if (t) { t.done = todoChk.checked; commit(); }
+      if (t){
+        if (todoChk.checked){
+          const r = todoChk.getBoundingClientRect();
+          completeTodo(t, r.left + r.width / 2, r.top + r.height / 2);
+        } else {
+          t.done = false;
+          commit();
+        }
+      }
       return;
     }
     const t = e.target.closest("[data-action='toggle-subtask']");
@@ -1626,7 +1974,18 @@
     const b = state.blocks.find(x => x.id === t.dataset.block);
     if (!b) return;
     const st = (b.subtasks || []).find(s => s.id === t.dataset.sub);
-    if (st) { st.done = t.checked; commit(); }
+    if (!st) return;
+    st.done = t.checked;
+    // Checking off the last step of a task is, in effect, finishing the
+    // task — it should celebrate the same way swiping it done does,
+    // instead of silently doing nothing (the gap behind "the task itself
+    // didn't work" while a plain swipe on a step-free buffer did).
+    if (t.checked && b.status === "pending" && b.subtasks.length && b.subtasks.every(s => s.done)){
+      const r = t.getBoundingClientRect();
+      completeBlock(b, r.left + r.width / 2, r.top + r.height / 2);
+    } else {
+      commit();
+    }
   });
 
   function insertBufferAfter(afterId){
@@ -1718,7 +2077,7 @@
               '<input type="checkbox" id="bd_soundtrack" ' + (soundtrackEnabled ? "checked" : "") + '>' +
               '<label for="bd_soundtrack">Play a timer-length soundtrack for this block (prototype stub)</label>' +
             '</div>' +
-            '<div class="checkbox-field">' +
+            '<div class="checkbox-field bd-buffer-option">' +
               '<input type="checkbox" id="bd_addBuffer">' +
               '<label for="bd_addBuffer">Add a short buffer right after this block</label>' +
             '</div>' +
@@ -1882,6 +2241,7 @@
 
     if (!formIsBuffer){
       block.categoryId = document.getElementById("bd_category").value || (state.categories[0] ? state.categories[0].id : null);
+      state.lastCategoryId = block.categoryId;
       block.soundtrackEnabled = document.getElementById("bd_soundtrack").checked;
       block.subtasks = formSubtasks.filter(s => s.title.trim().length > 0).map(s => ({ id: s.id, title: s.title.trim(), est: s.est, done: !!s.done }));
 
@@ -1908,19 +2268,66 @@
     settingsDialog.showModal();
   });
 
+  document.getElementById("customizeBtn").addEventListener("click", () => {
+    renderSettingsDialog();
+    settingsDialog.showModal();
+  });
+
+  // `requires` greys a row out while the feature it lives inside is off.
+  const FEATURE_TOGGLES = [
+    { key: "focus", name: "Right now card", desc: "What you're on now, with its buttons" },
+    { key: "timer", name: "Countdown timer", desc: "Time left on the current block" },
+    { key: "timerShape", name: "Show as a shrinking circle", desc: "Off shows just the minutes", sub: true, requires: "timer" },
+    { key: "timeline", name: "Day timeline", desc: "Today's blocks, in order" },
+    { key: "quickAdd", name: "Quick add", desc: "One-line box to add a block fast", sub: true, requires: "timeline" },
+    { key: "buffers", name: "Buffers", desc: "“+ buffer” buttons for breathing room", sub: true, requires: "timeline" },
+    { key: "todoList", name: "To-do list", desc: "Untimed things to get to today" },
+    { key: "celebrations", name: "Celebrations", desc: "Burst of color when you finish something" },
+    { key: "sounds", name: "Sounds", desc: "Soft chime when a block starts or you finish" }
+  ];
+  function featureValue(key){
+    if (key === "sounds") return state.soundEnabled;
+    if (key === "timerShape") return state.showTimer;
+    return !!state.features[key];
+  }
+  function setFeatureValue(key, on){
+    if (key === "sounds") state.soundEnabled = on;
+    else if (key === "timerShape") state.showTimer = on;
+    else state.features[key] = on;
+  }
+  function syncFeatureRows(){
+    FEATURE_TOGGLES.forEach(t => {
+      if (!t.requires) return;
+      const row = document.querySelector('#st_featureList .feature-row[data-feature="' + t.key + '"]');
+      if (!row) return;
+      const enabled = featureValue(t.requires);
+      row.classList.toggle("is-disabled", !enabled);
+      row.querySelector("input").disabled = !enabled;
+    });
+  }
+
   function renderSettingsDialog(){
     const inner = document.getElementById("settingsDialogInner");
     inner.innerHTML =
       '<h2 id="settingsDialogTitle">Settings</h2>' +
       '<p class="dialog-sub">Saved on this device' + (cloudEnabled && currentUser && !offlineMode ? ' and synced to your account.' : '.') + '</p>' +
 
+      '<h3 style="font-size:13.5px;margin:0 0 4px;">Features</h3>' +
+      '<p class="dialog-sub" style="margin-bottom:10px;">Switch off anything you don\'t need. Nothing is deleted &mdash; switch it back on any time.</p>' +
+      '<div class="feature-list" id="st_featureList">' +
+        FEATURE_TOGGLES.map(t =>
+          '<label class="feature-row' + (t.sub ? ' sub' : '') + '" data-feature="' + t.key + '">' +
+            '<span class="feature-text">' +
+              '<span class="feature-name">' + t.name + '</span>' +
+              '<span class="feature-desc" style="display:block;">' + t.desc + '</span>' +
+            '</span>' +
+            '<input type="checkbox" class="switch" role="switch" data-feature="' + t.key + '" aria-label="' + escapeAttr(t.name) + '"' + (featureValue(t.key) ? ' checked' : '') + '>' +
+          '</label>'
+        ).join('') +
+      '</div>' +
+
       '<div class="field"><label for="st_firstName">Your name</label>' +
         '<input type="text" id="st_firstName" value="' + escapeAttr(state.firstName) + '" placeholder="e.g. Sam"></div>' +
-
-      '<div class="checkbox-field">' +
-        '<input type="checkbox" id="st_showTimer" ' + (state.showTimer ? "checked" : "") + '>' +
-        '<label for="st_showTimer">Show the shrinking timer shape (turn off for just the number)</label>' +
-      '</div>' +
 
       '<h3 style="font-size:13.5px;margin:16px 0 8px;">Color theme</h3>' +
       '<p class="dialog-sub" style="margin-bottom:8px;">Recolors all categories at once &mdash; you can still fine-tune individual colors below afterward.</p>' +
@@ -1942,10 +2349,6 @@
       '<details class="more-options" id="st_soundDetails"' + (state.soundEnabled || state.speakEnabled ? " open" : "") + '>' +
         '<summary>Sound &amp; voice</summary>' +
         '<div class="more-options-body">' +
-          '<div class="checkbox-field">' +
-            '<input type="checkbox" id="st_soundEnabled" ' + (state.soundEnabled ? "checked" : "") + '>' +
-            '<label for="st_soundEnabled">Play a soft chime when a block starts or a task is marked done</label>' +
-          '</div>' +
           '<div class="field">' +
             '<label for="st_soundVolume">Volume</label>' +
             '<input type="range" id="st_soundVolume" min="0" max="1" step="0.1" value="' + state.soundVolume + '" style="width:100%;">' +
@@ -1986,9 +2389,14 @@
 
       '<div class="dialog-actions"><div></div><div class="right-group"><button type="button" class="primary-btn" id="st_done">Save &amp; close</button></div></div>';
 
-    document.getElementById("st_soundEnabled").addEventListener("change", (e) => {
-      state.soundEnabled = e.target.checked;
+    document.getElementById("st_featureList").querySelectorAll("input.switch").forEach(sw => {
+      sw.addEventListener("change", () => {
+        setFeatureValue(sw.dataset.feature, sw.checked);
+        syncFeatureRows();
+        commit();
+      });
     });
+    syncFeatureRows();
     document.getElementById("st_soundVolume").addEventListener("input", (e) => {
       state.soundVolume = parseFloat(e.target.value);
     });
@@ -2026,10 +2434,6 @@
     document.getElementById("st_firstName").addEventListener("input", (e) => {
       state.firstName = e.target.value.trim();
       updateGreeting();
-    });
-    document.getElementById("st_showTimer").addEventListener("change", (e) => {
-      state.showTimer = e.target.checked;
-      render();
     });
     document.getElementById("st_done").addEventListener("click", () => {
       settingsDialog.close();
@@ -2132,7 +2536,7 @@
         blocks: state.blocks, savedForDate: state.savedForDate,
         soundEnabled: state.soundEnabled, soundVolume: state.soundVolume, speakEnabled: state.speakEnabled,
         firstName: state.firstName, showTimer: state.showTimer,
-        colorTheme: state.colorTheme, todos: state.todos
+        colorTheme: state.colorTheme, todos: state.todos, features: state.features, lastCategoryId: state.lastCategoryId
       };
       const { error } = await sb.from("timeanchor_state").upsert({
         user_id: currentUser.id, data: payload, updated_at: new Date().toISOString()
@@ -2157,7 +2561,7 @@
       Object.assign(state, local || {
         nudgeThreshold: 45, categories: defaultCategories(), blocks: defaultBlocks(), savedForDate: todayStr(),
         soundEnabled: true, soundVolume: 0.6, speakEnabled: false, firstName: "", showTimer: true,
-        colorTheme: "mixed", todos: []
+        colorTheme: "mixed", todos: [], features: normalizeFeatures(null), lastCategoryId: null
       });
       // The name typed at signup only fills in if nothing's already set
       // (e.g. no leftover local-only data on this device/browser already
@@ -2165,6 +2569,7 @@
       if (!state.firstName) state.firstName = (user.user_metadata && user.user_metadata.full_name) || "";
       await saveCloudState();
     }
+    state.features = normalizeFeatures(state.features);
     restoreThemeVars();
     finishBoot();
     setCloudStatus("synced", "Synced");
