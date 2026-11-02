@@ -1168,7 +1168,7 @@
   function setupSwipeGestures(containerId, rowSelector, findItem, onComplete, onDelete){
     const container = document.getElementById(containerId);
     if (!container) return;
-    const THRESHOLD = 56;
+    const THRESHOLD = 34;
     let a = null; // active, unresolved swipe: { row, content, startX, startY, dx, pointerId, locked }
 
     function resetRow(row, content){
