@@ -264,27 +264,25 @@
   .more-options-body{ padding-top:4px; }
 
   /* ---------- Layout ---------- */
+  /* Mobile only, deliberately: this app is a phone PWA, nobody's opening
+     it on a desktop, so there's no multi-column grid or breakpoint to
+     maintain — everything is just a single stacked column at phone width. */
   main.layout{
-    max-width:1120px; margin:0 auto; padding:20px;
-    display:grid; grid-template-columns: 380px 1fr; gap:20px; align-items:start;
-  }
-  @media (max-width: 880px){
-    main.layout{ grid-template-columns: 1fr; }
+    max-width:560px; margin:0 auto; padding:16px;
+    display:flex; flex-direction:column; gap:16px;
   }
   .panel{
     background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg);
     padding:18px;
   }
   .panel h2{ margin:0 0 10px 0; font-size:15px; }
-  .focus-panel{ position:sticky; top:78px; }
-  @media (max-width:880px){ .focus-panel{ position:static; } }
 
   footer.app-footer{
-    max-width:1120px; margin:0 auto; padding:8px 20px calc(40px + var(--safe-bottom)); color:var(--muted-2); font-size:12px;
+    max-width:560px; margin:0 auto; padding:8px 16px calc(40px + var(--safe-bottom)); color:var(--muted-2); font-size:12px;
   }
 
   .notice-banner{
-    max-width:1120px; margin:12px auto 0; padding:0 20px;
+    max-width:560px; margin:12px auto 0; padding:0 16px;
   }
   .notice-banner .inner{
     display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -1170,7 +1168,7 @@
   function setupSwipeGestures(containerId, rowSelector, findItem, onComplete, onDelete){
     const container = document.getElementById(containerId);
     if (!container) return;
-    const THRESHOLD = 88;
+    const THRESHOLD = 56;
     let a = null; // active swipe: { row, content, startX, startY, dx, pointerId, locked }
 
     container.addEventListener("pointerdown", (e) => {
@@ -1203,13 +1201,14 @@
       const dx = e.clientX - a.startX;
       const dy = e.clientY - a.startY;
       if (a.locked === null){
-        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-        // Needs to be CLEARLY more horizontal than vertical to lock in as
-        // a swipe — a real finger rarely moves in a perfectly straight
-        // line, and a strict dx > dy comparison was locking "y" (i.e.
-        // giving up on the swipe for good) on completely normal swipes
-        // that had even a little vertical wobble in their first few px.
-        a.locked = Math.abs(dx) > Math.abs(dy) * 1.3 ? "x" : "y";
+        if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+        // Only needs to lean horizontal, not be purely horizontal — a
+        // real finger rarely moves in a straight line, and too strict a
+        // ratio here either kills the swipe outright or (more subtly)
+        // delays when it locks in, which eats into the drag distance
+        // before anything visibly responds and makes the whole gesture
+        // feel like it needs way more travel than it actually does.
+        a.locked = Math.abs(dx) > Math.abs(dy) * 1.15 ? "x" : "y";
         if (a.locked === "x") { try { a.content.setPointerCapture(e.pointerId); } catch (err) {} }
       }
       if (a.locked !== "x") return;
