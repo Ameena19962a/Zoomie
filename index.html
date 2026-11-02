@@ -251,10 +251,38 @@
   /* Independent feature toggles — each one hides its section outright, not
      just visually de-emphasized, so "off" really means off. No markup is
      removed, just hidden, so flipping it back on needs no rebuild. */
-  body.feat-timeline-off #focusPanelSection,
+  body.feat-focus-off #focusPanelSection,
   body.feat-timeline-off #timelinePanelSection,
-  body.feat-timeline-off #newBlockBtn{ display:none; }
+  body.feat-blocks-off #newBlockBtn,
+  body.feat-quickadd-off #quickBlockForm,
+  body.feat-buffers-off .tl-gap,
+  body.feat-buffers-off .bd-buffer-option,
   body.feat-todo-off #todoPanelSection{ display:none; }
+  #allOffNotice{ display:none; text-align:center; color:var(--muted); font-size:14px; padding:28px 12px 4px; }
+  body.feat-all-off #allOffNotice{ display:block; }
+  .customize-row{ display:flex; justify-content:center; padding:4px 0 8px; }
+
+  /* Settings → Features: one switch per feature, big enough to tap. */
+  .feature-list{ border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:18px; }
+  .feature-row{ display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--card); cursor:pointer; }
+  .feature-row + .feature-row{ border-top:1px solid var(--border); }
+  .feature-row.sub{ padding-left:32px; }
+  .feature-row.is-disabled{ opacity:.45; cursor:default; }
+  .feature-text{ flex:1; min-width:0; }
+  .feature-name{ font-weight:600; font-size:14px; }
+  .feature-desc{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .switch{
+    appearance:none; -webkit-appearance:none; margin:0; flex-shrink:0; cursor:pointer;
+    width:46px; height:28px; border-radius:999px; background:var(--border); position:relative;
+    transition:background 150ms ease;
+  }
+  .switch::after{
+    content:""; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25); transition:transform 150ms ease;
+  }
+  .switch:checked{ background:var(--accent); }
+  .switch:checked::after{ transform:translateX(18px); }
+  .switch:disabled{ cursor:default; }
 
   /* Progressive disclosure for the New block form: steps and extras stay
      tucked away until asked for, so the form that opens by default is
@@ -339,7 +367,8 @@
   .focus-current{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; }
   .focus-current .big-pie{ margin:6px 0 2px; }
   .focus-title{ font-size:25px; font-weight:800; margin:0; line-height:1.25; }
-  .focus-time-range{ font-size:12.5px; color:var(--muted); }
+  .focus-time-range{ font-size:17px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; margin:4px 0; }
+  .focus-time-range .block-dur{ font-size:13px; font-weight:600; color:var(--muted); }
   .focus-remaining-text{ font-size:13.5px; margin:0; }
   .focus-actions{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:6px; }
 
@@ -425,6 +454,9 @@
   .block-main{ flex:1; min-width:0; }
   .block-top-line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .block-title{ font-weight:700; font-size:14px; margin:0; }
+  .block-time{ font-size:15.5px; font-weight:800; margin:0 0 5px; font-variant-numeric:tabular-nums; color:var(--text); }
+  .block-time .block-dur{ font-size:12.5px; font-weight:600; color:var(--muted); white-space:nowrap; }
+  .is-done .block-time{ color:var(--muted); }
   .block-meta{ font-size:12px; color:var(--muted); margin-top:3px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .status-tag{ font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted); }
   .status-tag.now{ color:#fff; background:var(--accent); border-color:var(--accent); }
@@ -574,6 +606,11 @@
     </form>
     <ul class="subtask-list" id="todoList" style="margin:0;"></ul>
   </section>
+
+  <p id="allOffNotice">Everything's switched off right now.</p>
+  <div class="customize-row">
+    <button type="button" class="text-btn" id="customizeBtn">Customize what you see</button>
+  </div>
 </main>
 
 <footer class="app-footer" id="mainFooter" style="display:none;">
@@ -843,6 +880,15 @@
   /* ---------------------------------------------------------------------
      State
   --------------------------------------------------------------------- */
+  const DEFAULT_FEATURES = { focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, todoList: true, celebrations: true };
+  // Older saves only had { timeline, todoList }, where timeline:false also
+  // hid the focus card and timer — keep that meaning for them.
+  function normalizeFeatures(f){
+    const out = Object.assign({}, DEFAULT_FEATURES, f || {});
+    if (f && f.timeline === false && f.focus === undefined){ out.focus = false; out.timer = false; }
+    return out;
+  }
+
   const persisted = loadPersisted();
   const state = persisted ? {
     nudgeThreshold: persisted.nudgeThreshold || 45,
@@ -856,7 +902,7 @@
     showTimer: persisted.showTimer !== false,
     colorTheme: persisted.colorTheme || "mixed",
     todos: Array.isArray(persisted.todos) ? persisted.todos : [],
-    features: persisted.features || { timeline: true, todoList: true },
+    features: normalizeFeatures(persisted.features),
     lastCategoryId: persisted.lastCategoryId || null,
     demoOffset: 0,
     speed: 1
@@ -872,7 +918,7 @@
     showTimer: true,
     colorTheme: "mixed",
     todos: [],
-    features: { timeline: true, todoList: true },
+    features: normalizeFeatures(null),
     lastCategoryId: null,
     demoOffset: 0,
     speed: 1
@@ -1130,14 +1176,14 @@
     if (!b || b.status === "done" || b.status === "skipped") return;
     b.status = "done";
     commit();
-    celebrateBurst(x, y);
+    if (state.features.celebrations) celebrateBurst(x, y);
     playCompletionChime();
   }
   function completeTodo(t, x, y){
     if (!t || t.done) return;
     t.done = true;
     commit();
-    celebrateBurst(x, y);
+    if (state.features.celebrations) celebrateBurst(x, y);
     playCompletionChime();
   }
   function deleteBlockWithConfirm(b){
@@ -1398,7 +1444,9 @@
     const cat = catFor(cur);
     const { remaining, fraction, overrun } = timeInfo(cur);
     const holeLabel = overrun ? "Time's up" : (Math.ceil(remaining) + "m");
-    const pie = state.showTimer
+    const timerOn = state.features.timer;
+    const pie = !timerOn ? ""
+      : state.showTimer
       ? pieMarkup(fraction, cat.color, 120, 0.62, holeLabel, overrun, "focusPie")
       : '<div class="timer-off-display" style="font-size:28px;font-weight:800;padding:8px 0;color:' + (overrun ? "var(--danger-quiet)" : readableChipText(cat.color)) + ';">' + holeLabel + '</div>';
 
@@ -1443,10 +1491,10 @@
     el.innerHTML =
       '<div class="focus-current">' +
         '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
-        '<div class="big-pie">' + pie + '</div>' +
+        (pie ? '<div class="big-pie">' + pie + '</div>' : '') +
         '<p class="focus-title">' + escapeHtml(cur.title) + '</p>' +
-        '<p class="focus-time-range">' + fmtClock(cur.start) + '&ndash;' + fmtClock(cur.start + cur.duration) + ' &middot; ' + fmtDuration(cur.duration) + (overrun ? " (running over)" : "") + '</p>' +
-        '<p class="focus-remaining-text" id="focusRemainingText">' + remainingSentence(cur, remaining, overrun) + '</p>' +
+        '<p class="focus-time-range">' + fmtClock(cur.start) + ' &ndash; ' + fmtClock(cur.start + cur.duration) + ' <span class="block-dur">&middot; ' + fmtDuration(cur.duration) + (overrun ? " (running over)" : "") + '</span></p>' +
+        (timerOn ? '<p class="focus-remaining-text" id="focusRemainingText">' + remainingSentence(cur, remaining, overrun) + '</p>' : '') +
         subtasksHtml +
         soundtrackHtml +
         overrunHtml +
@@ -1504,7 +1552,7 @@
       const st = statusFor(block, curId);
       const isCurrent = block.id === curId;
       let miniTimer = "";
-      if (isCurrent && state.showTimer){
+      if (isCurrent && state.showTimer && state.features.timer){
         const { fraction, overrun } = timeInfo(block);
         miniTimer = pieMarkup(fraction, cat.color, 40, 0.5, "", overrun, "timelineMiniPie");
       }
@@ -1522,15 +1570,15 @@
           '<div class="swipe-content' + (block.isBuffer ? " is-buffer" : "") + '" style="border-left-color:' + cat.color + ';">' +
             (miniTimer ? miniTimer : "") +
             '<div class="block-main">' +
+              '<p class="block-time"><span style="white-space:nowrap;">' + fmtClock(block.start) + ' &ndash; ' + fmtClock(block.start + block.duration) + '</span> <span class="block-dur">' + fmtDuration(block.duration) + '</span></p>' +
               '<div class="block-top-line">' +
                 '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
                 '<p class="block-title">' + escapeHtml(block.title) + '</p>' +
               '</div>' +
-              '<div class="block-meta">' +
-                '<span>' + fmtClock(block.start) + '&ndash;' + fmtClock(block.start + block.duration) + ' &middot; ' + fmtDuration(block.duration) + '</span>' +
+              (st || subtaskBadge ? '<div class="block-meta">' +
                 (st ? '<span class="status-tag ' + st.cls + '">' + st.label + '</span>' : "") +
                 subtaskBadge +
-              '</div>' +
+              '</div>' : '') +
             '</div>' +
             '<div class="block-actions">' +
               '<button type="button" class="icon-mini" data-action="edit" data-id="' + block.id + '" aria-label="Edit ' + escapeAttr(block.title) + '">✏️</button>' +
@@ -1560,9 +1608,15 @@
   }
 
   function applyFeatureVisibility(){
-    const f = state.features || {};
-    document.body.classList.toggle("feat-timeline-off", f.timeline === false);
-    document.body.classList.toggle("feat-todo-off", f.todoList === false);
+    const f = state.features;
+    const cl = document.body.classList;
+    cl.toggle("feat-focus-off", !f.focus);
+    cl.toggle("feat-timeline-off", !f.timeline);
+    cl.toggle("feat-blocks-off", !f.focus && !f.timeline);
+    cl.toggle("feat-quickadd-off", !f.quickAdd);
+    cl.toggle("feat-buffers-off", !f.buffers);
+    cl.toggle("feat-todo-off", !f.todoList);
+    cl.toggle("feat-all-off", !f.focus && !f.timeline && !f.todoList);
   }
 
   // Runs every 200ms (tick) without touching any button/row markup — only
@@ -2023,7 +2077,7 @@
               '<input type="checkbox" id="bd_soundtrack" ' + (soundtrackEnabled ? "checked" : "") + '>' +
               '<label for="bd_soundtrack">Play a timer-length soundtrack for this block (prototype stub)</label>' +
             '</div>' +
-            '<div class="checkbox-field">' +
+            '<div class="checkbox-field bd-buffer-option">' +
               '<input type="checkbox" id="bd_addBuffer">' +
               '<label for="bd_addBuffer">Add a short buffer right after this block</label>' +
             '</div>' +
@@ -2214,30 +2268,66 @@
     settingsDialog.showModal();
   });
 
+  document.getElementById("customizeBtn").addEventListener("click", () => {
+    renderSettingsDialog();
+    settingsDialog.showModal();
+  });
+
+  // `requires` greys a row out while the feature it lives inside is off.
+  const FEATURE_TOGGLES = [
+    { key: "focus", name: "Right now card", desc: "What you're on now, with its buttons" },
+    { key: "timer", name: "Countdown timer", desc: "Time left on the current block" },
+    { key: "timerShape", name: "Show as a shrinking circle", desc: "Off shows just the minutes", sub: true, requires: "timer" },
+    { key: "timeline", name: "Day timeline", desc: "Today's blocks, in order" },
+    { key: "quickAdd", name: "Quick add", desc: "One-line box to add a block fast", sub: true, requires: "timeline" },
+    { key: "buffers", name: "Buffers", desc: "“+ buffer” buttons for breathing room", sub: true, requires: "timeline" },
+    { key: "todoList", name: "To-do list", desc: "Untimed things to get to today" },
+    { key: "celebrations", name: "Celebrations", desc: "Burst of color when you finish something" },
+    { key: "sounds", name: "Sounds", desc: "Soft chime when a block starts or you finish" }
+  ];
+  function featureValue(key){
+    if (key === "sounds") return state.soundEnabled;
+    if (key === "timerShape") return state.showTimer;
+    return !!state.features[key];
+  }
+  function setFeatureValue(key, on){
+    if (key === "sounds") state.soundEnabled = on;
+    else if (key === "timerShape") state.showTimer = on;
+    else state.features[key] = on;
+  }
+  function syncFeatureRows(){
+    FEATURE_TOGGLES.forEach(t => {
+      if (!t.requires) return;
+      const row = document.querySelector('#st_featureList .feature-row[data-feature="' + t.key + '"]');
+      if (!row) return;
+      const enabled = featureValue(t.requires);
+      row.classList.toggle("is-disabled", !enabled);
+      row.querySelector("input").disabled = !enabled;
+    });
+  }
+
   function renderSettingsDialog(){
     const inner = document.getElementById("settingsDialogInner");
     inner.innerHTML =
       '<h2 id="settingsDialogTitle">Settings</h2>' +
       '<p class="dialog-sub">Saved on this device' + (cloudEnabled && currentUser && !offlineMode ? ' and synced to your account.' : '.') + '</p>' +
 
-      '<h3 style="font-size:13.5px;margin:0 0 8px;">Features</h3>' +
-      '<p class="dialog-sub" style="margin-bottom:8px;">Turn off anything you don\'t need.</p>' +
-      '<div class="checkbox-field">' +
-        '<input type="checkbox" id="st_featTimeline" ' + (state.features.timeline !== false ? "checked" : "") + '>' +
-        '<label for="st_featTimeline">Timed schedule — today\'s timeline, the focus panel, and the shrinking timer</label>' +
-      '</div>' +
-      '<div class="checkbox-field" style="margin-bottom:16px;">' +
-        '<input type="checkbox" id="st_featTodo" ' + (state.features.todoList !== false ? "checked" : "") + '>' +
-        '<label for="st_featTodo">To-do list</label>' +
+      '<h3 style="font-size:13.5px;margin:0 0 4px;">Features</h3>' +
+      '<p class="dialog-sub" style="margin-bottom:10px;">Switch off anything you don\'t need. Nothing is deleted &mdash; switch it back on any time.</p>' +
+      '<div class="feature-list" id="st_featureList">' +
+        FEATURE_TOGGLES.map(t =>
+          '<label class="feature-row' + (t.sub ? ' sub' : '') + '" data-feature="' + t.key + '">' +
+            '<span class="feature-text">' +
+              '<span class="feature-name">' + t.name + '</span>' +
+              '<span class="feature-desc" style="display:block;">' + t.desc + '</span>' +
+            '</span>' +
+            '<input type="checkbox" class="switch" role="switch" data-feature="' + t.key + '" aria-label="' + escapeAttr(t.name) + '"' + (featureValue(t.key) ? ' checked' : '') + '>' +
+          '</label>'
+        ).join('') +
       '</div>' +
 
       '<div class="field"><label for="st_firstName">Your name</label>' +
         '<input type="text" id="st_firstName" value="' + escapeAttr(state.firstName) + '" placeholder="e.g. Sam"></div>' +
-
-      '<div class="checkbox-field">' +
-        '<input type="checkbox" id="st_showTimer" ' + (state.showTimer ? "checked" : "") + '>' +
-        '<label for="st_showTimer">Show the shrinking timer shape (turn off for just the number)</label>' +
-      '</div>' +
 
       '<h3 style="font-size:13.5px;margin:16px 0 8px;">Color theme</h3>' +
       '<p class="dialog-sub" style="margin-bottom:8px;">Recolors all categories at once &mdash; you can still fine-tune individual colors below afterward.</p>' +
@@ -2259,10 +2349,6 @@
       '<details class="more-options" id="st_soundDetails"' + (state.soundEnabled || state.speakEnabled ? " open" : "") + '>' +
         '<summary>Sound &amp; voice</summary>' +
         '<div class="more-options-body">' +
-          '<div class="checkbox-field">' +
-            '<input type="checkbox" id="st_soundEnabled" ' + (state.soundEnabled ? "checked" : "") + '>' +
-            '<label for="st_soundEnabled">Play a soft chime when a block starts or a task is marked done</label>' +
-          '</div>' +
           '<div class="field">' +
             '<label for="st_soundVolume">Volume</label>' +
             '<input type="range" id="st_soundVolume" min="0" max="1" step="0.1" value="' + state.soundVolume + '" style="width:100%;">' +
@@ -2303,9 +2389,14 @@
 
       '<div class="dialog-actions"><div></div><div class="right-group"><button type="button" class="primary-btn" id="st_done">Save &amp; close</button></div></div>';
 
-    document.getElementById("st_soundEnabled").addEventListener("change", (e) => {
-      state.soundEnabled = e.target.checked;
+    document.getElementById("st_featureList").querySelectorAll("input.switch").forEach(sw => {
+      sw.addEventListener("change", () => {
+        setFeatureValue(sw.dataset.feature, sw.checked);
+        syncFeatureRows();
+        commit();
+      });
     });
+    syncFeatureRows();
     document.getElementById("st_soundVolume").addEventListener("input", (e) => {
       state.soundVolume = parseFloat(e.target.value);
     });
@@ -2340,21 +2431,9 @@
         renderSettingsDialog();
       });
     });
-    document.getElementById("st_featTimeline").addEventListener("change", (e) => {
-      state.features.timeline = e.target.checked;
-      commit();
-    });
-    document.getElementById("st_featTodo").addEventListener("change", (e) => {
-      state.features.todoList = e.target.checked;
-      commit();
-    });
     document.getElementById("st_firstName").addEventListener("input", (e) => {
       state.firstName = e.target.value.trim();
       updateGreeting();
-    });
-    document.getElementById("st_showTimer").addEventListener("change", (e) => {
-      state.showTimer = e.target.checked;
-      render();
     });
     document.getElementById("st_done").addEventListener("click", () => {
       settingsDialog.close();
@@ -2482,7 +2561,7 @@
       Object.assign(state, local || {
         nudgeThreshold: 45, categories: defaultCategories(), blocks: defaultBlocks(), savedForDate: todayStr(),
         soundEnabled: true, soundVolume: 0.6, speakEnabled: false, firstName: "", showTimer: true,
-        colorTheme: "mixed", todos: [], features: { timeline: true, todoList: true }, lastCategoryId: null
+        colorTheme: "mixed", todos: [], features: normalizeFeatures(null), lastCategoryId: null
       });
       // The name typed at signup only fills in if nothing's already set
       // (e.g. no leftover local-only data on this device/browser already
@@ -2490,6 +2569,7 @@
       if (!state.firstName) state.firstName = (user.user_metadata && user.user_metadata.full_name) || "";
       await saveCloudState();
     }
+    state.features = normalizeFeatures(state.features);
     restoreThemeVars();
     finishBoot();
     setCloudStatus("synced", "Synced");
