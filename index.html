@@ -1911,7 +1911,18 @@
     const b = state.blocks.find(x => x.id === t.dataset.block);
     if (!b) return;
     const st = (b.subtasks || []).find(s => s.id === t.dataset.sub);
-    if (st) { st.done = t.checked; commit(); }
+    if (!st) return;
+    st.done = t.checked;
+    // Checking off the last step of a task is, in effect, finishing the
+    // task — it should celebrate the same way swiping it done does,
+    // instead of silently doing nothing (the gap behind "the task itself
+    // didn't work" while a plain swipe on a step-free buffer did).
+    if (t.checked && b.status === "pending" && b.subtasks.length && b.subtasks.every(s => s.done)){
+      const r = t.getBoundingClientRect();
+      completeBlock(b, r.left + r.width / 2, r.top + r.height / 2);
+    } else {
+      commit();
+    }
   });
 
   function insertBufferAfter(afterId){
