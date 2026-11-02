@@ -355,16 +355,22 @@
   .subtask-list .subtask-title{ flex:1; min-width:0; }
   .subtask-est{ margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
 
-  /* Swipe-to-complete (to-do rows only — block "steps" checklists keep the
-     plain .subtask-list li look above). Swiping right reveals this green
-     layer; releasing past the threshold marks it done. The sliding
-     foreground carries the row's normal look so at rest it's unchanged. */
+  /* Swipe-to-complete / swipe-to-delete (to-do rows only — block "steps"
+     checklists keep the plain .subtask-list li look above). Swiping right
+     reveals the green layer (release past the threshold completes it);
+     swiping left reveals the red one (release past threshold deletes it).
+     Both bg layers sit stacked underneath; only the one being dragged
+     toward is opaque. The sliding foreground carries the row's normal
+     look so at rest it's unchanged. */
   #todoList li{ position:relative; overflow:hidden; padding:0; border:none; background:transparent; border-radius:8px; }
-  #todoList .swipe-bg{
-    position:absolute; inset:0; display:flex; align-items:center; gap:6px;
-    padding-left:14px; background:#5c9c76; color:#fff; font-weight:700; font-size:12.5px; border-radius:8px;
+  #todoList .swipe-bg-right, #todoList .swipe-bg-left{
+    position:absolute; inset:0; display:flex; align-items:center; font-weight:700; font-size:12.5px; border-radius:8px; opacity:0;
   }
-  #todoList li.swipe-armed .swipe-bg{ background:#4a8863; }
+  #todoList .swipe-bg-right{ justify-content:flex-start; padding-left:14px; background:#5c9c76; color:#fff; }
+  #todoList .swipe-bg-left{ justify-content:flex-end; padding-right:14px; background:#c1595a; color:#fff; }
+  #todoList li.swipe-right .swipe-bg-right, #todoList li.swipe-left .swipe-bg-left{ opacity:1; }
+  #todoList li.swipe-armed-right .swipe-bg-right{ background:#4a8863; }
+  #todoList li.swipe-armed-left .swipe-bg-left{ background:#a84546; }
   #todoList .swipe-content{
     position:relative; display:flex; align-items:center; gap:8px; font-size:13px;
     padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:var(--bg);
@@ -392,11 +398,14 @@
   .tl-gap button:hover, .tl-gap button:focus-visible{ color:var(--text); border-color:var(--accent); }
 
   .block-row{ position:relative; overflow:hidden; border-radius:var(--radius-md); margin:6px 0; }
-  .block-row .swipe-bg{
-    position:absolute; inset:0; display:flex; align-items:center; gap:6px;
-    padding-left:20px; background:#5c9c76; color:#fff; font-weight:700; font-size:13px; border-radius:var(--radius-md);
+  .block-row .swipe-bg-right, .block-row .swipe-bg-left{
+    position:absolute; inset:0; display:flex; align-items:center; font-weight:700; font-size:13px; border-radius:var(--radius-md); opacity:0;
   }
-  .block-row.swipe-armed .swipe-bg{ background:#4a8863; }
+  .block-row .swipe-bg-right{ justify-content:flex-start; padding-left:20px; background:#5c9c76; color:#fff; }
+  .block-row .swipe-bg-left{ justify-content:flex-end; padding-right:20px; background:#c1595a; color:#fff; }
+  .block-row.swipe-right .swipe-bg-right, .block-row.swipe-left .swipe-bg-left{ opacity:1; }
+  .block-row.swipe-armed-right .swipe-bg-right{ background:#4a8863; }
+  .block-row.swipe-armed-left .swipe-bg-left{ background:#a84546; }
   .block-row .swipe-content{
     position:relative; display:flex; gap:12px; align-items:flex-start;
     background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
@@ -1065,7 +1074,10 @@
     const msg = document.createElement("span");
     msg.className = "celebrate-message";
     msg.textContent = CELEBRATE_MESSAGES[Math.floor(Math.random() * CELEBRATE_MESSAGES.length)];
-    msg.style.left = x + "px";
+    // Clamped defensively — x is normally a row's center now, never a
+    // pointer's release position, but this keeps the message on-screen
+    // even if some future caller passes a near-edge coordinate.
+    msg.style.left = clamp(x, 70, (window.innerWidth || 1) - 70) + "px";
     msg.style.top = Math.max(8, y - 40) + "px";
     document.body.appendChild(msg);
     setTimeout(() => msg.remove(), 1500);
@@ -1102,6 +1114,13 @@
     } catch (e) { /* the visual celebration still communicates completion without sound */ }
   }
 
+  // Celebration is always centered on the row itself, never on wherever
+  // the pointer happened to end up — a swipe-right release sits right at
+  // the screen edge, which clipped the message before this.
+  function rowCenter(row){
+    const r = row.getBoundingClientRect();
+    return [r.left + r.width / 2, r.top + r.height / 2];
+  }
   function completeBlock(b, x, y){
     if (!b || b.status === "done" || b.status === "skipped") return;
     b.status = "done";
@@ -1116,17 +1135,39 @@
     celebrateBurst(x, y);
     playCompletionChime();
   }
+  function deleteBlockWithConfirm(b){
+    if (!b) return;
+    showConfirm('Delete "' + b.title + '"? This can\'t be undone.', () => {
+      state.blocks = state.blocks.filter(x => x.id !== b.id);
+      commit();
+    });
+  }
+  function deleteTodo(t){
+    if (!t) return;
+    state.todos = state.todos.filter(x => x.id !== t.id);
+    commit();
+  }
 
   /* ---------------------------------------------------------------------
-     Swipe-to-complete — the single way to mark a block or to-do done (the
-     to-do checkbox stays too, as a tap alternative; it just doesn't
-     celebrate the way completing something via swipe does). Delegated
-     Pointer Events on the stable list containers (never replaced, only
-     their children are, on re-render) so the listeners survive renders.
-     A short pointer-move before locking onto horizontal vs. vertical means
-     a normal scroll gesture never gets mistaken for a swipe.
+     Swipe-to-complete / swipe-to-delete — the single way to mark a block
+     or to-do done, or to remove it (the to-do checkbox stays too, as a
+     tap alternative for completing; it just doesn't celebrate the way
+     completing something via swipe does). Delegated Pointer Events on the
+     stable list containers (never replaced, only their children are, on
+     re-render) so the listeners survive renders. A short pointer-move
+     before locking onto horizontal vs. vertical means a normal scroll
+     gesture never gets mistaken for a swipe. Deleting a block asks first
+     (matching the old delete button); deleting a to-do doesn't, matching
+     how its delete button always worked.
   --------------------------------------------------------------------- */
-  function setupSwipeToComplete(containerId, rowSelector, findItem, onComplete){
+  // While true, tick()'s periodic structural re-render is skipped — it
+  // rebuilds #timelineList's whole innerHTML, which would yank the very
+  // row a gesture is mid-drag on out of the DOM (and silently drop its
+  // pointer capture with it), losing the swipe. A render is never more
+  // than ~200ms late because of this, which a human can't perceive.
+  let swipeGestureActive = false;
+
+  function setupSwipeGestures(containerId, rowSelector, findItem, onComplete, onDelete){
     const container = document.getElementById(containerId);
     if (!container) return;
     const THRESHOLD = 88;
@@ -1143,6 +1184,7 @@
       const content = row.querySelector(".swipe-content");
       if (!content) return;
       a = { row, content, startX: e.clientX, startY: e.clientY, dx: 0, pointerId: e.pointerId, locked: null };
+      swipeGestureActive = true;
     });
 
     container.addEventListener("pointermove", (e) => {
@@ -1156,23 +1198,36 @@
       }
       if (a.locked !== "x") return;
       e.preventDefault();
-      a.dx = Math.max(0, dx);
+      a.dx = dx;
       a.content.style.transform = "translateX(" + a.dx + "px)";
-      a.row.classList.toggle("swipe-armed", a.dx > THRESHOLD);
+      a.row.classList.toggle("swipe-right", a.dx > 0);
+      a.row.classList.toggle("swipe-left", a.dx < 0);
+      a.row.classList.toggle("swipe-armed-right", a.dx > THRESHOLD);
+      a.row.classList.toggle("swipe-armed-left", a.dx < -THRESHOLD);
     });
+
+    function resetRow(row, content){
+      content.style.transform = "translateX(0)";
+      row.classList.remove("swipe-right", "swipe-left", "swipe-armed-right", "swipe-armed-left");
+    }
 
     function endSwipe(e){
       if (!a || e.pointerId !== a.pointerId) return;
       const done = a;
       a = null;
+      swipeGestureActive = false;
       done.content.style.transition = "transform 160ms ease";
       if (done.dx > THRESHOLD){
         done.content.style.transform = "translateX(140%)";
         const item = findItem(done.row.dataset.id);
-        setTimeout(() => onComplete(item, e.clientX, e.clientY), 120);
+        const [cx, cy] = rowCenter(done.row);
+        setTimeout(() => onComplete(item, cx, cy), 120);
+      } else if (done.dx < -THRESHOLD){
+        const item = findItem(done.row.dataset.id);
+        if (onDelete) onDelete(item, done.row, done.content, () => resetRow(done.row, done.content));
+        else resetRow(done.row, done.content);
       } else {
-        done.content.style.transform = "translateX(0)";
-        done.row.classList.remove("swipe-armed");
+        resetRow(done.row, done.content);
       }
       setTimeout(() => { done.content.style.transition = ""; }, 220);
     }
@@ -1390,7 +1445,8 @@
       const swipeable = block.status !== "done" && block.status !== "skipped";
       html +=
         '<div class="block-row' + (isCurrent ? " is-current" : "") + (swipeable ? "" : " is-done") + '" data-id="' + block.id + '">' +
-          (swipeable ? '<div class="swipe-bg">✓ Done — swipe to complete</div>' : "") +
+          (swipeable ? '<div class="swipe-bg-right">✓ Done</div>' : "") +
+          '<div class="swipe-bg-left">🗑 Delete</div>' +
           '<div class="swipe-content' + (block.isBuffer ? " is-buffer" : "") + '" style="border-left-color:' + cat.color + ';">' +
             (miniTimer ? miniTimer : "") +
             '<div class="block-main">' +
@@ -1406,7 +1462,6 @@
             '</div>' +
             '<div class="block-actions">' +
               '<button type="button" class="icon-mini" data-action="edit" data-id="' + block.id + '" aria-label="Edit ' + escapeAttr(block.title) + '">✏️</button>' +
-              '<button type="button" class="icon-mini" data-action="delete" data-id="' + block.id + '" aria-label="Delete ' + escapeAttr(block.title) + '">🗑️</button>' +
             '</div>' +
           '</div>' +
         '</div>';
@@ -1482,11 +1537,11 @@
     if (!list) return;
     list.innerHTML = state.todos.map(t =>
       '<li class="' + (t.done ? "done" : "") + '" data-id="' + t.id + '">' +
-        (t.done ? "" : '<div class="swipe-bg">✓ Done — swipe to complete</div>') +
+        (t.done ? "" : '<div class="swipe-bg-right">✓ Done</div>') +
+        '<div class="swipe-bg-left">🗑 Delete</div>' +
         '<div class="swipe-content">' +
           '<input type="checkbox" id="todo_' + t.id + '" data-action="toggle-todo" data-id="' + t.id + '" ' + (t.done ? "checked" : "") + ' aria-label="Mark \'' + escapeAttr(t.title) + '\' done">' +
           '<label class="subtask-title" for="todo_' + t.id + '">' + escapeHtml(t.title) + '</label>' +
-          '<button type="button" class="icon-mini" data-action="delete-todo" data-id="' + t.id + '" style="margin-left:auto;" aria-label="Delete ' + escapeAttr(t.title) + '">🗑️</button>' +
         '</div>' +
       '</li>'
     ).join("") || '<p style="color:var(--muted);font-size:13px;margin:0;">Nothing on the list yet.</p>';
@@ -1602,7 +1657,7 @@
   const STRUCTURAL_RENDER_EVERY_TICKS = 150; // ~30s safety-net resync (e.g. "Upcoming" -> "Waiting" labels)
   let lastTickMs = performance.now();
   function tick(){
-    if (!appBooted) return;
+    if (!appBooted || swipeGestureActive) return;
     const now = performance.now();
     const deltaSec = (now - lastTickMs) / 1000;
     lastTickMs = now;
@@ -1672,14 +1727,6 @@
       if (b) openBlockForm(b);
       return;
     }
-    if (action === "delete"){
-      const b = state.blocks.find(x => x.id === t.dataset.id);
-      if (b) showConfirm('Delete "' + b.title + '"? This can\'t be undone.', () => {
-        state.blocks = state.blocks.filter(x => x.id !== b.id);
-        commit();
-      });
-      return;
-    }
     if (action === "insert-buffer"){
       insertBufferAfter(t.dataset.after);
       return;
@@ -1725,12 +1772,6 @@
       clearLowCapacityDay();
       return;
     }
-    if (action === "delete-todo"){
-      const delId = t.dataset.id;
-      state.todos = state.todos.filter(td => td.id !== delId);
-      commit();
-      return;
-    }
   });
 
   const todoForm = document.getElementById("todoForm");
@@ -1744,8 +1785,21 @@
     commit();
   });
 
-  setupSwipeToComplete("timelineList", ".block-row", (id) => state.blocks.find(b => b.id === id), completeBlock);
-  setupSwipeToComplete("todoList", "li", (id) => state.todos.find(t => t.id === id), completeTodo);
+  setupSwipeGestures(
+    "timelineList", ".block-row",
+    (id) => state.blocks.find(b => b.id === id),
+    completeBlock,
+    (item, row, content, reset) => { reset(); deleteBlockWithConfirm(item); }
+  );
+  setupSwipeGestures(
+    "todoList", "li",
+    (id) => state.todos.find(t => t.id === id),
+    completeTodo,
+    (item, row, content, reset) => {
+      content.style.transform = "translateX(-140%)";
+      setTimeout(() => deleteTodo(item), 120);
+    }
+  );
 
   // Quick-add for blocks — just a title, no dialog. Everything else
   // (category, start time, duration) gets a sensible default so the block
