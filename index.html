@@ -1221,7 +1221,13 @@
       if (!row) return;
       const content = row.querySelector(".swipe-content");
       if (!content) return;
-      const started = { row, content, startX: e.clientX, startY: e.clientY, dx: 0, pointerId: e.pointerId, locked: null };
+      // An already-completed row has no "done" action left — only delete.
+      // Without this, swiping right still played the complete-and-slide-
+      // away animation even though onComplete's status guard silently did
+      // nothing, leaving the row's content permanently slid off-screen
+      // (blank) with no re-render ever bringing it back.
+      const alreadyDone = row.classList.contains("is-done") || row.classList.contains("done");
+      const started = { row, content, startX: e.clientX, startY: e.clientY, dx: 0, pointerId: e.pointerId, locked: null, alreadyDone };
       a = started;
       swipeGestureActive = true;
       // Self-healing safety net: a real touch gesture can be interrupted
@@ -1273,7 +1279,10 @@
         // That was the actual bug behind "barely moves, then snaps back."
       }
       e.preventDefault();
-      a.dx = dx;
+      // Clamp to leftward-only (delete) once a row is already done — it
+      // never gets to visually arm, let alone resolve, a "complete" swipe
+      // it has no action for.
+      a.dx = a.alreadyDone ? Math.min(dx, 0) : dx;
       a.content.style.transform = "translateX(" + a.dx + "px)";
       a.row.classList.toggle("swipe-right", a.dx > 0);
       a.row.classList.toggle("swipe-left", a.dx < 0);
