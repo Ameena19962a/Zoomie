@@ -958,7 +958,11 @@
   }
   function persist(){
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot()));
+    } catch (e) { /* storage unavailable — app still works for this session */ }
+  }
+  function snapshot(){
+    return ({
         nudgeThreshold: state.nudgeThreshold,
         categories: state.categories,
         blocks: state.blocks,
@@ -975,8 +979,7 @@
         ui: state.ui,
         brainDump: state.brainDump,
         history: state.history
-      }));
-    } catch (e) { /* storage unavailable — app still works for this session */ }
+      });
   }
 
   /* ---------------------------------------------------------------------
@@ -2912,6 +2915,52 @@
     settingsDialog.showModal();
   });
 
+  /* ---------------------------------------------------------------------
+     Backup: the whole saved state as one JSON file. Restoring writes it
+     back to storage and reloads, so it goes through the same checks and
+     upgrades as a normal start.
+  --------------------------------------------------------------------- */
+  async function exportBackup(){
+    const json = JSON.stringify({ app: "TimeAnchor", version: 1, savedAt: new Date().toISOString(), data: snapshot() }, null, 2);
+    const name = "timeanchor-backup-" + todayStr() + ".json";
+    try {
+      const file = new File([json], name, { type: "application/json" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], title: "TimeAnchor backup" });
+        return;
+      }
+    } catch (e) {
+      if (e && e.name === "AbortError") return;
+    }
+    const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  function importBackup(file){
+    if (file.size > 5 * 1024 * 1024){ showNotice("That file is too big to be a TimeAnchor backup."); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      let data;
+      try {
+        const parsed = JSON.parse(reader.result);
+        data = parsed && parsed.app === "TimeAnchor" ? parsed.data : parsed;
+      } catch (e) { data = null; }
+      if (!data || !Array.isArray(data.blocks) || !Array.isArray(data.categories)){
+        settingsDialog.close();
+        showNotice("That doesn't look like a TimeAnchor backup, so nothing was changed.");
+        return;
+      }
+      showConfirm("Replace everything on this phone with this backup? What's here now will be overwritten.", () => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        location.reload();
+      }, "Load backup");
+    };
+    reader.readAsText(file);
+  }
+
   // `requires` greys a row out while the feature it lives inside is off.
   const FEATURE_TOGGLES = [
     { group: "today", key: "focus", name: () => nameOf("focus") + " card", desc: "What you're on now, with its buttons" },
@@ -3086,6 +3135,18 @@
         '</div>' +
       '</details>' +
 
+      '<details class="more-options" id="st_backupDetails">' +
+        '<summary>Backup <span>&mdash; keep your data safe</span></summary>' +
+        '<div class="more-options-body">' +
+          '<p class="dialog-sub" style="margin-bottom:10px;">Everything lives only on this phone. Save a backup file now and then (to Files, email, or anywhere you like) so a new phone or a cleared browser doesn\'t lose it.</p>' +
+          '<div class="field" style="display:flex;gap:8px;flex-wrap:wrap;">' +
+            '<button type="button" class="ghost-btn" id="st_exportBtn">💾 Save a backup</button>' +
+            '<button type="button" class="ghost-btn" id="st_importBtn">📂 Load a backup</button>' +
+            '<input type="file" id="st_importFile" accept=".json,application/json" hidden>' +
+          '</div>' +
+        '</div>' +
+      '</details>' +
+
       '<details class="more-options" id="st_testingDetails">' +
         '<summary>Testing tools</summary>' +
         '<div class="more-options-body">' +
@@ -3198,6 +3259,13 @@
     document.getElementById("st_firstName").addEventListener("input", (e) => {
       state.firstName = e.target.value.trim();
       updateGreeting();
+    });
+    document.getElementById("st_exportBtn").addEventListener("click", exportBackup);
+    document.getElementById("st_importBtn").addEventListener("click", () => document.getElementById("st_importFile").click());
+    document.getElementById("st_importFile").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (file) importBackup(file);
     });
     document.getElementById("st_done").addEventListener("click", () => {
       settingsDialog.close();
