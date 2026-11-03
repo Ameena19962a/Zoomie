@@ -338,6 +338,30 @@
   button.dump-dest::after{ content:" ⇄"; font-weight:400; }
   .dump-empty{ color:var(--muted); font-size:13px; margin:14px 0 0; }
 
+  /* ---------- Day jar ---------- */
+  body.feat-dayjar-off #jarPanelSection{ display:none; }
+  .jar-panel{ padding:14px 18px; }
+  .jar-wrap{ display:flex; align-items:center; gap:16px; }
+  .jar-svg{ width:78px; height:100px; flex:none; overflow:visible; }
+  .jar-outline{ fill:none; stroke:var(--muted); stroke-width:3; stroke-linejoin:round; }
+  .jar-lid{ fill:var(--track); stroke:var(--muted); stroke-width:3; }
+  .jar-fill{ fill:var(--accent); opacity:.2; transition:y 1s ease, height 1s ease; }
+  .jar-surface{ stroke:var(--accent); stroke-width:2; opacity:.45; transition:transform 1s ease; }
+  .jar-marble{ stroke:rgba(0,0,0,.18); stroke-width:1; }
+  .jar-shine{ fill:#fff; opacity:.55; }
+  .jar-text h2{ margin:0 0 4px; font-size:15px; }
+  .jar-text p{ margin:0; font-size:13px; color:var(--muted); line-height:1.45; }
+  .jar-text .jar-period{ color:var(--text); font-weight:700; font-size:14px; margin-bottom:4px; }
+  @media not (prefers-reduced-motion: reduce){
+    .jar-marble-g.drop{ animation: marbleDrop 700ms cubic-bezier(.3,.6,.4,1.2) both; }
+  }
+  @keyframes marbleDrop{
+    0%{ transform:translateY(-95px); opacity:0; }
+    20%{ opacity:1; }
+    80%{ transform:translateY(3px); }
+    100%{ transform:translateY(0); }
+  }
+
   /* ---------- Energy ---------- */
   .energy-chip{
     flex:none; margin-left:auto; min-width:36px; height:30px; padding:0 8px; border-radius:999px;
@@ -657,6 +681,9 @@
 
 <main class="layout" id="mainApp" style="display:none;">
  <div class="tab-panel" data-tab="today">
+  <section class="panel jar-panel" id="jarPanelSection" aria-label="Your day jar">
+    <div id="jarBody"></div>
+  </section>
   <section class="panel focus-panel" id="focusPanelSection" aria-labelledby="focusHeading">
     <h2 id="focusHeading">Right now</h2>
     <div id="focusPanelBody"></div>
@@ -998,7 +1025,7 @@
   /* ---------------------------------------------------------------------
      State
   --------------------------------------------------------------------- */
-  const DEFAULT_FEATURES = { focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, energy: true, history: true, celebrations: true };
+  const DEFAULT_FEATURES = { dayJar: true, focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, energy: true, history: true, celebrations: true };
   const TAB_IDS = ["today", "dump", "todo", "done"];
   const DEFAULT_NAMES = { today: "Today", dump: "Brain dump", todo: "To-do list", done: "Done list", focus: "Right now", timeline: "Today's timeline" };
   function normalizeUi(u){
@@ -1013,7 +1040,9 @@
       celebrateStyle: ["burst", "sparkles", "message"].includes(u.celebrateStyle) ? u.celebrateStyle : "burst",
       soundOnSilent: u.soundOnSilent === true,
       headsUp: [0, 2, 5, 10].includes(u.headsUp) ? u.headsUp : 5,
-      gentle: u.gentle === true
+      gentle: u.gentle === true,
+      dayStart: Number.isFinite(u.dayStart) ? u.dayStart : 7 * 60,
+      dayEnd: Number.isFinite(u.dayEnd) ? u.dayEnd : 22 * 60
     };
   }
 
@@ -1854,12 +1883,14 @@
     renderTimeline();
     renderTodos();
     renderDone();
+    renderJar();
   }
 
   function applyFeatureVisibility(){
     const f = state.features;
     const cl = document.body.classList;
     cl.toggle("feat-focus-off", !f.focus);
+    cl.toggle("feat-dayjar-off", !f.dayJar);
     cl.toggle("feat-timeline-off", !f.timeline);
     cl.toggle("feat-blocks-off", !f.focus && !f.timeline);
     cl.toggle("feat-quickadd-off", !f.quickAdd);
@@ -1881,7 +1912,7 @@
   }
   function tabVisible(id){
     const f = state.features;
-    if (id === "today") return f.focus || f.timeline;
+    if (id === "today") return f.dayJar || f.focus || f.timeline;
     if (id === "dump") return f.brainDump;
     if (id === "done") return f.history;
     return f.todoList;
@@ -2025,6 +2056,97 @@
           '<div class="seg choice">' + Object.keys(ENERGY).map(k =>
             '<button type="button" data-action="energy-set" data-level="' + k + '">' + ENERGY[k].icon + ' ' + ENERGY[k].name + '</button>'
           ).join('') + '</div></div>';
+  }
+
+  /* ---------------------------------------------------------------------
+     Day jar: a calm colour rises with the time of day, and every finished
+     thing drops a marble in. It never counts down or shows "missed".
+  --------------------------------------------------------------------- */
+  const JAR_INNER_TOP = 24, JAR_INNER_BOTTOM = 118;
+  const MARBLE_SPOTS = [];
+  (function(){
+    for (let row = 0; row < 6; row++){
+      const off = row % 2 ? 7 : 0;
+      for (let i = 0; i < 4; i++){
+        const x = 29 + off + i * 14;
+        if (x > 74) continue;
+        MARBLE_SPOTS.push([x, 110 - row * 12]);
+      }
+    }
+  })();
+  // Works for days that run past midnight too (e.g. 10 AM to 2 AM).
+  function dayPosition(){
+    const s = state.ui.dayStart, e = state.ui.dayEnd, now = state.simNow;
+    const length = ((e - s) % 1440 + 1440) % 1440 || 1440;
+    const elapsed = ((now - s) % 1440 + 1440) % 1440;
+    if (elapsed <= length) return { phase: "during", fraction: elapsed / length };
+    const sinceEnd = ((now - e) % 1440 + 1440) % 1440;
+    const untilStart = ((s - now) % 1440 + 1440) % 1440;
+    return sinceEnd <= untilStart ? { phase: "after", fraction: 1 } : { phase: "before", fraction: 0 };
+  }
+  function dayFraction(){ return dayPosition().fraction; }
+  function dayPeriodText(){
+    const p = dayPosition();
+    if (p.phase === "before") return "Your day hasn't started yet";
+    if (p.phase === "after") return "Day's done — rest well 🌙";
+    return p.fraction < 0.34 ? "Morning ☀️" : p.fraction < 0.67 ? "Afternoon 🌤️" : "Evening 🌆";
+  }
+  let jarRenderedCount = -1;
+  let jarRenderedDay = "";
+  function renderJar(){
+    const el = document.getElementById("jarBody");
+    if (!el || !state.features.dayJar) return;
+    const done = state.history[todayStr()] || [];
+    const count = done.length;
+    const palette = (COLOR_THEMES[state.colorTheme] || COLOR_THEMES.mixed).colors;
+    if (count === jarRenderedCount && jarRenderedDay === todayStr()){ updateJarFill(); return; }
+    const isNew = jarRenderedCount >= 0 && count > jarRenderedCount && jarRenderedDay === todayStr();
+    jarRenderedCount = count;
+    jarRenderedDay = todayStr();
+    const shown = done.slice(0, MARBLE_SPOTS.length);
+    const marbles = shown.map((e, i) => {
+      const [x, y] = MARBLE_SPOTS[i];
+      const color = e.color || palette[i % palette.length];
+      return '<g class="jar-marble-g' + (isNew && i === shown.length - 1 ? ' drop' : '') + '">' +
+        '<circle class="jar-marble" cx="' + x + '" cy="' + y + '" r="6" fill="' + escapeAttr(color) + '"/>' +
+        '<circle class="jar-shine" cx="' + (x - 2) + '" cy="' + (y - 2) + '" r="1.6"/></g>';
+    }).join('');
+    const extra = count - shown.length;
+    el.innerHTML =
+      '<div class="jar-wrap">' +
+        '<svg class="jar-svg" viewBox="0 0 100 130" role="img" aria-label="Day jar with ' + count + (count === 1 ? ' marble' : ' marbles') + '">' +
+          '<defs><clipPath id="jarClip"><path d="M30 20 Q16 26 16 40 L16 112 Q16 120 24 120 L76 120 Q84 120 84 112 L84 40 Q84 26 70 20 Z"/></clipPath></defs>' +
+          '<g clip-path="url(#jarClip)">' +
+            '<rect id="jarFill" class="jar-fill" x="0" y="' + JAR_INNER_BOTTOM + '" width="100" height="0"/>' +
+            '<line id="jarSurface" class="jar-surface" x1="0" x2="100" y1="0" y2="0"/>' +
+            marbles +
+          '</g>' +
+          '<path class="jar-outline" d="M30 20 Q16 26 16 40 L16 112 Q16 120 24 120 L76 120 Q84 120 84 112 L84 40 Q84 26 70 20 Z"/>' +
+          '<rect class="jar-lid" x="27" y="8" width="46" height="12" rx="4"/>' +
+        '</svg>' +
+        '<div class="jar-text">' +
+          '<h2>Your day</h2>' +
+          '<p class="jar-period" id="jarPeriod">' + dayPeriodText() + '</p>' +
+          '<p>' + (count
+            ? count + (count === 1 ? ' marble' : ' marbles') + ' — one for everything you finished today 🌟' + (extra > 0 ? ' (the jar\'s overflowing!)' : '')
+            : 'Every little thing you finish drops a marble in 💫') + '</p>' +
+        '</div>' +
+      '</div>';
+    updateJarFill();
+  }
+  function updateJarFill(){
+    const rect = document.getElementById("jarFill");
+    if (!rect) return;
+    const h = dayFraction() * (JAR_INNER_BOTTOM - JAR_INNER_TOP);
+    const y = JAR_INNER_BOTTOM - h;
+    rect.setAttribute("y", y.toFixed(1));
+    rect.setAttribute("height", h.toFixed(1));
+    const surf = document.getElementById("jarSurface");
+    surf.setAttribute("y1", y.toFixed(1)); surf.setAttribute("y2", y.toFixed(1));
+    surf.style.display = h > 0.5 ? "" : "none";
+    const period = document.getElementById("jarPeriod");
+    const txt = dayPeriodText();
+    if (period && period.textContent !== txt) period.textContent = txt;
   }
 
   function renderTodos(){
@@ -2219,6 +2341,7 @@
     state.simNow = actualNowMinutes() + state.demoOffset;
     if (state.simNow >= 1440) { state.simNow -= 1440; }
     updateSimClock();
+    if (state.features.dayJar) updateJarFill();
 
     // A swipe gesture mid-drag owns its row's markup right now — skip
     // anything below that could rebuild or react to list content until it
@@ -3087,6 +3210,7 @@
 
   // `requires` greys a row out while the feature it lives inside is off.
   const FEATURE_TOGGLES = [
+    { group: "today", key: "dayJar", name: () => "Day jar", desc: "Fills gently as the day goes, plus a marble for everything you finish" },
     { group: "today", key: "focus", name: () => nameOf("focus") + " card", desc: "What you're on now, with its buttons" },
     { group: "today", key: "timer", name: () => "Countdown timer", desc: "Time left on the current block" },
     { group: "today", key: "timerShape", name: () => "Show as a shrinking circle", desc: "Off shows just the minutes", sub: true, requires: "timer" },
@@ -3186,6 +3310,13 @@
       '<h3 style="font-size:13.5px;margin:6px 0 4px;">Heads-up before a block ends</h3>' +
       '<p class="dialog-sub" style="margin:0 0 8px;">A soft chime and a note so switching tasks never feels sudden.</p>' +
       segHtml("st_headsUp", [["0", "Off"], ["2", "2 min"], ["5", "5 min"], ["10", "10 min"]], String(state.ui.headsUp), "headsup") +
+
+      '<h3 style="font-size:13.5px;margin:6px 0 4px;">Your day</h3>' +
+      '<p class="dialog-sub" style="margin:0 0 8px;">Roughly when your day starts and ends &mdash; the Day jar fills between these.</p>' +
+      '<div class="field-row">' +
+        '<div class="field"><label for="st_dayStart">Starts</label><input type="text" id="st_dayStart" value="' + fmtClock(state.ui.dayStart) + '" inputmode="text"></div>' +
+        '<div class="field"><label for="st_dayEnd">Ends</label><input type="text" id="st_dayEnd" value="' + fmtClock(state.ui.dayEnd) + '" inputmode="text"></div>' +
+      '</div>' +
 
       '<h3 style="font-size:13.5px;margin:6px 0 8px;">Look &amp; feel</h3>' +
       '<div class="feature-list">' +
@@ -3309,6 +3440,14 @@
       document.getElementById("st_tabsBody").innerHTML = tabsSectionHtml();
     });
     syncFeatureRows();
+    ["st_dayStart", "st_dayEnd"].forEach(id => document.getElementById(id).addEventListener("change", (e) => {
+      const key = id === "st_dayStart" ? "dayStart" : "dayEnd";
+      const v = parseTimeFlexible(e.target.value);
+      if (v === null){ e.target.value = fmtClock(state.ui[key]); return; }
+      state.ui[key] = v;
+      e.target.value = fmtClock(v);
+      commit();
+    }));
     document.getElementById("st_gentle").addEventListener("change", (e) => {
       state.ui.gentle = e.target.checked;
       commit();
