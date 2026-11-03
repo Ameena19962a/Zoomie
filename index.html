@@ -42,21 +42,6 @@
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
-  @media (prefers-color-scheme: dark){
-    :root{
-      --bg:#1c1b19;
-      --card:#252320;
-      --border:#38352f;
-      --text:#ece8e0;
-      --muted:#b3ab9c;
-      --muted-2:#948c7c;
-      --track:#3a372f;
-      --accent:#8fb4d1;
-      --focus-ring:#8fd0ff;
-      --cat-buffer:#7c8283;
-      --cat-buffer-tint:#2c2e2c;
-    }
-  }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
@@ -66,25 +51,14 @@
     line-height:1.45;
     -webkit-tap-highlight-color: transparent;
   }
-  /* ---------- Whimsical themed backdrops ----------
-     Every color theme except Monotone (kept deliberately plain, for anyone
-     who picked it specifically to cut down visual noise) gets its own
-     tiled decoration at two scales so it doesn't read as an obvious
-     repeating grid, with a slow, gentle twinkle (never faster than a
-     normal breath — nowhere near flash-rate territory). */
+  /* ---------- Themed backdrops (Monotone stays plain); a slow twinkle, never flash-rate ---------- */
   body[data-bg-pattern]{ position:relative; }
   body[data-bg-pattern]::before, body[data-bg-pattern]::after{
     content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
     background-repeat: repeat;
   }
-  /* Scoped to the actual static layout pieces (not a blanket ">*") so any
-     element appended straight to <body> later — celebration overlays,
-     etc. — isn't unexpectedly forced down to this z-index too: this
-     selector's specificity (it includes the "body" type) beats a plain
-     class selector, so a bare ">*" would silently win over e.g.
-     .celebrate-flash{ z-index:45 } and hide it behind everything. */
+  /* Listed explicitly: a bare ">*" would outrank e.g. .celebrate-flash's z-index and hide overlays. */
   body[data-bg-pattern] > .notice-banner,
-  body[data-bg-pattern] > .auth-screen,
   body[data-bg-pattern] > main.layout,
   body[data-bg-pattern] > footer.app-footer{ position:relative; z-index:1; }
   /* header.app-header is excluded above: it already has its own
@@ -191,13 +165,7 @@
      so finishing a task reads as a real moment even glanced at quickly or
      tapped from way down in the timeline. */
   .celebrate-flash{
-    /* opacity defaults to the animation's own peak value, not 0 — unlike
-       .celebrate-message (which also defaults to visible), this element
-       used to START invisible and depend entirely on its animation to
-       ever become visible at all; if that animation failed to apply for
-       any reason, the celebration was permanently blank rather than just
-       unanimated. The animation below still fully controls opacity for
-       its duration either way — this only matters as the fallback. */
+    /* Visible by default so a failed animation can't leave it permanently blank. */
     position:fixed; inset:0; z-index:45; pointer-events:none; opacity:.85;
     background: radial-gradient(circle at var(--fx,50%) var(--fy,40%),
       rgba(255,209,102,.85) 0%, rgba(244,114,182,.7) 30%, rgba(192,132,252,.5) 55%, transparent 78%);
@@ -380,6 +348,28 @@
   @keyframes cloudBlink{ 0%{ transform:scaleY(.1); } 100%{ transform:scaleY(1); } }
   #headerLine{ font-size:18px; line-height:1.3; vertical-align:middle; }
   .brand h1{ display:flex; align-items:center; }
+  .splash-cloud-wrap{ position:relative; }
+  .splash-spark{ position:absolute; font-size:20px; opacity:0; animation: sparkTwinkle .9s ease 1.05s both; }
+  .splash-spark.s1{ top:-6px; right:-8px; }
+  .splash-spark.s2{ top:34px; left:-16px; font-size:14px; animation-delay:1.25s; }
+  @keyframes sparkTwinkle{
+    0%{ opacity:0; transform:scale(.3) rotate(-20deg); }
+    40%{ opacity:1; transform:scale(1.15) rotate(10deg); }
+    100%{ opacity:0; transform:scale(.8); }
+  }
+  /* The header cloud cheers along with the done burst. */
+  @media not (prefers-reduced-motion: reduce){
+    .brand-cloud.cheer{ animation: cloudCheer .9s cubic-bezier(.3,.6,.4,1.3); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .splash-spark{ display:none; }
+    .brand-cloud.cheer{ animation: cloudGlow .9s ease; }
+  }
+  @keyframes cloudCheer{
+    30%{ transform:translateY(-6px) scale(1.15) rotate(-6deg); }
+    60%{ transform:translateY(0) scale(.96) rotate(4deg); }
+  }
+  @keyframes cloudGlow{ 50%{ filter:drop-shadow(0 0 8px rgba(255,214,102,.95)); } }
   .brand-cloud{ flex:none; width:34px; height:24px; margin-right:9px; vertical-align:-3px; filter:drop-shadow(0 2px 4px rgba(70,100,135,.22)); }
   .splash-name{ margin:18px 0 2px; font-size:26px; font-weight:800; letter-spacing:.01em; animation: splashFade .8s ease .45s both; }
   .splash-tag{ margin:0; font-size:15px; opacity:.75; animation: splashFade .8s ease .75s both; }
@@ -638,13 +628,7 @@
   .subtask-list .subtask-title{ flex:1; min-width:0; }
   .subtask-est{ margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
 
-  /* Swipe-to-complete / swipe-to-delete (to-do rows only — block "steps"
-     checklists keep the plain .subtask-list li look above). Swiping right
-     reveals the green layer (release past the threshold completes it);
-     swiping left reveals the red one (release past threshold deletes it).
-     Both bg layers sit stacked underneath; only the one being dragged
-     toward is opaque. The sliding foreground carries the row's normal
-     look so at rest it's unchanged. */
+  /* Swipe rows: green (done) and red (delete) layers sit underneath the sliding content. */
   #todoList li{ position:relative; overflow:hidden; padding:0; border:none; background:transparent; border-radius:8px; }
   #todoList .swipe-bg-right, #todoList .swipe-bg-left{
     position:absolute; inset:0; display:flex; align-items:center; font-weight:700; font-size:12.5px; border-radius:8px; opacity:0;
@@ -759,28 +743,7 @@
   .cat-manage-row input[type=text].cname{ flex:1; min-width:0; }
   .cat-manage-row input[type=text].cicon{ width:44px; text-align:center; }
 
-  /* ---------- Auth screen ---------- */
-  .auth-screen{
-    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
-  }
-  .auth-card{
-    width:100%; max-width:380px; background:var(--card); border:1px solid var(--border);
-    border-radius:var(--radius-lg); padding:28px;
-  }
-  .auth-card h1{ margin:0 0 4px; font-size:22px; }
-  .auth-card .auth-sub{ margin:0 0 20px; font-size:13px; color:var(--muted); }
-  .auth-tabs{ display:flex; gap:4px; background:var(--bg); border:1px solid var(--border); border-radius:999px; padding:4px; margin-bottom:18px; }
-  .auth-tabs button{ flex:1; border:none; background:transparent; padding:8px; border-radius:999px; font-size:13px; font-weight:600; color:var(--muted); }
-  .auth-tabs button.active{ background:var(--accent); color:#fff; }
-  .auth-error{ font-size:12.5px; color:var(--danger-quiet); margin:0 0 10px; min-height:1em; }
-  .auth-footer-link{ text-align:center; margin-top:14px; font-size:12.5px; color:var(--muted); }
-  .auth-offline-link{ display:block; text-align:center; margin-top:18px; font-size:12px; }
-  .auth-card .primary-btn{ width:100%; justify-content:center; padding:11px; font-size:14px; }
-  .cloud-status{ font-size:11.5px; color:var(--muted); display:flex; align-items:center; gap:5px; }
-  .cloud-status .dot{ width:7px; height:7px; border-radius:50%; background:var(--muted-2); }
-  .cloud-status.synced .dot{ background:#6f9c7d; }
-  .cloud-status.syncing .dot{ background:var(--accent); }
-  .cloud-status.error .dot{ background:var(--danger-quiet); }
+  .low-capacity-link{ display:block; text-align:center; margin-top:18px; font-size:12px; }
 </style>
 </head>
 <body>
@@ -798,7 +761,10 @@
   })();
 </script>
 <div id="splash" aria-hidden="true">
+  <div class="splash-cloud-wrap">
   <svg class="splash-cloud cloud-svg" viewBox="0 0 120 84" width="168" height="118"><g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g><ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/><g class="face-sleepy"><path class="cloud-line" d="M49 52 q4 4 8 0"/><path class="cloud-line" d="M66 52 q4 4 8 0"/><path class="cloud-line" d="M58 60 q3 2.5 6 0"/></g><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="51" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="49.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="51" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="49.7" r="1.2"/></g><path class="cloud-line" d="M55.5 58.5 q6 6 12 0"/></g></svg>
+    <span class="splash-spark s1">✨</span><span class="splash-spark s2">✨</span>
+  </div>
   <p class="splash-name">Kindday</p>
   <p class="splash-tag">your day, gently</p>
 </div>
@@ -935,11 +901,7 @@
 
   function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
 
-  // Category colors are user-editable (a plain color picker), so a chosen
-  // hue can easily be too pale/mid-tone to read as text once it's sitting
-  // on its own light tinted pill background. This darkens it just enough
-  // to guarantee real contrast, however it was picked — the pill's
-  // background tint and border keep the original, undarkened color.
+  // Darkens (or, on dark themes, lightens) a picked category colour until it's readable on its chip.
   function hexToRgbArr(hex){
     const c = hex.replace('#', '');
     return [parseInt(c.substr(0,2),16), parseInt(c.substr(2,2),16), parseInt(c.substr(4,2),16)];
@@ -961,10 +923,7 @@
       .map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
   }
   function readableChipText(hex){
-    // The chip's actual background is this color mixed at 16% over the
-    // current theme's card color (matching the CSS color-mix() used for
-    // the pill background) — darken against *that*, not an assumed white,
-    // since a tinted background can be a little darker than white.
+    // Measured against the chip's real background: this colour at 16% over the card.
     const cardHex = (getComputedStyle(document.documentElement).getPropertyValue("--card") || "#ffffff").trim() || "#ffffff";
     const tint = mixHex(hex, cardHex, 0.16);
     const darkCard = contrastRatio(cardHex, "#000000") < 7;
@@ -985,10 +944,7 @@
     let h12 = h % 12; if (h12 === 0) h12 = 12;
     return h12 + ":" + String(mm).padStart(2, "0") + " " + ampm;
   }
-  // Accepts free-typed time in either 12-hour ("9:30 am", "9am", "9:30pm")
-  // or 24-hour ("21:30", "9:30") form — a plain typable text field instead
-  // of relying on the browser's native time-picker widget, which some
-  // embedded/sandboxed viewers render awkwardly or restrict to click-only.
+  // Free-typed time, 12- or 24-hour ("9:30 am", "21:30"); text fields beat native pickers in some viewers.
   function parseTimeFlexible(str){
     if (!str) return null;
     const m = str.trim().toLowerCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
@@ -1006,10 +962,7 @@
     }
     return h * 60 + min;
   }
-  // Accepts free-typed duration: a plain number of minutes ("45"), with a
-  // unit ("45m", "45 min"), hours ("1h", "1 hour"), or combined ("1h 30m",
-  // "1:30"). Same reasoning as parseTimeFlexible — a plain text field the
-  // native number-input spinner some viewers render as click-only.
+  // Free-typed duration: "45", "45m", "1h", "1h 30m" or "1:30".
   function parseDurationFlexible(str){
     if (!str) return null;
     str = str.trim().toLowerCase();
@@ -1044,16 +997,8 @@
 
   let appBooted = false;
 
-  /* ---------------------------------------------------------------------
-     Color themes — bulk-recolor every category (in their current order)
-     plus the app's accent color in one tap. All kept in the same muted,
-     low-saturation range as the original palette, just shifted in hue.
-  --------------------------------------------------------------------- */
-  // Every theme is a COMPLETE palette (bg/card/text/muted/border/track), not
-  // just an accent tint — a theme is a deliberate, explicit look, so once
-  // picked it stays correct regardless of the device's light/dark setting.
-  // (A partial override was exactly how the Pink theme ended up with
-  // light dark-mode text sitting on a light pink background — unreadable.)
+  /* ---------- Colour themes ---------- */
+  // Each theme is a complete palette, so it stays readable whatever the phone's light/dark setting.
   const COLOR_THEMES = {
     mixed:    { label: "Calm mixed",  accent: "#4d6b86", focusRing: "#2c6e9e", bg: "#f6f4ef", card: "#ffffff", text: "#2c2a27", muted: "#706a5f", muted2: "#746f64", border: "#e3ded3", track: "#eae6db", bgPattern: "confetti", colors: ["#5b7fa6", "#ab8657", "#6f9c7d", "#9a7bb0"] },
     monotone: { label: "Monotone",    accent: "#5c5c5c", focusRing: "#3d3d3d", bg: "#f2f2f0", card: "#ffffff", text: "#2a2a2a", muted: "#66666a", muted2: "#6d6d74", border: "#dcdcdc", track: "#e6e6e6", colors: ["#454545", "#6b6b6b", "#8c8c8c", "#3a3a3a"] },
@@ -1081,10 +1026,7 @@
     document.documentElement.style.setProperty("--muted-2", theme.muted2);
     document.documentElement.style.setProperty("--border", theme.border);
     document.documentElement.style.setProperty("--track", theme.track);
-    // Buffer blocks and notice banners use a neutral tint rather than a
-    // category color — tie it to this theme's own track/muted tones so it
-    // never falls back to the system dark-mode default (which caused
-    // unreadable near-black banners on a light theme's dark-colored text).
+    // Buffers and notice banners use the theme's own neutral tint.
     document.documentElement.style.setProperty("--cat-buffer-tint", theme.track);
     document.documentElement.style.setProperty("--cat-buffer", theme.muted2);
     document.documentElement.style.setProperty("--on-accent", theme.onAccent || "#ffffff");
@@ -1347,11 +1289,7 @@
     });
   }
 
-  /* ---------------------------------------------------------------------
-     Local notifications — real reminders that fire even if the app is
-     backgrounded or closed (native only; best-effort in a plain browser
-     tab). These always track the REAL schedule, never the demo speed.
-  --------------------------------------------------------------------- */
+  /* ---------- Reminders: native notifications (best-effort in a browser tab), on the real clock ---------- */
   const hasCapacitor = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const LocalNotifications = hasCapacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.LocalNotifications : null;
   let notifPermission = "unknown";
@@ -1457,18 +1395,8 @@
     document.getElementById("noticeBanner").style.display = "none";
   });
 
-  /* ---------------------------------------------------------------------
-     A small celebratory reward for finishing a task — sparkles that pop
-     and float from wherever "Mark done" was tapped, plus a short chime
-     and a quick encouraging note. This is deliberately *variable*: which
-     emoji and which phrase show up is randomized each time (unpredictable
-     small rewards hold attention better than the exact same one every
-     time), while staying calm and non-garish — a handful of sparkles and
-     one line of text, nothing that takes over the screen. The sparkles
-     are skipped entirely for reduced-motion; the phrase still shows
-     (opacity fade only, no movement) so finishing something still gets
-     acknowledged either way.
-  --------------------------------------------------------------------- */
+  /* ---------- Celebrations ---------- */
+  // A varied phrase and sparkles (small surprises hold attention), kept calm; no movement when motion is reduced.
   const CELEBRATE_MESSAGES = ["Nice work!", "Done. ✓", "One down.", "Nailed it.", "Task complete.", "You did it!", "That's a wrap.", "Off the list."];
   function celebrateBurst(x, y){
     const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1476,6 +1404,20 @@
     if (style === "burst") celebrateFlash(x, y);
     if (!reduceMotion && style !== "message") celebrateSparkles(x, y);
     celebrateMessage(x, y);
+    cloudCheer(reduceMotion);
+  }
+
+  function cloudCheer(reduceMotion){
+    const cloud = document.querySelector("#brandTagline .brand-cloud");
+    if (!cloud) return;
+    cloud.classList.remove("cheer");
+    void cloud.getBoundingClientRect();
+    cloud.classList.add("cheer");
+    setTimeout(() => cloud.classList.remove("cheer"), 1000);
+    if (!reduceMotion){
+      const [cx, cy] = rowCenter(cloud);
+      celebrateSparkles(cx, cy, 3);
+    }
   }
 
   // Full-screen color wash; reduced-motion gets a fade instead of a pulse.
@@ -1489,9 +1431,9 @@
     setTimeout(() => flash.remove(), 800);
   }
 
-  function celebrateSparkles(x, y){
+  function celebrateSparkles(x, y, count){
     const emojis = ["✨", "⭐", "💫", "🌟"];
-    for (let i = 0; i < 5; i++){
+    for (let i = 0; i < (count || 5); i++){
       const el = document.createElement("span");
       el.className = "celebrate-burst";
       el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
@@ -1521,10 +1463,7 @@
     if (!state.soundEnabled) return;
     withAudio((audioCtx, now) => {
       const peakBase = clamp(state.soundVolume, 0, 1) * 0.32;
-      // A brighter, quicker "ta-da" than the block-start chime, so the
-      // two are easy to tell apart by ear — same gentle volume cap and
-      // soft fade-in, just a different, more resolved little flourish for
-      // finishing something.
+      // Brighter and quicker than the start chime, so the two are easy to tell apart.
       [
         { freq: 784.00, at: 0.00, dur: 0.16 },
         { freq: 1046.50, at: 0.09, dur: 0.16 },
@@ -1638,23 +1577,9 @@
     });
   }
 
-  /* ---------------------------------------------------------------------
-     Swipe-to-complete / swipe-to-delete — the single way to mark a block
-     or to-do done, or to remove it (the to-do checkbox stays too, as a
-     tap alternative for completing; it just doesn't celebrate the way
-     completing something via swipe does). Delegated Pointer Events on the
-     stable list containers (never replaced, only their children are, on
-     re-render) so the listeners survive renders. A short pointer-move
-     before locking onto horizontal vs. vertical means a normal scroll
-     gesture never gets mistaken for a swipe. Deleting a block asks first
-     (matching the old delete button); deleting a to-do doesn't, matching
-     how its delete button always worked.
-  --------------------------------------------------------------------- */
-  // While true, tick()'s periodic structural re-render is skipped — it
-  // rebuilds #timelineList's whole innerHTML, which would yank the very
-  // row a gesture is mid-drag on out of the DOM (and silently drop its
-  // pointer capture with it), losing the swipe. A render is never more
-  // than ~200ms late because of this, which a human can't perceive.
+  /* ---------- Swipe right to complete, left to delete ---------- */
+  // Listeners sit on the list containers so they survive re-renders.
+  // While true, tick() skips re-rendering the lists so a row isn't swapped out mid-drag.
   let swipeGestureActive = false;
 
   function setupSwipeGestures(containerId, rowSelector, findItem, onComplete, onDelete){
@@ -1670,16 +1595,7 @@
       setTimeout(() => { content.style.transition = ""; }, 220);
     }
 
-    // Fires the instant a drag crosses the threshold — not on release.
-    // Deciding the action from wherever a finger happened to be AT THE
-    // MOMENT it lifted (the old design) meant a completely normal flick —
-    // drag right past the threshold, finger eases back a little as it
-    // lifts, the kind of motion nobody can fully avoid — could land back
-    // past the delete threshold at that exact instant and fire the
-    // opposite action from the one that had clearly, visibly armed a
-    // moment before. Committing the moment the threshold is first crossed
-    // removes that ambiguity outright: once you've dragged far enough, it
-    // just happens, and whatever the finger does afterward is irrelevant.
+    // Resolves the moment a threshold is crossed, so easing back while lifting can't flip the action.
     function resolve(dir, row, content, id){
       a = null;
       swipeGestureActive = false;
@@ -1697,30 +1613,18 @@
     }
 
     container.addEventListener("pointerdown", (e) => {
-      // Deliberately NOT excluding <label> here — the to-do row's title is
-      // a label tied to its checkbox, and a plain tap on it (no real drag)
-      // still reaches the checkbox normally below, since preventDefault
-      // only fires once a horizontal drag is actually locked in.
+      // Labels aren't excluded: a plain tap still reaches the to-do checkbox (preventDefault only starts once a swipe locks in).
       if (e.target.closest("button, a, input")) return;
       const row = e.target.closest(rowSelector);
       if (!row) return;
       const content = row.querySelector(".swipe-content");
       if (!content) return;
-      // An already-completed row has no "done" action left — only delete.
-      // Without this, swiping right still played the complete-and-slide-
-      // away animation even though onComplete's status guard silently did
-      // nothing, leaving the row's content permanently slid off-screen
-      // (blank) with no re-render ever bringing it back.
+      // Done rows only allow delete; a right swipe used to slide them away for good.
       const alreadyDone = row.classList.contains("is-done") || row.classList.contains("done");
       const started = { row, content, startX: e.clientX, startY: e.clientY, dx: 0, pointerId: e.pointerId, locked: null, alreadyDone };
       a = started;
       swipeGestureActive = true;
-      // Self-healing safety net: a real touch gesture can be interrupted
-      // (another app switch, an incoming call) in ways that don't always
-      // reach pointerup or pointercancel. Without this, one missed event
-      // leaves the row stuck mid-drag forever. If this exact gesture
-      // hasn't resolved (by crossing a threshold) or been released within
-      // 2.5s, just snap it back rather than guess at an action.
+      // Safety net: an interrupted gesture that never gets pointerup snaps back after 2.5s.
       setTimeout(() => {
         if (a === started){
           a = null;
@@ -1735,18 +1639,7 @@
       const dx = e.clientX - a.startX;
       const dy = e.clientY - a.startY;
       if (a.locked !== "x"){
-        // Deciding "this is a swipe" vs "this is a scroll" off a SINGLE
-        // early sample was the actual bug: real touch input's first
-        // reported point is often coarse/diagonal-looking even for a
-        // dead-straight intended swipe, since a finger's direction hasn't
-        // "settled" the instant it starts moving. That one unlucky sample
-        // used to lock this permanently as a scroll with no way back,
-        // which is exactly why it only ever worked with a long, careful,
-        // nearly edge-to-edge drag — that's the only kind of motion whose
-        // very first sample is unambiguous enough to survive a one-shot
-        // decision. Now: too small to call yet keeps waiting; genuinely,
-        // persistently more vertical commits to scroll; anything else —
-        // including "a bit of both, leaning horizontal" — commits to swipe.
+        // Wait for a clear direction: early touch samples often look diagonal even on a straight swipe.
         if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
         if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 24){
           a.locked = "y";
@@ -1754,14 +1647,7 @@
         }
         if (Math.abs(dx) < Math.abs(dy)) return;
         a.locked = "x";
-        // Deliberately NOT calling setPointerCapture here. It isn't needed
-        // — the container-level delegated listeners keep receiving this
-        // pointer's move/up events regardless — and on real iOS Safari it
-        // was actively harmful: granting capture was immediately followed
-        // by a lostpointercapture event (sometimes in the same
-        // millisecond), which this code used to treat as "the gesture
-        // ended" and cancel an otherwise perfectly fine swipe mid-drag.
-        // That was the actual bug behind "barely moves, then snaps back."
+        // No setPointerCapture: iOS Safari revokes it instantly, which used to cancel real swipes.
       }
       e.preventDefault();
       // Clamp to leftward-only (delete) once a row is already done — it
@@ -1777,10 +1663,7 @@
       else if (a.dx < -THRESHOLD) resolve("delete", a.row, a.content, a.row.dataset.id);
     }, { passive: false });
 
-    // Released (or the gesture was cancelled) before ever crossing a
-    // threshold — just snap back. Anything that DID cross already
-    // resolved and nulled `a` out in pointermove above, so these are
-    // no-ops for it.
+    // Released before crossing a threshold: snap back.
     function cancel(e){
       if (!a || e.pointerId !== a.pointerId) return;
       const dropped = a;
@@ -1792,11 +1675,7 @@
     container.addEventListener("pointercancel", cancel);
   }
 
-  /* ---------------------------------------------------------------------
-     In-app confirm dialog — used instead of the browser's native confirm(),
-     which some embedded/sandboxed viewers block or silently no-op, making
-     a delete/clear action look like it does nothing at all.
-  --------------------------------------------------------------------- */
+  /* ---------- In-app confirm dialog (native confirm() is blocked in some viewers) ---------- */
   const confirmDialog = document.getElementById("confirmDialog");
   function showConfirm(message, onYes, confirmLabel){
     document.getElementById("confirmMessage").textContent = message;
@@ -1807,12 +1686,7 @@
   }
   document.getElementById("confirmCancel").addEventListener("click", () => confirmDialog.close());
 
-  /* ---------------------------------------------------------------------
-     Low-capacity ("bed rot") day. Autistic burnout / spoon-theory guidance
-     treats a demand-free rest day as a legitimate recovery need, not a
-     failure — so this clears today's remaining plan with validating
-     copy, no streak-breaking, no "missed" language, and a one-tap undo.
-  --------------------------------------------------------------------- */
+  /* ---------- Low-capacity day: clear the rest of today without guilt, with undo ---------- */
   function hasClearableBlocksToday(){
     return sortedBlocks().some(b => b.status === "pending");
   }
@@ -1952,7 +1826,7 @@
 
   function lowCapacityLinkHtml(){
     if (!hasClearableBlocksToday()) return "";
-    return '<a href="#" class="auth-offline-link text-btn" data-action="low-capacity-day" style="margin-top:14px;">Low-capacity day? Clear the rest of today</a>';
+    return '<a href="#" class="low-capacity-link text-btn" data-action="low-capacity-day" style="margin-top:14px;">Low-capacity day? Clear the rest of today</a>';
   }
 
   function remainingSentence(block, remaining, overrun){
@@ -2137,12 +2011,7 @@
     window.scrollTo(0, 0);
   });
 
-  // Runs every 200ms (tick) without touching any button/row markup — only
-  // the live numbers (pie fraction, "Xm remaining" text, soundtrack bar)
-  // get mutated in place. This is what stops the countdown from stealing
-  // taps: rebuilding the whole timeline's innerHTML that often would
-  // destroy and recreate the very button someone just tapped, dropping
-  // the click before it fires (especially on real touch devices).
+  // Each tick only updates live numbers in place; rebuilding buttons this often would swallow taps.
   function updatePieEl(wrap, fraction, overrun, holeLabel){
     if (!wrap) return;
     const outer = wrap.querySelector(".pie-outer");
@@ -2374,14 +2243,7 @@
     });
   }
 
-  /* ---------------------------------------------------------------------
-     Alarm chime — a soft two-note tone when a block actually starts, not
-     a jarring digital beep. Sound sensitivity is common in autistic
-     adults (sudden/high-pitched noise is a frequent trigger), so this is
-     deliberately gentle (fades in, low peak volume even at max), on by
-     default, and trivially muted from Settings — the shrinking timer
-     still communicates state with sound off.
-  --------------------------------------------------------------------- */
+  /* ---------- Chimes: soft fade-in tones with a low volume cap (sound sensitivity is common) ---------- */
   let audioCtx = null;
   // iPhones mute web audio when the ring/silent switch is on silent. Opting
   // in to "playback" plays through it (Safari 17+), but can pause music
@@ -2452,11 +2314,7 @@
     if (!state.soundEnabled) return;
     withAudio((audioCtx, now) => {
       const peakBase = clamp(state.soundVolume, 0, 1) * 0.32; // gentle even at "full" volume
-      // A short, cute little sparkle: a four-note rising arpeggio
-      // (C5 → E5 → G5 → C6) on a soft triangle wave, which reads as more
-      // of a toy-bell "ta-da" than a plain two-note doorbell chime. Each
-      // note still fades in over ~20ms (never a hard onset) and the whole
-      // thing is done in under a second — informative, not startling.
+      // A rising four-note toy bell (C5 E5 G5 C6) with a soft attack, done in under a second.
       [
         { freq: 523.25, at: 0.00, peak: 1.00 },
         { freq: 659.25, at: 0.11, peak: 0.95 },
@@ -2479,11 +2337,7 @@
     });
   }
 
-  /* ---------------------------------------------------------------------
-     Spoken time + plan — a second, optional channel alongside the chime,
-     for when even glancing at the screen is more than someone wants to
-     do right then. Reuses the same info already shown in the focus panel.
-  --------------------------------------------------------------------- */
+  /* ---------- Spoken time and plan (optional) ---------- */
   const speechSupported = "speechSynthesis" in window;
 
   function buildSpokenStatus(){
@@ -2530,11 +2384,7 @@
     updateSimClock();
     if (state.features.dayJar) updateJarFill();
 
-    // A swipe gesture mid-drag owns its row's markup right now — skip
-    // anything below that could rebuild or react to list content until it
-    // resolves (normally under a second; self-heals within 2.5s even in
-    // the worst case). The header clock above keeps ticking regardless,
-    // so the page never looks fully frozen even in that brief window.
+    // Mid-swipe, skip anything that could rebuild the lists (the clock above keeps ticking).
     if (swipeGestureActive) return;
 
     const nowCurrent = getCurrentBlock();
@@ -2705,11 +2555,7 @@
     }
   );
 
-  // Quick-add for blocks — just a title, no dialog. Everything else
-  // (category, start time, duration) gets a sensible default so the block
-  // exists immediately; tap it afterward (the ✏️ edit button) to change
-  // any of that. "+ New block" still opens the full dialog for anyone who
-  // wants to set those deliberately before it's created.
+  // Quick add: just a title; everything else gets a sensible default and can be edited later.
   const quickBlockForm = document.getElementById("quickBlockForm");
   if (quickBlockForm) quickBlockForm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -2725,13 +2571,7 @@
     commit();
   });
 
-  /* ---------------------------------------------------------------------
-     Brain dump → tidy list. Plain rules that run on the phone: no network,
-     nothing typed here ever leaves the device. It splits on lines, bullets,
-     sentences, commas, "then", and "and" when a new action verb follows
-     ("buy milk and eggs" stays one item); strips filler like "I need to";
-     and spots times ("at 3pm", "14:30", "noon") and lengths ("for 2 hours").
-  --------------------------------------------------------------------- */
+  /* ---------- Brain dump: on-phone rules split messy text into items and spot times and lengths ---------- */
   const DUMP_VERBS = "call|phone|ring|text|email|message|reply|ask|tell|remind|book|cancel|schedule|buy|order|get|pick|collect|drop|return|post|send|pay|renew|submit|apply|clean|tidy|wash|hoover|vacuum|empty|cook|make|fix|sort|do|finish|start|write|read|study|revise|check|update|plan|pack|prepare|walk|feed|water|take|bring|go|visit|see|meet|watch|charge|change|put|grab|find|print|file|organise|organize|shower|eat|drink|stretch|exercise|practise|practice|learn|look|research|move|try";
   const DUMP_AND_VERB = new RegExp("\\s+(?:and|also|plus)\\s+(?=(?:" + DUMP_VERBS + ")\\b)", "gi");
   const DUMP_CONTINUATION = /^(?:because|cos|cuz|coz|since|but|so that|which|who|as|she|he|it|they|we|that's|it's|its|she's|he's|they're|i'm|for her|for him|for them)\b/i;
@@ -3009,10 +2849,7 @@
     const st = (b.subtasks || []).find(s => s.id === t.dataset.sub);
     if (!st) return;
     st.done = t.checked;
-    // Checking off the last step of a task is, in effect, finishing the
-    // task — it should celebrate the same way swiping it done does,
-    // instead of silently doing nothing (the gap behind "the task itself
-    // didn't work" while a plain swipe on a step-free buffer did).
+    // Ticking the last step finishes the task, with the same celebration as a swipe.
     if (t.checked && b.status === "pending" && b.subtasks.length && b.subtasks.every(s => s.done)){
       const r = t.getBoundingClientRect();
       completeBlock(b, r.left + r.width / 2, r.top + r.height / 2);
@@ -3359,11 +3196,7 @@
     settingsDialog.showModal();
   });
 
-  /* ---------------------------------------------------------------------
-     Backup: the whole saved state as one JSON file. Restoring writes it
-     back to storage and reloads, so it goes through the same checks and
-     upgrades as a normal start.
-  --------------------------------------------------------------------- */
+  /* ---------- Backup: the saved state as one JSON file; restoring reloads through normal start-up ---------- */
   async function exportBackup(){
     const json = JSON.stringify({ app: "Kindday", version: 1, savedAt: new Date().toISOString(), data: snapshot() }, null, 2);
     const name = "kindday-backup-" + todayStr() + ".json";
@@ -3806,12 +3639,7 @@
     });
   }
 
-  /* ---------------------------------------------------------------------
-     Focus with me: a calm, body-double style session. A breathing shape
-     keeps you company, time left is shown in minutes (no ticking
-     seconds), there's a gentle halfway check-in, and the end celebrates.
-     Optional background noise is generated on the phone, nothing streamed.
-  --------------------------------------------------------------------- */
+  /* ---------- Focus with me: a calm, body-double style session ---------- */
   const focusDialog = document.getElementById("focusDialog");
   // Written to be PDA-friendly: no instructions, no "should", no questions
   // that need answering. Short, plain statements of permission and safety.
@@ -4225,11 +4053,7 @@
 
   finishBoot();
 
-  // Installable-app support: register the service worker so "Add to Home
-  // Screen" behaves like a real app (own icon, opens full-screen, keeps
-  // working offline). It fetches fresh content over the network whenever
-  // possible and only falls back to its cache when offline, so edits show
-  // up on next load rather than getting stuck on an old cached copy.
+  // Service worker: installable and works offline; network first so updates arrive straight away.
   if ("serviceWorker" in navigator){
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js").then((reg) => {
