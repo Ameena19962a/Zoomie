@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>TimeAnchor</title>
+<title>Kindday</title>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="TimeAnchor" />
+<meta name="apple-mobile-web-app-title" content="Kindday" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="theme-color" content="#f6f4ef" />
 <!-- Every theme is light; stops Samsung Internet / Chrome from force-darkening it. -->
@@ -42,21 +42,6 @@
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
-  @media (prefers-color-scheme: dark){
-    :root{
-      --bg:#1c1b19;
-      --card:#252320;
-      --border:#38352f;
-      --text:#ece8e0;
-      --muted:#b3ab9c;
-      --muted-2:#948c7c;
-      --track:#3a372f;
-      --accent:#8fb4d1;
-      --focus-ring:#8fd0ff;
-      --cat-buffer:#7c8283;
-      --cat-buffer-tint:#2c2e2c;
-    }
-  }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
@@ -66,25 +51,14 @@
     line-height:1.45;
     -webkit-tap-highlight-color: transparent;
   }
-  /* ---------- Whimsical themed backdrops ----------
-     Every color theme except Monotone (kept deliberately plain, for anyone
-     who picked it specifically to cut down visual noise) gets its own
-     tiled decoration at two scales so it doesn't read as an obvious
-     repeating grid, with a slow, gentle twinkle (never faster than a
-     normal breath — nowhere near flash-rate territory). */
+  /* ---------- Themed backdrops (Monotone stays plain); a slow twinkle, never flash-rate ---------- */
   body[data-bg-pattern]{ position:relative; }
   body[data-bg-pattern]::before, body[data-bg-pattern]::after{
     content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
     background-repeat: repeat;
   }
-  /* Scoped to the actual static layout pieces (not a blanket ">*") so any
-     element appended straight to <body> later — celebration overlays,
-     etc. — isn't unexpectedly forced down to this z-index too: this
-     selector's specificity (it includes the "body" type) beats a plain
-     class selector, so a bare ">*" would silently win over e.g.
-     .celebrate-flash{ z-index:45 } and hide it behind everything. */
+  /* Listed explicitly: a bare ">*" would outrank e.g. .celebrate-flash's z-index and hide overlays. */
   body[data-bg-pattern] > .notice-banner,
-  body[data-bg-pattern] > .auth-screen,
   body[data-bg-pattern] > main.layout,
   body[data-bg-pattern] > footer.app-footer{ position:relative; z-index:1; }
   /* header.app-header is excluded above: it already has its own
@@ -112,6 +86,20 @@
   }
   body[data-bg-pattern="confetti"]::before{ background-size: 140px 140px; background-position: 0 0; opacity:.8; }
   body[data-bg-pattern="confetti"]::after{ background-size: 220px 220px; background-position: 60px 80px; opacity:.5; transform:scale(1.3); }
+
+  /* Sage: a few soft leaves and dots. */
+  body[data-bg-pattern="leaves"]::before, body[data-bg-pattern="leaves"]::after{
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cpath d='M15 30 C15 18 27 12 33 12 C33 24 25 30 15 30 Z' fill='%2395b89a' opacity='0.6'/%3E%3Cpath d='M66 70 C66 60 76 54 82 55 C81 65 74 70 66 70 Z' fill='%23a9c2a0' opacity='0.55'/%3E%3Ccircle cx='48' cy='45' r='3' fill='%23b7cdb0' opacity='0.7'/%3E%3Ccircle cx='85' cy='20' r='2.5' fill='%2395b89a' opacity='0.6'/%3E%3Ccircle cx='22' cy='80' r='2' fill='%23a9c2a0' opacity='0.7'/%3E%3C/svg%3E");
+  }
+  body[data-bg-pattern="leaves"]::before{ background-size: 140px 140px; background-position: 0 0; opacity:.85; }
+  body[data-bg-pattern="leaves"]::after{ background-size: 220px 220px; background-position: 60px 80px; opacity:.5; transform:scale(1.3); }
+
+  /* Sunshine: soft, muted suns and dots — warm, never bright lemon. */
+  body[data-bg-pattern="suns"]::before, body[data-bg-pattern="suns"]::after{
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='18' cy='20' r='6' fill='%23f2cf6a' opacity='0.75'/%3E%3Cg stroke='%23f2cf6a' stroke-width='2' stroke-linecap='round' opacity='0.75'%3E%3Cpath d='M18 9 V6 M18 31 V34 M7 20 H4 M29 20 H32 M10 12 L8 10 M26 28 L28 30 M26 12 L28 10 M10 28 L8 30'/%3E%3C/g%3E%3Ccircle cx='70' cy='62' r='4' fill='%23efb98a' opacity='0.7'/%3E%3Ccircle cx='44' cy='84' r='3' fill='%23f5dc8f' opacity='0.9'/%3E%3Ccircle cx='86' cy='16' r='2.5' fill='%23e6c46a' opacity='0.8'/%3E%3C/svg%3E");
+  }
+  body[data-bg-pattern="suns"]::before{ background-size: 140px 140px; background-position: 0 0; opacity:.85; }
+  body[data-bg-pattern="suns"]::after{ background-size: 220px 220px; background-position: 60px 80px; opacity:.5; transform:scale(1.3); }
 
   @media not (prefers-reduced-motion: reduce){
     body[data-bg-pattern]::before{ animation: sparkleTwinkle 5s ease-in-out infinite; }
@@ -177,13 +165,7 @@
      so finishing a task reads as a real moment even glanced at quickly or
      tapped from way down in the timeline. */
   .celebrate-flash{
-    /* opacity defaults to the animation's own peak value, not 0 — unlike
-       .celebrate-message (which also defaults to visible), this element
-       used to START invisible and depend entirely on its animation to
-       ever become visible at all; if that animation failed to apply for
-       any reason, the celebration was permanently blank rather than just
-       unanimated. The animation below still fully controls opacity for
-       its duration either way — this only matters as the fallback. */
+    /* Visible by default so a failed animation can't leave it permanently blank. */
     position:fixed; inset:0; z-index:45; pointer-events:none; opacity:.85;
     background: radial-gradient(circle at var(--fx,50%) var(--fy,40%),
       rgba(255,209,102,.85) 0%, rgba(244,114,182,.7) 30%, rgba(192,132,252,.5) 55%, transparent 78%);
@@ -223,7 +205,7 @@
     border:none; background:transparent; color:var(--text);
     padding:6px 11px; border-radius:999px; font-size:12.5px; font-weight:600;
   }
-  .seg button.active{ background:var(--accent); color:#fff; }
+  .seg button.active{ background:var(--accent); color:var(--on-accent, #fff); }
   .sim-clock{ font-size:12.5px; color:var(--muted); white-space:nowrap; }
   .sim-clock strong{ color:var(--text); font-variant-numeric:tabular-nums; }
 
@@ -233,7 +215,7 @@
     font-size:16px;
   }
   .primary-btn{
-    border:none; background:var(--accent); color:#fff; font-weight:600;
+    border:none; background:var(--accent); color:var(--on-accent, #fff); font-weight:600;
     padding:9px 16px; border-radius:999px; font-size:13.5px;
     display:inline-flex; align-items:center; gap:6px;
   }
@@ -255,7 +237,7 @@
     border:1px solid var(--border); background:var(--track); color:var(--text);
     padding:5px 12px; border-radius:999px; font-size:12.5px; font-weight:600;
   }
-  .duration-chip:hover{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .duration-chip:hover{ background:var(--accent); color:var(--on-accent, #fff); border-color:var(--accent); }
 
   /* Independent feature toggles — each one hides its section outright, not
      just visually de-emphasized, so "off" really means off. No markup is
@@ -338,6 +320,73 @@
   button.dump-dest::after{ content:" ⇄"; font-weight:400; }
   .dump-empty{ color:var(--muted); font-size:13px; margin:14px 0 0; }
 
+  /* ---------- Opening animation: a sleepy cloud ---------- */
+  #splash{
+    position:fixed; inset:0; z-index:200; display:none; flex-direction:column; align-items:center; justify-content:center;
+    background:linear-gradient(180deg, #e6eff7 0%, #f6f2ec 100%); color:#3a4a5c; cursor:pointer;
+    animation: splashOut .7s ease 2.4s forwards;
+  }
+  html.show-splash #splash{ display:flex; }
+  html.splash-night #splash{ background:linear-gradient(180deg, #14171d 0%, #1d2129 100%); color:#dfe5ee; }
+  #splash.skip{ animation: splashOut .3s ease forwards; }
+  .splash-cloud{ overflow:visible; filter:drop-shadow(0 10px 18px rgba(70,100,135,.18)); animation: cloudIn 1.1s cubic-bezier(.2,.7,.3,1) both; }
+  /* The cloud, wherever it appears. */
+  .cloud-svg{ overflow:visible; }
+  .cloud-body{ fill:var(--cloud-fill, #ffffff); }
+  html.splash-night #splash .cloud-body{ fill:#c9d4e3; }
+  .cloud-line{ fill:none; stroke:#3b4656; stroke-width:2.2; stroke-linecap:round; }
+  .cloud-pupil{ fill:#3b4656; }
+  .cloud-shine{ fill:#ffffff; }
+  .cloud-blush{ fill:#f4a9b8; opacity:.55; }
+  .cloud-eye{ transform-box:fill-box; transform-origin:center; }
+  /* Splash: sleepy at first, then it wakes, looks at you and smiles. */
+  #splash .face-awake{ opacity:0; animation: cloudFaceIn .3s ease 1s both; }
+  #splash .face-sleepy{ animation: cloudFaceOut .2s ease 1s both; }
+  #splash .face-awake .cloud-eye{ animation: cloudBlink .35s ease 1s both; }
+  @keyframes cloudFaceIn{ from{ opacity:0; } to{ opacity:1; } }
+  @keyframes cloudFaceOut{ to{ opacity:0; } }
+  @keyframes cloudBlink{ 0%{ transform:scaleY(.1); } 100%{ transform:scaleY(1); } }
+  #headerLine{ font-size:18px; line-height:1.3; vertical-align:middle; }
+  .brand h1{ display:flex; align-items:center; }
+  .splash-cloud-wrap{ position:relative; }
+  .splash-spark{ position:absolute; font-size:20px; opacity:0; animation: sparkTwinkle .9s ease 1.05s both; }
+  .splash-spark.s1{ top:-6px; right:-8px; }
+  .splash-spark.s2{ top:34px; left:-16px; font-size:14px; animation-delay:1.25s; }
+  @keyframes sparkTwinkle{
+    0%{ opacity:0; transform:scale(.3) rotate(-20deg); }
+    40%{ opacity:1; transform:scale(1.15) rotate(10deg); }
+    100%{ opacity:0; transform:scale(.8); }
+  }
+  /* The header cloud cheers along with the done burst. */
+  @media not (prefers-reduced-motion: reduce){
+    .brand-cloud.cheer{ animation: cloudCheer .9s cubic-bezier(.3,.6,.4,1.3); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .splash-spark{ display:none; }
+    .brand-cloud.cheer{ animation: cloudGlow .9s ease; }
+  }
+  @keyframes cloudCheer{
+    30%{ transform:translateY(-6px) scale(1.15) rotate(-6deg); }
+    60%{ transform:translateY(0) scale(.96) rotate(4deg); }
+  }
+  @keyframes cloudGlow{ 50%{ filter:drop-shadow(0 0 8px rgba(255,214,102,.95)); } }
+  .brand-cloud{ flex:none; width:34px; height:24px; margin-right:9px; vertical-align:-3px; filter:drop-shadow(0 2px 4px rgba(70,100,135,.22)); }
+  .splash-name{ margin:18px 0 2px; font-size:26px; font-weight:800; letter-spacing:.01em; animation: splashFade .8s ease .45s both; }
+  .splash-tag{ margin:0; font-size:15px; opacity:.75; animation: splashFade .8s ease .75s both; }
+  @media not (prefers-reduced-motion: reduce){
+    .splash-cloud{ animation: cloudIn 1.1s cubic-bezier(.2,.7,.3,1) both, cloudFloat 3s ease-in-out 1.1s infinite; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #splash{ animation-duration:.4s; animation-delay:1.2s; }
+    #splash .face-sleepy{ display:none; }
+    #splash .face-awake, #splash .face-awake .cloud-eye{ opacity:1; animation:none; }
+    .splash-cloud, .splash-name, .splash-tag{ animation: splashFade .4s ease both; }
+  }
+  @keyframes cloudIn{ 0%{ opacity:0; transform:translateY(22px) scale(.88); } 100%{ opacity:1; transform:translateY(0) scale(1); } }
+  @keyframes cloudFloat{ 0%, 100%{ transform:translateY(0); } 50%{ transform:translateY(-5px); } }
+  @keyframes splashFade{ from{ opacity:0; } to{ opacity:1; } }
+  @keyframes splashOut{ to{ opacity:0; visibility:hidden; } }
+
   /* ---------- Steps dropdown (timeline rows) ---------- */
   .steps-toggle{
     border:1px solid var(--border); background:var(--bg); color:var(--muted); border-radius:999px;
@@ -352,6 +401,9 @@
 
   /* ---------- Focus with me ---------- */
   body.feat-focusmode-off .fm-launch{ display:none; }
+  body.feat-categories-off .cat-chip,
+  body.feat-categories-off .bd-cat-field,
+  body.feat-categories-off #st_catSection{ display:none; }
   .fm-launch-row{ margin:-4px 0 10px; }
   dialog#focusDialog{
     width:100%; height:100%; max-width:none; max-height:none; margin:0; border-radius:0;
@@ -376,17 +428,28 @@
     background:radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 45%, white), color-mix(in srgb, var(--accent) 75%, transparent));
     opacity:.85; box-shadow:0 0 60px color-mix(in srgb, var(--accent) 40%, transparent);
   }
+  /* Box breathing, 16s per breath: grow 4s, still 4s, shrink 4s, rest 4s. */
   @media not (prefers-reduced-motion: reduce){
-    .fm-breath{ animation: fmBreathe 10s ease-in-out infinite; }
-    .fm-paused .fm-breath{ animation-play-state:paused; }
+    .fm-breath.breathing{ animation: fmBreathe 16s ease-in-out infinite; }
   }
   @keyframes fmBreathe{
-    0%, 100%{ transform:scale(.78) rotate(0deg); border-radius:46% 54% 52% 48% / 50% 46% 54% 50%; }
-    45%{ transform:scale(1) rotate(8deg); border-radius:54% 46% 48% 52% / 46% 54% 50% 50%; }
-    55%{ transform:scale(1) rotate(8deg); }
+    0%{ transform:scale(.72) rotate(0deg); border-radius:46% 54% 52% 48% / 50% 46% 54% 50%; }
+    25%, 50%{ transform:scale(1) rotate(3deg); border-radius:54% 46% 48% 52% / 46% 54% 50% 50%; }
+    75%, 100%{ transform:scale(.72) rotate(0deg); border-radius:46% 54% 52% 48% / 50% 46% 54% 50%; }
   }
-  .fm-time{ position:relative; font-size:24px; font-weight:800; color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.25); }
-  .fm-msg{ min-height:2.9em; margin:0 0 14px; font-size:15px; color:var(--muted); max-width:320px; }
+  .fm-cue{ margin:-8px 0 12px; min-height:1.4em; font-size:15px; color:var(--muted); letter-spacing:.02em; }
+  .fm-msg{ transition:opacity .7s ease; }
+  .fm-msg.fading{ opacity:0; }
+  .fm-calm-link{ margin-top:14px; }
+  #fmInner .fm-calm-title, #fmInner .fm-calm-actions{ display:none; }
+  .fm-calm-title{ font-size:20px; font-weight:800; line-height:1.35; margin:0 0 22px; max-width:320px; }
+  #fmInner.fm-calm .fm-calm-title{ display:block; }
+  #fmInner.fm-calm .fm-calm-actions{ display:flex; }
+  #fmInner .fm-actions.fm-normal-actions{ display:flex; }
+  #fmInner.fm-calm .fm-with, #fmInner.fm-calm .fm-task, #fmInner.fm-calm .fm-time,
+  #fmInner.fm-calm .fm-normal-actions, #fmInner.fm-calm #fmCheck, #fmInner.fm-calm .fm-close{ display:none; }
+  .fm-time{ position:relative; font-size:24px; font-weight:800; color:var(--on-accent, #fff); text-shadow:0 1px 6px rgba(0,0,0,.25); }
+  .fm-msg{ min-height:2.9em; margin:0 0 16px; font-size:20px; font-weight:600; line-height:1.4; color:var(--text); max-width:300px; }
   .fm-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
   .fm-check{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin:0 0 16px; }
   .fm-check p{ margin:0 0 8px; font-weight:700; }
@@ -435,7 +498,7 @@
     flex:1; min-width:0; aspect-ratio:1; max-width:44px; border-radius:50%;
     border:1px solid var(--border); background:var(--card); color:var(--text); font-weight:700; font-size:13px;
   }
-  .day-pick.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .day-pick.on{ background:var(--accent); border-color:var(--accent); color:var(--on-accent, #fff); }
 
   /* ---------- Done history ---------- */
   .done-hero{ font-size:15px; font-weight:700; margin:4px 0 14px; }
@@ -565,13 +628,7 @@
   .subtask-list .subtask-title{ flex:1; min-width:0; }
   .subtask-est{ margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
 
-  /* Swipe-to-complete / swipe-to-delete (to-do rows only — block "steps"
-     checklists keep the plain .subtask-list li look above). Swiping right
-     reveals the green layer (release past the threshold completes it);
-     swiping left reveals the red one (release past threshold deletes it).
-     Both bg layers sit stacked underneath; only the one being dragged
-     toward is opaque. The sliding foreground carries the row's normal
-     look so at rest it's unchanged. */
+  /* Swipe rows: green (done) and red (delete) layers sit underneath the sliding content. */
   #todoList li{ position:relative; overflow:hidden; padding:0; border:none; background:transparent; border-radius:8px; }
   #todoList .swipe-bg-right, #todoList .swipe-bg-left{
     position:absolute; inset:0; display:flex; align-items:center; font-weight:700; font-size:12.5px; border-radius:8px; opacity:0;
@@ -635,7 +692,7 @@
   .is-done .block-time{ color:var(--muted); }
   .block-meta{ font-size:12px; color:var(--muted); margin-top:3px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .status-tag{ font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted); }
-  .status-tag.now{ color:#fff; background:var(--accent); border-color:var(--accent); }
+  .status-tag.now{ color:var(--on-accent, #fff); background:var(--accent); border-color:var(--accent); }
   .status-tag.over{ color:var(--danger-quiet); border-color:var(--danger-quiet); background:transparent; }
   .status-tag.wait{ color:var(--muted); border-style:dashed; }
   .block-actions{ display:flex; gap:6px; align-items:center; flex:none; }
@@ -686,35 +743,35 @@
   .cat-manage-row input[type=text].cname{ flex:1; min-width:0; }
   .cat-manage-row input[type=text].cicon{ width:44px; text-align:center; }
 
-  /* ---------- Auth screen ---------- */
-  .auth-screen{
-    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
-  }
-  .auth-card{
-    width:100%; max-width:380px; background:var(--card); border:1px solid var(--border);
-    border-radius:var(--radius-lg); padding:28px;
-  }
-  .auth-card h1{ margin:0 0 4px; font-size:22px; }
-  .auth-card .auth-sub{ margin:0 0 20px; font-size:13px; color:var(--muted); }
-  .auth-tabs{ display:flex; gap:4px; background:var(--bg); border:1px solid var(--border); border-radius:999px; padding:4px; margin-bottom:18px; }
-  .auth-tabs button{ flex:1; border:none; background:transparent; padding:8px; border-radius:999px; font-size:13px; font-weight:600; color:var(--muted); }
-  .auth-tabs button.active{ background:var(--accent); color:#fff; }
-  .auth-error{ font-size:12.5px; color:var(--danger-quiet); margin:0 0 10px; min-height:1em; }
-  .auth-footer-link{ text-align:center; margin-top:14px; font-size:12.5px; color:var(--muted); }
-  .auth-offline-link{ display:block; text-align:center; margin-top:18px; font-size:12px; }
-  .auth-card .primary-btn{ width:100%; justify-content:center; padding:11px; font-size:14px; }
-  .cloud-status{ font-size:11.5px; color:var(--muted); display:flex; align-items:center; gap:5px; }
-  .cloud-status .dot{ width:7px; height:7px; border-radius:50%; background:var(--muted-2); }
-  .cloud-status.synced .dot{ background:#6f9c7d; }
-  .cloud-status.syncing .dot{ background:var(--accent); }
-  .cloud-status.error .dot{ background:var(--danger-quiet); }
+  .low-capacity-link{ display:block; text-align:center; margin-top:18px; font-size:12px; }
 </style>
 </head>
 <body>
+<script>
+  // Decide on the opening animation before anything paints.
+  (function(){
+    var show = true, night = false;
+    try {
+      var saved = JSON.parse(localStorage.getItem("timeanchor_state_v1") || "{}");
+      show = !(saved.features && saved.features.splash === false);
+      night = saved.colorTheme === "night";
+    } catch (e) {}
+    if (show) document.documentElement.classList.add("show-splash");
+    if (night) document.documentElement.classList.add("splash-night");
+  })();
+</script>
+<div id="splash" aria-hidden="true">
+  <div class="splash-cloud-wrap">
+  <svg class="splash-cloud cloud-svg" viewBox="0 0 120 84" width="168" height="118"><g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g><ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/><g class="face-sleepy"><path class="cloud-line" d="M49 52 q4 4 8 0"/><path class="cloud-line" d="M66 52 q4 4 8 0"/><path class="cloud-line" d="M58 60 q3 2.5 6 0"/></g><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="51" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="49.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="51" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="49.7" r="1.2"/></g><path class="cloud-line" d="M55.5 58.5 q6 6 12 0"/></g></svg>
+    <span class="splash-spark s1">✨</span><span class="splash-spark s2">✨</span>
+  </div>
+  <p class="splash-name">Kindday</p>
+  <p class="splash-tag">your day, gently</p>
+</div>
 
 <header class="app-header">
   <div class="brand">
-    <h1 id="brandTagline">Hi, Ameena</h1>
+    <h1 id="brandTagline"><svg class="brand-cloud cloud-svg" viewBox="20 10 86 62" aria-hidden="true"><g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g><ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="51" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="49.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="51" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="49.7" r="1.2"/></g><path class="cloud-line" d="M55.5 58.5 q6 6 12 0"/></g></svg><span id="headerLine">Kindday</span></h1>
   </div>
   <div class="header-controls">
     <div class="sim-clock" id="simClockWrap" title="Speed and other testing tools are in Settings"><strong id="simClockText">--:--</strong></div>
@@ -781,7 +838,7 @@
   <section class="panel" id="todoPanelSection" aria-labelledby="todoHeading">
     <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
     <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
-    <div class="fm-launch-row"><button type="button" class="text-btn fm-launch" data-action="focus-with-me">🫧 Focus with me</button></div>
+    <div class="fm-launch-row"><button type="button" class="text-btn fm-launch" data-action="focus-with-me">☁️ Focus with me</button></div>
     <div id="energyCheck"></div>
     <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
       <input type="text" id="todoInput" placeholder="Add something…" style="flex:1;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
@@ -844,11 +901,7 @@
 
   function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
 
-  // Category colors are user-editable (a plain color picker), so a chosen
-  // hue can easily be too pale/mid-tone to read as text once it's sitting
-  // on its own light tinted pill background. This darkens it just enough
-  // to guarantee real contrast, however it was picked — the pill's
-  // background tint and border keep the original, undarkened color.
+  // Darkens (or, on dark themes, lightens) a picked category colour until it's readable on its chip.
   function hexToRgbArr(hex){
     const c = hex.replace('#', '');
     return [parseInt(c.substr(0,2),16), parseInt(c.substr(2,2),16), parseInt(c.substr(4,2),16)];
@@ -870,18 +923,15 @@
       .map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
   }
   function readableChipText(hex){
-    // The chip's actual background is this color mixed at 16% over the
-    // current theme's card color (matching the CSS color-mix() used for
-    // the pill background) — darken against *that*, not an assumed white,
-    // since a tinted background can be a little darker than white.
+    // Measured against the chip's real background: this colour at 16% over the card.
     const cardHex = (getComputedStyle(document.documentElement).getPropertyValue("--card") || "#ffffff").trim() || "#ffffff";
     const tint = mixHex(hex, cardHex, 0.16);
+    const darkCard = contrastRatio(cardHex, "#000000") < 7;
     let amt = 0;
     let cur = hex;
     while (contrastRatio(cur, tint) < 4.5 && amt < 0.9){
       amt += 0.03;
-      const [r,g,b] = hexToRgbArr(hex);
-      cur = "#" + [r,g,b].map(v => Math.round(v * (1 - amt)).toString(16).padStart(2, "0")).join("");
+      cur = darkCard ? mixHex("#ffffff", hex, amt) : mixHex("#000000", hex, amt);
     }
     return cur;
   }
@@ -894,10 +944,7 @@
     let h12 = h % 12; if (h12 === 0) h12 = 12;
     return h12 + ":" + String(mm).padStart(2, "0") + " " + ampm;
   }
-  // Accepts free-typed time in either 12-hour ("9:30 am", "9am", "9:30pm")
-  // or 24-hour ("21:30", "9:30") form — a plain typable text field instead
-  // of relying on the browser's native time-picker widget, which some
-  // embedded/sandboxed viewers render awkwardly or restrict to click-only.
+  // Free-typed time, 12- or 24-hour ("9:30 am", "21:30"); text fields beat native pickers in some viewers.
   function parseTimeFlexible(str){
     if (!str) return null;
     const m = str.trim().toLowerCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
@@ -915,10 +962,7 @@
     }
     return h * 60 + min;
   }
-  // Accepts free-typed duration: a plain number of minutes ("45"), with a
-  // unit ("45m", "45 min"), hours ("1h", "1 hour"), or combined ("1h 30m",
-  // "1:30"). Same reasoning as parseTimeFlexible — a plain text field the
-  // native number-input spinner some viewers render as click-only.
+  // Free-typed duration: "45", "45m", "1h", "1h 30m" or "1:30".
   function parseDurationFlexible(str){
     if (!str) return null;
     str = str.trim().toLowerCase();
@@ -953,21 +997,18 @@
 
   let appBooted = false;
 
-  /* ---------------------------------------------------------------------
-     Color themes — bulk-recolor every category (in their current order)
-     plus the app's accent color in one tap. All kept in the same muted,
-     low-saturation range as the original palette, just shifted in hue.
-  --------------------------------------------------------------------- */
-  // Every theme is a COMPLETE palette (bg/card/text/muted/border/track), not
-  // just an accent tint — a theme is a deliberate, explicit look, so once
-  // picked it stays correct regardless of the device's light/dark setting.
-  // (A partial override was exactly how the Pink theme ended up with
-  // light dark-mode text sitting on a light pink background — unreadable.)
+  /* ---------- Colour themes ---------- */
+  // Each theme is a complete palette, so it stays readable whatever the phone's light/dark setting.
   const COLOR_THEMES = {
     mixed:    { label: "Calm mixed",  accent: "#4d6b86", focusRing: "#2c6e9e", bg: "#f6f4ef", card: "#ffffff", text: "#2c2a27", muted: "#706a5f", muted2: "#746f64", border: "#e3ded3", track: "#eae6db", bgPattern: "confetti", colors: ["#5b7fa6", "#ab8657", "#6f9c7d", "#9a7bb0"] },
     monotone: { label: "Monotone",    accent: "#5c5c5c", focusRing: "#3d3d3d", bg: "#f2f2f0", card: "#ffffff", text: "#2a2a2a", muted: "#66666a", muted2: "#6d6d74", border: "#dcdcdc", track: "#e6e6e6", colors: ["#454545", "#6b6b6b", "#8c8c8c", "#3a3a3a"] },
     blue:     { label: "Blue",        accent: "#3f6b95", focusRing: "#2a5a86", bg: "#f0f4f8", card: "#ffffff", text: "#1f3347", muted: "#5c7186", muted2: "#5e717f", border: "#d7e2ea", track: "#e2ebf1", bgPattern: "bubbles", colors: ["#2f5a80", "#4a7fa5", "#3d8fa0", "#5f7fa8"] },
-    pink:     { label: "Pink",        accent: "#b0508a", focusRing: "#9a3f78", bg: "#fdeef5", card: "#fffbfd", text: "#5a2245", muted: "#8f4a72", muted2: "#97587c", border: "#f3c9df", track: "#f8ddec", bgPattern: "stars", colors: ["#c15a92", "#d97fae", "#a54f8a", "#b96a9c"] }
+    pink:     { label: "Pink",        accent: "#b0508a", focusRing: "#9a3f78", bg: "#fdeef5", card: "#fffbfd", text: "#5a2245", muted: "#8f4a72", muted2: "#97587c", border: "#f3c9df", track: "#f8ddec", bgPattern: "stars", colors: ["#c15a92", "#d97fae", "#a54f8a", "#b96a9c"] },
+    sunshine: { label: "Sunshine",    accent: "#8a6a12", focusRing: "#a37a0f", bg: "#fdf8e6", card: "#fffdf4", text: "#3a321f", muted: "#6b6044", muted2: "#71654a", border: "#efe2b8", track: "#f6ecc6", bgPattern: "suns", colors: ["#c9a227", "#d08a4c", "#8f9a52", "#b9894a"] },
+    sage:     { label: "Sage",        accent: "#4f7a5a", focusRing: "#3c6a48", bg: "#f1f5ef", card: "#fbfdfa", text: "#253226", muted: "#5b6b5c", muted2: "#627262", border: "#d7e3d4", track: "#e3ece0", bgPattern: "leaves", colors: ["#5f8f6a", "#8aa36b", "#4f8a86", "#a39264"] },
+    lavender: { label: "Lavender",    accent: "#6d5a9c", focusRing: "#5a4889", bg: "#f5f2fa", card: "#fdfcff", text: "#2d2640", muted: "#665c7d", muted2: "#6c6283", border: "#e2dcef", track: "#ebe6f4", bgPattern: "stars", colors: ["#7d68b0", "#a084c4", "#6a7fb8", "#b07aa8"] },
+    peach:    { label: "Peach",       accent: "#a5583a", focusRing: "#8f4a2f", bg: "#fdf4ee", card: "#fffbf8", text: "#3d2a22", muted: "#76584b", muted2: "#7b5e50", border: "#f0ddd0", track: "#f7e7dc", bgPattern: "suns", colors: ["#d07a55", "#c99a5b", "#b8696f", "#8f9a6a"] },
+    night:    { label: "Night",       accent: "#9db8d9", onAccent: "#121821", focusRing: "#bcd3ee", bg: "#16181d", card: "#1f2229", text: "#e8e6e1", muted: "#a9adb6", muted2: "#9da1aa", border: "#33373f", track: "#2a2e36", danger: "#e0a172", dark: true, colors: ["#7fa6d1", "#c9a46b", "#82b394", "#b199cf"] }
   };
   function applyColorTheme(key){
     const theme = COLOR_THEMES[key] || COLOR_THEMES.mixed;
@@ -985,12 +1026,15 @@
     document.documentElement.style.setProperty("--muted-2", theme.muted2);
     document.documentElement.style.setProperty("--border", theme.border);
     document.documentElement.style.setProperty("--track", theme.track);
-    // Buffer blocks and notice banners use a neutral tint rather than a
-    // category color — tie it to this theme's own track/muted tones so it
-    // never falls back to the system dark-mode default (which caused
-    // unreadable near-black banners on a light theme's dark-colored text).
+    // Buffers and notice banners use the theme's own neutral tint.
     document.documentElement.style.setProperty("--cat-buffer-tint", theme.track);
     document.documentElement.style.setProperty("--cat-buffer", theme.muted2);
+    document.documentElement.style.setProperty("--on-accent", theme.onAccent || "#ffffff");
+    document.documentElement.style.setProperty("--cloud-fill", theme.dark ? "#c9d4e3" : "#ffffff");
+    document.documentElement.style.setProperty("--danger-quiet", theme.danger || "#966335");
+    document.documentElement.style.colorScheme = theme.dark ? "only dark" : "only light";
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) themeMeta.setAttribute("content", theme.bg);
     if (theme.bgPattern) document.body.setAttribute("data-bg-pattern", theme.bgPattern);
     else document.body.removeAttribute("data-bg-pattern");
   }
@@ -1085,7 +1129,7 @@
   /* ---------------------------------------------------------------------
      State
   --------------------------------------------------------------------- */
-  const DEFAULT_FEATURES = { dayJar: true, focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, energy: true, history: true, celebrations: true, focusMode: true };
+  const DEFAULT_FEATURES = { categories: true, dayJar: true, focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, energy: true, history: true, celebrations: true, focusMode: true, splash: true, dailyWords: true };
   const TAB_IDS = ["today", "dump", "todo", "done"];
   const DEFAULT_NAMES = { today: "Today", dump: "Brain dump", todo: "To-do list", done: "Done list", focus: "Right now", timeline: "Today's timeline" };
   function normalizeUi(u){
@@ -1117,7 +1161,7 @@
     behind: ["Waiting — running behind", "Whenever you're ready"],
     nextUp: ["Next up", "Coming up"],
     notifStart: ["Starting now", "Ready when you are"],
-    notifEnd: ["Time's up — check in on TimeAnchor", "Time for a gentle check-in"]
+    notifEnd: ["Time's up — check in on Kindday", "Time for a gentle check-in"]
   };
   function w(key){ return WORDS[key][state && state.ui && state.ui.gentle ? 1 : 0]; }
   // Older saves only had { timeline, todoList }, where timeline:false also
@@ -1201,16 +1245,22 @@
     const list = state.history[day] || (state.history[day] = []);
     if (list.some(e => e.id === item.id)) return;
     const cat = kind === "block" ? catFor(item) : null;
-    list.push({ id: item.id, kind, title: item.title, icon: cat ? cat.icon : "✅", color: cat ? cat.color : null, at: Math.round(actualNowMinutes()) });
+    list.push({ id: item.id, kind, title: item.title, icon: cat ? (cat.icon || "☀️") : "🌱", color: cat ? cat.color : null, at: Math.round(actualNowMinutes()) });
   }
   function unrecordDone(id){
     const list = state.history[todayStr()];
     if (list) state.history[todayStr()] = list.filter(e => e.id !== id);
   }
 
+  // A task with no category (or categories switched off) gets no label.
+  const NO_CAT = { name: "", color: "#8a8f98", icon: "" };
   function catFor(block){
-    if (block.isBuffer || !block.categoryId) return BUFFER_META;
-    return state.categories.find(c => c.id === block.categoryId) || BUFFER_META;
+    if (block.isBuffer) return BUFFER_META;
+    return state.categories.find(c => c.id === block.categoryId) || NO_CAT;
+  }
+  function catChip(cat){
+    if (!cat.name) return "";
+    return '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>';
   }
   function sortedBlocks(){ return state.blocks.filter(blockIsToday).sort((a,b) => a.start - b.start); }
 
@@ -1239,11 +1289,7 @@
     });
   }
 
-  /* ---------------------------------------------------------------------
-     Local notifications — real reminders that fire even if the app is
-     backgrounded or closed (native only; best-effort in a plain browser
-     tab). These always track the REAL schedule, never the demo speed.
-  --------------------------------------------------------------------- */
+  /* ---------- Reminders: native notifications (best-effort in a browser tab), on the real clock ---------- */
   const hasCapacitor = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const LocalNotifications = hasCapacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.LocalNotifications : null;
   let notifPermission = "unknown";
@@ -1267,7 +1313,7 @@
       notifPermission = "unavailable";
     }
     if (notifPermission !== "granted"){
-      showNotice("Reminders are off — allow notifications in your device settings if you'd like TimeAnchor to alert you when blocks start and end.");
+      showNotice("Reminders are off — allow notifications in your device settings if you'd like Kindday to alert you when blocks start and end.");
     }
     scheduleNotifications();
   }
@@ -1294,7 +1340,7 @@
         const cat = catFor(b);
         const startDate = minutesToRealDate(b.start);
         if (startDate) toSchedule.push({
-          id: notifIdCounter++, title: w("notifStart"), body: b.title + " (" + cat.name + ")", schedule: { at: startDate }
+          id: notifIdCounter++, title: w("notifStart"), body: b.title + (cat.name && state.features.categories ? " (" + cat.name + ")" : ""), schedule: { at: startDate }
         });
         const hu = state.ui.headsUp;
         if (hu && b.duration > hu){
@@ -1349,18 +1395,8 @@
     document.getElementById("noticeBanner").style.display = "none";
   });
 
-  /* ---------------------------------------------------------------------
-     A small celebratory reward for finishing a task — sparkles that pop
-     and float from wherever "Mark done" was tapped, plus a short chime
-     and a quick encouraging note. This is deliberately *variable*: which
-     emoji and which phrase show up is randomized each time (unpredictable
-     small rewards hold attention better than the exact same one every
-     time), while staying calm and non-garish — a handful of sparkles and
-     one line of text, nothing that takes over the screen. The sparkles
-     are skipped entirely for reduced-motion; the phrase still shows
-     (opacity fade only, no movement) so finishing something still gets
-     acknowledged either way.
-  --------------------------------------------------------------------- */
+  /* ---------- Celebrations ---------- */
+  // A varied phrase and sparkles (small surprises hold attention), kept calm; no movement when motion is reduced.
   const CELEBRATE_MESSAGES = ["Nice work!", "Done. ✓", "One down.", "Nailed it.", "Task complete.", "You did it!", "That's a wrap.", "Off the list."];
   function celebrateBurst(x, y){
     const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1368,6 +1404,20 @@
     if (style === "burst") celebrateFlash(x, y);
     if (!reduceMotion && style !== "message") celebrateSparkles(x, y);
     celebrateMessage(x, y);
+    cloudCheer(reduceMotion);
+  }
+
+  function cloudCheer(reduceMotion){
+    const cloud = document.querySelector("#brandTagline .brand-cloud");
+    if (!cloud) return;
+    cloud.classList.remove("cheer");
+    void cloud.getBoundingClientRect();
+    cloud.classList.add("cheer");
+    setTimeout(() => cloud.classList.remove("cheer"), 1000);
+    if (!reduceMotion){
+      const [cx, cy] = rowCenter(cloud);
+      celebrateSparkles(cx, cy, 3);
+    }
   }
 
   // Full-screen color wash; reduced-motion gets a fade instead of a pulse.
@@ -1381,9 +1431,9 @@
     setTimeout(() => flash.remove(), 800);
   }
 
-  function celebrateSparkles(x, y){
-    const emojis = ["✨", "🎉", "⭐", "💫"];
-    for (let i = 0; i < 5; i++){
+  function celebrateSparkles(x, y, count){
+    const emojis = ["✨", "⭐", "💫", "🌟"];
+    for (let i = 0; i < (count || 5); i++){
       const el = document.createElement("span");
       el.className = "celebrate-burst";
       el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
@@ -1413,10 +1463,7 @@
     if (!state.soundEnabled) return;
     withAudio((audioCtx, now) => {
       const peakBase = clamp(state.soundVolume, 0, 1) * 0.32;
-      // A brighter, quicker "ta-da" than the block-start chime, so the
-      // two are easy to tell apart by ear — same gentle volume cap and
-      // soft fade-in, just a different, more resolved little flourish for
-      // finishing something.
+      // Brighter and quicker than the start chime, so the two are easy to tell apart.
       [
         { freq: 784.00, at: 0.00, dur: 0.16 },
         { freq: 1046.50, at: 0.09, dur: 0.16 },
@@ -1518,7 +1565,7 @@
   }
 
   function deletePoof(x, y){
-    ["💨", "✨"].forEach((emoji, i) => {
+    ["☁️", "✨"].forEach((emoji, i) => {
       const el = document.createElement("span");
       el.className = "delete-poof";
       el.textContent = emoji;
@@ -1530,23 +1577,9 @@
     });
   }
 
-  /* ---------------------------------------------------------------------
-     Swipe-to-complete / swipe-to-delete — the single way to mark a block
-     or to-do done, or to remove it (the to-do checkbox stays too, as a
-     tap alternative for completing; it just doesn't celebrate the way
-     completing something via swipe does). Delegated Pointer Events on the
-     stable list containers (never replaced, only their children are, on
-     re-render) so the listeners survive renders. A short pointer-move
-     before locking onto horizontal vs. vertical means a normal scroll
-     gesture never gets mistaken for a swipe. Deleting a block asks first
-     (matching the old delete button); deleting a to-do doesn't, matching
-     how its delete button always worked.
-  --------------------------------------------------------------------- */
-  // While true, tick()'s periodic structural re-render is skipped — it
-  // rebuilds #timelineList's whole innerHTML, which would yank the very
-  // row a gesture is mid-drag on out of the DOM (and silently drop its
-  // pointer capture with it), losing the swipe. A render is never more
-  // than ~200ms late because of this, which a human can't perceive.
+  /* ---------- Swipe right to complete, left to delete ---------- */
+  // Listeners sit on the list containers so they survive re-renders.
+  // While true, tick() skips re-rendering the lists so a row isn't swapped out mid-drag.
   let swipeGestureActive = false;
 
   function setupSwipeGestures(containerId, rowSelector, findItem, onComplete, onDelete){
@@ -1562,16 +1595,7 @@
       setTimeout(() => { content.style.transition = ""; }, 220);
     }
 
-    // Fires the instant a drag crosses the threshold — not on release.
-    // Deciding the action from wherever a finger happened to be AT THE
-    // MOMENT it lifted (the old design) meant a completely normal flick —
-    // drag right past the threshold, finger eases back a little as it
-    // lifts, the kind of motion nobody can fully avoid — could land back
-    // past the delete threshold at that exact instant and fire the
-    // opposite action from the one that had clearly, visibly armed a
-    // moment before. Committing the moment the threshold is first crossed
-    // removes that ambiguity outright: once you've dragged far enough, it
-    // just happens, and whatever the finger does afterward is irrelevant.
+    // Resolves the moment a threshold is crossed, so easing back while lifting can't flip the action.
     function resolve(dir, row, content, id){
       a = null;
       swipeGestureActive = false;
@@ -1589,30 +1613,18 @@
     }
 
     container.addEventListener("pointerdown", (e) => {
-      // Deliberately NOT excluding <label> here — the to-do row's title is
-      // a label tied to its checkbox, and a plain tap on it (no real drag)
-      // still reaches the checkbox normally below, since preventDefault
-      // only fires once a horizontal drag is actually locked in.
+      // Labels aren't excluded: a plain tap still reaches the to-do checkbox (preventDefault only starts once a swipe locks in).
       if (e.target.closest("button, a, input")) return;
       const row = e.target.closest(rowSelector);
       if (!row) return;
       const content = row.querySelector(".swipe-content");
       if (!content) return;
-      // An already-completed row has no "done" action left — only delete.
-      // Without this, swiping right still played the complete-and-slide-
-      // away animation even though onComplete's status guard silently did
-      // nothing, leaving the row's content permanently slid off-screen
-      // (blank) with no re-render ever bringing it back.
+      // Done rows only allow delete; a right swipe used to slide them away for good.
       const alreadyDone = row.classList.contains("is-done") || row.classList.contains("done");
       const started = { row, content, startX: e.clientX, startY: e.clientY, dx: 0, pointerId: e.pointerId, locked: null, alreadyDone };
       a = started;
       swipeGestureActive = true;
-      // Self-healing safety net: a real touch gesture can be interrupted
-      // (another app switch, an incoming call) in ways that don't always
-      // reach pointerup or pointercancel. Without this, one missed event
-      // leaves the row stuck mid-drag forever. If this exact gesture
-      // hasn't resolved (by crossing a threshold) or been released within
-      // 2.5s, just snap it back rather than guess at an action.
+      // Safety net: an interrupted gesture that never gets pointerup snaps back after 2.5s.
       setTimeout(() => {
         if (a === started){
           a = null;
@@ -1627,18 +1639,7 @@
       const dx = e.clientX - a.startX;
       const dy = e.clientY - a.startY;
       if (a.locked !== "x"){
-        // Deciding "this is a swipe" vs "this is a scroll" off a SINGLE
-        // early sample was the actual bug: real touch input's first
-        // reported point is often coarse/diagonal-looking even for a
-        // dead-straight intended swipe, since a finger's direction hasn't
-        // "settled" the instant it starts moving. That one unlucky sample
-        // used to lock this permanently as a scroll with no way back,
-        // which is exactly why it only ever worked with a long, careful,
-        // nearly edge-to-edge drag — that's the only kind of motion whose
-        // very first sample is unambiguous enough to survive a one-shot
-        // decision. Now: too small to call yet keeps waiting; genuinely,
-        // persistently more vertical commits to scroll; anything else —
-        // including "a bit of both, leaning horizontal" — commits to swipe.
+        // Wait for a clear direction: early touch samples often look diagonal even on a straight swipe.
         if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
         if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 24){
           a.locked = "y";
@@ -1646,14 +1647,7 @@
         }
         if (Math.abs(dx) < Math.abs(dy)) return;
         a.locked = "x";
-        // Deliberately NOT calling setPointerCapture here. It isn't needed
-        // — the container-level delegated listeners keep receiving this
-        // pointer's move/up events regardless — and on real iOS Safari it
-        // was actively harmful: granting capture was immediately followed
-        // by a lostpointercapture event (sometimes in the same
-        // millisecond), which this code used to treat as "the gesture
-        // ended" and cancel an otherwise perfectly fine swipe mid-drag.
-        // That was the actual bug behind "barely moves, then snaps back."
+        // No setPointerCapture: iOS Safari revokes it instantly, which used to cancel real swipes.
       }
       e.preventDefault();
       // Clamp to leftward-only (delete) once a row is already done — it
@@ -1669,10 +1663,7 @@
       else if (a.dx < -THRESHOLD) resolve("delete", a.row, a.content, a.row.dataset.id);
     }, { passive: false });
 
-    // Released (or the gesture was cancelled) before ever crossing a
-    // threshold — just snap back. Anything that DID cross already
-    // resolved and nulled `a` out in pointermove above, so these are
-    // no-ops for it.
+    // Released before crossing a threshold: snap back.
     function cancel(e){
       if (!a || e.pointerId !== a.pointerId) return;
       const dropped = a;
@@ -1684,11 +1675,7 @@
     container.addEventListener("pointercancel", cancel);
   }
 
-  /* ---------------------------------------------------------------------
-     In-app confirm dialog — used instead of the browser's native confirm(),
-     which some embedded/sandboxed viewers block or silently no-op, making
-     a delete/clear action look like it does nothing at all.
-  --------------------------------------------------------------------- */
+  /* ---------- In-app confirm dialog (native confirm() is blocked in some viewers) ---------- */
   const confirmDialog = document.getElementById("confirmDialog");
   function showConfirm(message, onYes, confirmLabel){
     document.getElementById("confirmMessage").textContent = message;
@@ -1699,12 +1686,7 @@
   }
   document.getElementById("confirmCancel").addEventListener("click", () => confirmDialog.close());
 
-  /* ---------------------------------------------------------------------
-     Low-capacity ("bed rot") day. Autistic burnout / spoon-theory guidance
-     treats a demand-free rest day as a legitimate recovery need, not a
-     failure — so this clears today's remaining plan with validating
-     copy, no streak-breaking, no "missed" language, and a one-tap undo.
-  --------------------------------------------------------------------- */
+  /* ---------- Low-capacity day: clear the rest of today without guilt, with undo ---------- */
   function hasClearableBlocksToday(){
     return sortedBlocks().some(b => b.status === "pending");
   }
@@ -1749,7 +1731,7 @@
   /* ---------------------------------------------------------------------
      Rendering: Focus panel
   --------------------------------------------------------------------- */
-  const FOCUS_LAUNCH_HTML = '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me">🫧 Focus with me</button></div>';
+  const FOCUS_LAUNCH_HTML = '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me">☁️ Focus with me</button></div>';
   function renderFocusPanel(){
     const el = document.getElementById("focusPanelBody");
     const cur = getCurrentBlock();
@@ -1761,7 +1743,7 @@
         el.innerHTML =
           '<div class="focus-empty">' +
             '<p>Nothing scheduled right now &mdash; this is open time.</p>' +
-            '<p class="next-line">' + w("nextUp") + ': <strong>' + escapeHtml(next.title) + '</strong> (' + cat.icon + ' ' + escapeHtml(cat.name) + ') at ' + fmtClock(next.start) + '.</p>' +
+            '<p class="next-line">' + w("nextUp") + ': <strong>' + escapeHtml(next.title) + '</strong>' + (cat.name && state.features.categories ? ' (' + cat.icon + ' ' + escapeHtml(cat.name) + ')' : '') + ' at ' + fmtClock(next.start) + '.</p>' +
             '<div class="focus-actions"><button type="button" class="ghost-btn" data-action="start-now" data-id="' + next.id + '">' + w("startNow") + '</button></div>' +
             FOCUS_LAUNCH_HTML +
           '</div>' + lowCapacityLinkHtml();
@@ -1825,7 +1807,7 @@
 
     el.innerHTML =
       '<div class="focus-current">' +
-        '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
+        catChip(cat) +
         (pie ? '<div class="big-pie">' + pie + '</div>' : '') +
         '<p class="focus-title">' + escapeHtml(cur.title) + '</p>' +
         '<p class="focus-time-range">' + fmtClock(cur.start) + ' &ndash; ' + fmtClock(cur.start + cur.duration) + ' <span class="block-dur">&middot; ' + fmtDuration(cur.duration) + (overrun ? " (running over)" : "") + '</span></p>' +
@@ -1838,13 +1820,13 @@
           '<button type="button" class="ghost-btn" data-action="extend" data-id="' + cur.id + '" data-min="10">+10m</button>' +
           '<button type="button" class="primary-btn" data-action="done" data-id="' + cur.id + '">' + w("markDone") + '</button>' +
         '</div>' +
-        '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me" data-kind="block" data-id="' + cur.id + '">🫧 Focus with me</button></div>' +
+        '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me" data-kind="block" data-id="' + cur.id + '">☁️ Focus with me</button></div>' +
       '</div>' + lowCapacityLinkHtml();
   }
 
   function lowCapacityLinkHtml(){
     if (!hasClearableBlocksToday()) return "";
-    return '<a href="#" class="auth-offline-link text-btn" data-action="low-capacity-day" style="margin-top:14px;">Low-capacity day? Clear the rest of today</a>';
+    return '<a href="#" class="low-capacity-link text-btn" data-action="low-capacity-day" style="margin-top:14px;">Low-capacity day? Clear the rest of today</a>';
   }
 
   function remainingSentence(block, remaining, overrun){
@@ -1921,7 +1903,7 @@
             '<div class="block-main">' +
               '<p class="block-time"><span style="white-space:nowrap;">' + fmtClock(block.start) + ' &ndash;</span> <span style="white-space:nowrap;">' + fmtClock(block.start + block.duration) + '</span> <span class="block-dur">' + fmtDuration(block.duration) + '</span></p>' +
               '<div class="block-top-line">' +
-                '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
+                catChip(cat) +
                 '<p class="block-title">' + escapeHtml(block.title) + '</p>' +
               '</div>' +
               (st || subtaskBadge || block.repeat !== "once" ? '<div class="block-meta">' +
@@ -1966,6 +1948,8 @@
     cl.toggle("feat-focus-off", !f.focus);
     cl.toggle("feat-dayjar-off", !f.dayJar);
     cl.toggle("feat-focusmode-off", !f.focusMode);
+    cl.toggle("feat-categories-off", !f.categories);
+    updateHeaderLine();
     cl.toggle("feat-timeline-off", !f.timeline);
     cl.toggle("feat-blocks-off", !f.focus && !f.timeline);
     cl.toggle("feat-quickadd-off", !f.quickAdd);
@@ -1979,7 +1963,7 @@
      Tabs. A tab disappears when every feature inside it is switched off;
      the bar itself only shows when there's more than one tab to pick.
   --------------------------------------------------------------------- */
-  const TAB_ICONS = { today: "🗓️", dump: "🧠", todo: "✅", done: "🌟" };
+  const TAB_ICONS = { today: "☀️", dump: "💭", todo: "🌱", done: "🌈" };
   let activeTab = null;
   function nameOf(key){
     const n = (state.ui.names[key] || "").trim();
@@ -2027,12 +2011,7 @@
     window.scrollTo(0, 0);
   });
 
-  // Runs every 200ms (tick) without touching any button/row markup — only
-  // the live numbers (pie fraction, "Xm remaining" text, soundtrack bar)
-  // get mutated in place. This is what stops the countdown from stealing
-  // taps: rebuilding the whole timeline's innerHTML that often would
-  // destroy and recreate the very button someone just tapped, dropping
-  // the click before it fires (especially on real touch devices).
+  // Each tick only updates live numbers in place; rebuilding buttons this often would swallow taps.
   function updatePieEl(wrap, fraction, overrun, holeLabel){
     if (!wrap) return;
     const outer = wrap.querySelector(".pie-outer");
@@ -2093,7 +2072,7 @@
       return;
     }
     el.innerHTML =
-      (todayCount ? '<p class="done-hero">🌟 You\'ve done ' + todayCount + (todayCount === 1 ? ' thing' : ' things') + ' today.</p>' : '') +
+      (todayCount ? '<p class="done-hero">🌈 You\'ve done ' + todayCount + (todayCount === 1 ? ' thing' : ' things') + ' today.</p>' : '') +
       days.map(d => {
         const items = state.history[d].slice().sort((a, b) => a.at - b.at);
         return '<details class="done-day" data-day="' + d + '"' + (doneOpenDays.has(d) ? ' open' : '') + '>' +
@@ -2111,9 +2090,9 @@
   }, true);
 
   const ENERGY = {
-    low: { icon: "🪫", name: "Low", note: "Low-energy day. The 🪫 gentle ones are at the top — everything else can wait." },
-    med: { icon: "🔋", name: "Okay", note: "The 🔋 middle-energy ones are at the top." },
-    high: { icon: "⚡", name: "Good", note: "Good energy! The ⚡ bigger ones are at the top." }
+    low: { icon: "🌙", name: "Low", note: "Low-energy day. The 🌙 gentle ones are at the top \u2014 everything else can wait." },
+    med: { icon: "⛅", name: "Okay", note: "The ⛅ middle-energy ones are at the top." },
+    high: { icon: "☀️", name: "Good", note: "Good energy! The ☀️ bigger ones are at the top." }
   };
   const ENERGY_CYCLE = [null, "low", "med", "high"];
   function todaysEnergy(){
@@ -2163,8 +2142,8 @@
   function dayPeriodText(){
     const p = dayPosition();
     if (p.phase === "before") return "Your day hasn't started yet";
-    if (p.phase === "after") return "Day's done — rest well 🌙";
-    return p.fraction < 0.34 ? "Morning ☀️" : p.fraction < 0.67 ? "Afternoon 🌤️" : "Evening 🌆";
+    if (p.phase === "after") return "Day's done \u2014 rest well ⭐";
+    return p.fraction < 0.34 ? "Morning 🌤️" : p.fraction < 0.67 ? "Afternoon ☀️" : "Evening 🌙";
   }
   let jarRenderedCount = -1;
   let jarRenderedDay = "";
@@ -2264,14 +2243,7 @@
     });
   }
 
-  /* ---------------------------------------------------------------------
-     Alarm chime — a soft two-note tone when a block actually starts, not
-     a jarring digital beep. Sound sensitivity is common in autistic
-     adults (sudden/high-pitched noise is a frequent trigger), so this is
-     deliberately gentle (fades in, low peak volume even at max), on by
-     default, and trivially muted from Settings — the shrinking timer
-     still communicates state with sound off.
-  --------------------------------------------------------------------- */
+  /* ---------- Chimes: soft fade-in tones with a low volume cap (sound sensitivity is common) ---------- */
   let audioCtx = null;
   // iPhones mute web audio when the ring/silent switch is on silent. Opting
   // in to "playback" plays through it (Safari 17+), but can pause music
@@ -2342,11 +2314,7 @@
     if (!state.soundEnabled) return;
     withAudio((audioCtx, now) => {
       const peakBase = clamp(state.soundVolume, 0, 1) * 0.32; // gentle even at "full" volume
-      // A short, cute little sparkle: a four-note rising arpeggio
-      // (C5 → E5 → G5 → C6) on a soft triangle wave, which reads as more
-      // of a toy-bell "ta-da" than a plain two-note doorbell chime. Each
-      // note still fades in over ~20ms (never a hard onset) and the whole
-      // thing is done in under a second — informative, not startling.
+      // A rising four-note toy bell (C5 E5 G5 C6) with a soft attack, done in under a second.
       [
         { freq: 523.25, at: 0.00, peak: 1.00 },
         { freq: 659.25, at: 0.11, peak: 0.95 },
@@ -2369,11 +2337,7 @@
     });
   }
 
-  /* ---------------------------------------------------------------------
-     Spoken time + plan — a second, optional channel alongside the chime,
-     for when even glancing at the screen is more than someone wants to
-     do right then. Reuses the same info already shown in the focus panel.
-  --------------------------------------------------------------------- */
+  /* ---------- Spoken time and plan (optional) ---------- */
   const speechSupported = "speechSynthesis" in window;
 
   function buildSpokenStatus(){
@@ -2420,11 +2384,7 @@
     updateSimClock();
     if (state.features.dayJar) updateJarFill();
 
-    // A swipe gesture mid-drag owns its row's markup right now — skip
-    // anything below that could rebuild or react to list content until it
-    // resolves (normally under a second; self-heals within 2.5s even in
-    // the worst case). The header clock above keeps ticking regardless,
-    // so the page never looks fully frozen even in that brief window.
+    // Mid-swipe, skip anything that could rebuild the lists (the clock above keeps ticking).
     if (swipeGestureActive) return;
 
     const nowCurrent = getCurrentBlock();
@@ -2595,11 +2555,7 @@
     }
   );
 
-  // Quick-add for blocks — just a title, no dialog. Everything else
-  // (category, start time, duration) gets a sensible default so the block
-  // exists immediately; tap it afterward (the ✏️ edit button) to change
-  // any of that. "+ New block" still opens the full dialog for anyone who
-  // wants to set those deliberately before it's created.
+  // Quick add: just a title; everything else gets a sensible default and can be edited later.
   const quickBlockForm = document.getElementById("quickBlockForm");
   if (quickBlockForm) quickBlockForm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -2615,13 +2571,7 @@
     commit();
   });
 
-  /* ---------------------------------------------------------------------
-     Brain dump → tidy list. Plain rules that run on the phone: no network,
-     nothing typed here ever leaves the device. It splits on lines, bullets,
-     sentences, commas, "then", and "and" when a new action verb follows
-     ("buy milk and eggs" stays one item); strips filler like "I need to";
-     and spots times ("at 3pm", "14:30", "noon") and lengths ("for 2 hours").
-  --------------------------------------------------------------------- */
+  /* ---------- Brain dump: on-phone rules split messy text into items and spot times and lengths ---------- */
   const DUMP_VERBS = "call|phone|ring|text|email|message|reply|ask|tell|remind|book|cancel|schedule|buy|order|get|pick|collect|drop|return|post|send|pay|renew|submit|apply|clean|tidy|wash|hoover|vacuum|empty|cook|make|fix|sort|do|finish|start|write|read|study|revise|check|update|plan|pack|prepare|walk|feed|water|take|bring|go|visit|see|meet|watch|charge|change|put|grab|find|print|file|organise|organize|shower|eat|drink|stretch|exercise|practise|practice|learn|look|research|move|try";
   const DUMP_AND_VERB = new RegExp("\\s+(?:and|also|plus)\\s+(?=(?:" + DUMP_VERBS + ")\\b)", "gi");
   const DUMP_CONTINUATION = /^(?:because|cos|cuz|coz|since|but|so that|which|who|as|she|he|it|they|we|that's|it's|its|she's|he's|they're|i'm|for her|for him|for them)\b/i;
@@ -2748,7 +2698,7 @@
     const f = state.features;
     const canSwitch = f.timeline && f.todoList;
     const anyDest = f.timeline || f.todoList;
-    const destLabel = (d) => d === "timeline" ? "🗓️ " + escapeHtml(nameOf("timeline")) : "✅ " + escapeHtml(nameOf("todo"));
+    const destLabel = (d) => d === "timeline" ? "☀️ " + escapeHtml(nameOf("timeline")) : "🌱 " + escapeHtml(nameOf("todo"));
     el.innerHTML =
       '<h3 class="dump-results-head">Here\'s your list</h3>' +
       '<p class="dialog-sub" style="margin:0;">Untick anything you don\'t want and tap any item to edit it' + (canSwitch ? ', or tap where it\'s going to switch it' : '') + '.</p>' +
@@ -2899,10 +2849,7 @@
     const st = (b.subtasks || []).find(s => s.id === t.dataset.sub);
     if (!st) return;
     st.done = t.checked;
-    // Checking off the last step of a task is, in effect, finishing the
-    // task — it should celebrate the same way swiping it done does,
-    // instead of silently doing nothing (the gap behind "the task itself
-    // didn't work" while a plain swipe on a step-free buffer did).
+    // Ticking the last step finishes the task, with the same celebration as a swipe.
     if (t.checked && b.status === "pending" && b.subtasks.length && b.subtasks.every(s => s.done)){
       const r = t.getBoundingClientRect();
       completeBlock(b, r.left + r.width / 2, r.top + r.height / 2);
@@ -3002,7 +2949,7 @@
 
       const hasExtrasAlready = formSubtasks.length > 0 || soundtrackEnabled;
       bodyFields =
-        '<div class="field"><label for="bd_category">Category <span style="font-weight:400;color:var(--muted);">(also sets a default length)</span></label>' +
+        '<div class="field bd-cat-field"><label for="bd_category">Category <span style="font-weight:400;color:var(--muted);">(also sets a default length)</span></label>' +
           '<select id="bd_category">' + catOptions + '</select>' +
         '</div>' +
         '<div id="bd_nudge"></div>' +
@@ -3249,18 +3196,14 @@
     settingsDialog.showModal();
   });
 
-  /* ---------------------------------------------------------------------
-     Backup: the whole saved state as one JSON file. Restoring writes it
-     back to storage and reloads, so it goes through the same checks and
-     upgrades as a normal start.
-  --------------------------------------------------------------------- */
+  /* ---------- Backup: the saved state as one JSON file; restoring reloads through normal start-up ---------- */
   async function exportBackup(){
-    const json = JSON.stringify({ app: "TimeAnchor", version: 1, savedAt: new Date().toISOString(), data: snapshot() }, null, 2);
-    const name = "timeanchor-backup-" + todayStr() + ".json";
+    const json = JSON.stringify({ app: "Kindday", version: 1, savedAt: new Date().toISOString(), data: snapshot() }, null, 2);
+    const name = "kindday-backup-" + todayStr() + ".json";
     try {
       const file = new File([json], name, { type: "application/json" });
       if (navigator.canShare && navigator.canShare({ files: [file] })){
-        await navigator.share({ files: [file], title: "TimeAnchor backup" });
+        await navigator.share({ files: [file], title: "Kindday backup" });
         return;
       }
     } catch (e) {
@@ -3274,17 +3217,18 @@
   }
 
   function importBackup(file){
-    if (file.size > 5 * 1024 * 1024){ showNotice("That file is too big to be a TimeAnchor backup."); return; }
+    if (file.size > 5 * 1024 * 1024){ showNotice("That file is too big to be a Kindday backup."); return; }
     const reader = new FileReader();
     reader.onload = () => {
       let data;
       try {
         const parsed = JSON.parse(reader.result);
-        data = parsed && parsed.app === "TimeAnchor" ? parsed.data : parsed;
+        // Backups saved under the app's old name (TimeAnchor) still load.
+        data = parsed && (parsed.app === "Kindday" || parsed.app === "TimeAnchor") ? parsed.data : parsed;
       } catch (e) { data = null; }
       if (!data || !Array.isArray(data.blocks) || !Array.isArray(data.categories)){
         settingsDialog.close();
-        showNotice("That doesn't look like a TimeAnchor backup, so nothing was changed.");
+        showNotice("That doesn't look like a Kindday backup, so nothing was changed.");
         return;
       }
       showConfirm("Replace everything on this phone with this backup? What's here now will be overwritten.", () => {
@@ -3302,13 +3246,16 @@
     { group: "today", key: "timer", name: () => "Countdown timer", desc: "Time left on the current block" },
     { group: "today", key: "timerShape", name: () => "Show as a shrinking circle", desc: "Off shows just the minutes", sub: true, requires: "timer" },
     { group: "today", key: "timeline", name: () => nameOf("timeline"), desc: "Today's blocks, in order" },
+    { group: "today", key: "categories", name: () => "Categories", desc: "Labels like Work or Rest on your tasks", sub: true, requires: "timeline" },
     { group: "today", key: "quickAdd", name: () => "Quick add", desc: "One-line box to add a block fast", sub: true, requires: "timeline" },
     { group: "today", key: "buffers", name: () => "Buffers", desc: "“+ buffer” buttons for breathing room", sub: true, requires: "timeline" },
     { group: "dump", key: "brainDump", name: () => nameOf("dump"), desc: "Empty your head, then sort it into a list" },
     { group: "todo", key: "todoList", name: () => nameOf("todo"), desc: "Untimed things to get to today" },
-    { group: "todo", key: "energy", name: () => "Energy check-in", desc: "Tag to-dos 🪫 🔋 ⚡ and see the right ones first", sub: true, requires: "todoList" },
+    { group: "todo", key: "energy", name: () => "Energy check-in", desc: "Tag to-dos 🌙 ⛅ ☀️ and see the right ones first", sub: true, requires: "todoList" },
     { group: "done", key: "history", name: () => nameOf("done"), desc: "Everything you've finished, by day" },
     { group: "all", key: "focusMode", name: () => "Focus with me", desc: "A calm companion that keeps you company while you work" },
+    { group: "all", key: "dailyWords", name: () => "Kind words at the top", desc: "One gentle line for the day. Off shows today's date instead" },
+    { group: "all", key: "splash", name: () => "Opening animation", desc: "A sleepy cloud says hello when the app opens" },
     { group: "all", key: "celebrations", name: () => "Celebrations", desc: "A little party when you finish something" },
     { group: "all", key: "sounds", name: () => "Sounds", desc: "Soft chime when a block starts or you finish" }
   ];
@@ -3438,8 +3385,6 @@
         '</div>' +
       '</details>' +
 
-      '<div class="field"><label for="st_firstName">Your name</label>' +
-        '<input type="text" id="st_firstName" value="' + escapeAttr(state.firstName) + '" placeholder="e.g. Sam"></div>' +
 
       '<h3 style="font-size:13.5px;margin:16px 0 8px;">Color theme</h3>' +
       '<p class="dialog-sub" style="margin-bottom:8px;">Recolors all categories at once &mdash; you can still fine-tune individual colors below afterward.</p>' +
@@ -3454,9 +3399,11 @@
         }).join('') +
       '</div>' +
 
-      '<h3 style="font-size:13.5px;margin:16px 0 8px;">Categories</h3>' +
-      '<div id="st_catRows"></div>' +
-      '<div class="field"><button type="button" class="text-btn" id="st_addCat">+ Add category</button></div>' +
+      '<div id="st_catSection">' +
+        '<h3 style="font-size:13.5px;margin:16px 0 8px;">Categories</h3>' +
+        '<div id="st_catRows"></div>' +
+        '<div class="field"><button type="button" class="text-btn" id="st_addCat">+ Add category</button></div>' +
+      '</div>' +
 
       '<details class="more-options" id="st_soundDetails"' + (state.soundEnabled || state.speakEnabled ? " open" : "") + '>' +
         '<summary>Sound &amp; voice</summary>' +
@@ -3639,10 +3586,6 @@
         renderSettingsDialog();
       });
     });
-    document.getElementById("st_firstName").addEventListener("input", (e) => {
-      state.firstName = e.target.value.trim();
-      updateGreeting();
-    });
     document.getElementById("st_exportBtn").addEventListener("click", exportBackup);
     document.getElementById("st_importBtn").addEventListener("click", () => document.getElementById("st_importFile").click());
     document.getElementById("st_importFile").addEventListener("change", (e) => {
@@ -3660,6 +3603,10 @@
 
   function renderCatRows(){
     const wrap = document.getElementById("st_catRows");
+    if (!state.categories.length){
+      wrap.innerHTML = '<p class="dialog-sub" style="margin:0 0 8px;">No categories — tasks simply won\'t have a label. You can also switch Categories off above.</p>';
+      return;
+    }
     wrap.innerHTML = state.categories.map(c => {
       const inUse = state.blocks.some(b => b.categoryId === c.id);
       return (
@@ -3667,7 +3614,7 @@
           '<input type="color" class="color-swatch-input" data-f="color" value="' + c.color + '" aria-label="' + escapeAttr(c.name) + ' color">' +
           '<input type="text" class="cicon" data-f="icon" value="' + escapeAttr(c.icon) + '" maxlength="2" aria-label="' + escapeAttr(c.name) + ' icon">' +
           '<input type="text" class="cname" data-f="name" value="' + escapeAttr(c.name) + '" aria-label="Category name">' +
-          '<button type="button" class="icon-mini" data-f="remove" ' + (inUse ? 'disabled title="In use by existing blocks"' : 'title="Delete category"') + '>🗑️</button>' +
+          '<button type="button" class="icon-mini" data-f="remove" data-inuse="' + inUse + '" title="Delete category" aria-label="Delete ' + escapeAttr(c.name) + '">🗑️</button>' +
         '</div>'
       );
     }).join("");
@@ -3680,28 +3627,59 @@
       });
       const rm = row.querySelector("button[data-f='remove']");
       rm.addEventListener("click", () => {
-        if (rm.disabled) return;
-        state.categories = state.categories.filter(c => c.id !== id);
-        renderCatRows();
+        const remove = () => {
+          state.categories = state.categories.filter(c => c.id !== id);
+          if (state.lastCategoryId === id) state.lastCategoryId = null;
+          renderCatRows();
+          commit();
+        };
+        if (rm.dataset.inuse === "true") showConfirm('Delete "' + cat.name + '"? Tasks using it will just have no label.', remove, "Delete");
+        else remove();
       });
     });
   }
 
-  /* ---------------------------------------------------------------------
-     Focus with me: a calm, body-double style session. A breathing shape
-     keeps you company, time left is shown in minutes (no ticking
-     seconds), there's a gentle halfway check-in, and the end celebrates.
-     Optional background noise is generated on the phone, nothing streamed.
-  --------------------------------------------------------------------- */
+  /* ---------- Focus with me: a calm, body-double style session ---------- */
   const focusDialog = document.getElementById("focusDialog");
-  const FM_MESSAGES = [
-    "I'm right here with you. Breathe with the shape if it helps.",
-    "One small step at a time.",
-    "It's okay to go slowly.",
-    "You started — that's the hardest part.",
-    "Wiggle, stretch, sip of water — all allowed.",
-    "Still here, still with you."
+  // Written to be PDA-friendly: no instructions, no "should", no questions
+  // that need answering. Short, plain statements of permission and safety.
+  const FM_AFFIRMATIONS = [
+    "No rush. There's time.",
+    "Small steps still count.",
+    "Going slowly is allowed.",
+    "Stopping is allowed, at any point.",
+    "Nothing has to be perfect.",
+    "Messy progress is still progress.",
+    "Different brains do things differently.",
+    "Drifting off and coming back is normal.",
+    "Breaks are allowed, any time.",
+    "Stimming is welcome here.",
+    "Your own way is a fine way.",
+    "It's okay if today is a low day.",
+    "Being here is already enough.",
+    "Big feelings pass, like weather.",
+    "Nobody is watching or judging.",
+    "There's no wrong way to do this.",
+    "Quiet is always an option.",
+    "Needs are allowed to change."
   ];
+  const FM_GROUNDING = [
+    "Nothing needs to happen right now.",
+    "There's no rush at all.",
+    "Everything else can wait.",
+    "This feeling will pass, like weather.",
+    "It's okay to just be here.",
+    "Quieter and dimmer is always allowed.",
+    "Soft, warm and comforting things are allowed.",
+    "No one needs anything from you right now.",
+    "Safe. Here. Now."
+  ];
+  // The cue describes the shape rather than telling anyone to breathe.
+  // Box breathing: four equal 4-second sides. The words show for the first
+  // couple of minutes (and in calm mode); after that the shape is just quiet company.
+  const FM_BREATH = [["Growing\u2026", 4000], ["Still", 4000], ["Getting smaller\u2026", 4000], ["Resting", 4000]];
+  const FM_CUE_FOR_MS = 2 * 60000;
+  const FM_MSG_EVERY = 30000;
   let fm = null;       // the running session
   let fmSetup = null;  // choices on the setup screen
   let fmWakeLock = null;
@@ -3710,9 +3688,9 @@
   function fmSubjects(){
     const list = [];
     const cur = getCurrentBlock();
-    if (cur) list.push({ kind: "block", id: cur.id, title: cur.title, icon: catFor(cur).icon, mins: Math.max(5, Math.min(120, Math.ceil(timeInfo(cur).remaining))) });
-    state.todos.filter(t => !t.done).slice(0, 8).forEach(t => list.push({ kind: "todo", id: t.id, title: t.title, icon: "✅" }));
-    list.push({ kind: "none", id: "", title: "Just focus", icon: "🫧" });
+    if (cur) list.push({ kind: "block", id: cur.id, title: cur.title, icon: catFor(cur).icon || "☀️", mins: Math.max(5, Math.min(120, Math.ceil(timeInfo(cur).remaining))) });
+    state.todos.filter(t => !t.done).slice(0, 8).forEach(t => list.push({ kind: "todo", id: t.id, title: t.title, icon: "🌱" }));
+    list.push({ kind: "none", id: "", title: "Just focus", icon: "☁️" });
     return list;
   }
 
@@ -3720,19 +3698,20 @@
     if (fm){ focusDialog.showModal(); return; }
     const subjects = fmSubjects();
     const pick = subjects.find(s => s.kind === kind && s.id === id) || subjects[0];
-    fmSetup = { subject: pick, minutes: pick.mins || 25, sound: state.ui.focusSound };
+    fmSetup = { subject: pick, minutes: Math.min(pick.mins || 10, 25), sound: state.ui.focusSound };
     renderFocusSetup();
     focusDialog.showModal();
   }
 
   function renderFocusSetup(){
     const subjects = fmSubjects();
-    const lengths = [[10, "10 min"], [25, "25 min"], [45, "45 min"]];
-    if (fmSetup.subject.mins && !lengths.some(l => l[0] === fmSetup.subject.mins)) lengths.push([fmSetup.subject.mins, "Rest of it (" + fmSetup.subject.mins + "m)"]);
+    const lengths = [[5, "5 min"], [10, "10 min"], [15, "15 min"], [25, "25 min"]];
+    const m = fmSetup.subject.mins;
+    if (m && m < 25 && !lengths.some(l => l[0] === m)){ lengths.push([m, m + " min"]); lengths.sort((x, y) => x[0] - y[0]); }
     document.getElementById("fmInner").innerHTML =
       '<div class="fm-setup">' +
         '<button type="button" class="icon-btn fm-close" data-fm="close" aria-label="Close">✕</button>' +
-        '<h2 id="fmTitle">🫧 Focus with me</h2>' +
+        '<h2 id="fmTitle">☁️ Focus with me</h2>' +
         '<p class="dialog-sub" style="margin:0;">I\'ll keep you company while you work. No pressure &mdash; stop whenever you like.</p>' +
         '<p class="fm-label">What are you working on?</p>' +
         '<div class="fm-choices">' + subjects.map((s, i) =>
@@ -3753,7 +3732,8 @@
   }
 
   function startFocus(){
-    fm = { subject: fmSetup.subject, minutes: fmSetup.minutes, sound: fmSetup.sound, startedAt: Date.now(), pausedTotal: 0, pausedAt: null, checkedIn: false, msgIdx: 0, lastMsgAt: Date.now() };
+    fm = { subject: fmSetup.subject, minutes: fmSetup.minutes, sound: fmSetup.sound, startedAt: Date.now(), pausedTotal: 0, pausedAt: null, checkedIn: false, msgIdx: 0, lastMsgAt: Date.now(), calm: false,
+      order: FM_AFFIRMATIONS.map((_, i) => i).sort(() => Math.random() - 0.5) };
     state.ui.focusSound = fmSetup.sound;
     persist();
     renderFocusSession();
@@ -3764,18 +3744,68 @@
 
   function renderFocusSession(){
     const s = fm.subject;
-    document.getElementById("fmInner").innerHTML =
+    const inner = document.getElementById("fmInner");
+    inner.classList.remove("fm-calm");
+    inner.innerHTML =
       '<button type="button" class="icon-btn fm-close" data-fm="stop" aria-label="Stop focusing">✕</button>' +
       '<p class="fm-with" id="fmTitle">' + (s.kind === "none" ? "Focusing" : "Focusing on") + '</p>' +
-      '<h2 class="fm-task">' + (s.kind === "none" ? "Just being here 🫧" : escapeHtml(s.title)) + '</h2>' +
+      '<h2 class="fm-task">' + (s.kind === "none" ? "Just being here ☁️" : escapeHtml(s.title)) + '</h2>' +
+      '<p class="fm-calm-title">You\'re safe. Nothing needs doing right now. 💛</p>' +
       '<div class="fm-breath-wrap"><div class="fm-breath"></div><div class="fm-time" id="fmTime" aria-live="polite"></div></div>' +
-      '<p class="fm-msg" id="fmMsg">' + FM_MESSAGES[0] + '</p>' +
+      '<p class="fm-cue" id="fmCue" aria-hidden="true"></p>' +
+      '<p class="fm-msg" id="fmMsg">' + FM_AFFIRMATIONS[fm.order[0]] + '</p>' +
       '<div id="fmCheck"></div>' +
-      '<div class="fm-actions">' +
-        '<button type="button" class="ghost-btn" data-fm="pause" id="fmPauseBtn">Take a breather</button>' +
+      '<div class="fm-actions fm-normal-actions">' +
+        '<button type="button" class="ghost-btn" data-fm="pause" id="fmPauseBtn">Pause</button>' +
         '<button type="button" class="primary-btn" data-fm="finish">I\'m done ✨</button>' +
+      '</div>' +
+      '<div class="fm-normal-actions fm-calm-link"><button type="button" class="text-btn" data-fm="calm">☁️ It\'s all too much</button></div>' +
+      '<div class="fm-actions fm-calm-actions" style="flex-direction:column;align-items:stretch;">' +
+        '<button type="button" class="primary-btn" data-fm="calm-resume" style="justify-content:center;">I\'m ready to carry on</button>' +
+        '<button type="button" class="ghost-btn" data-fm="calm-stop">Stop for today \u2014 that\'s okay</button>' +
       '</div>';
+    startBreathing();
     fmTick();
+  }
+
+  // The shape and its "Growing / Getting smaller" cue run from the same start so
+  // they stay in step. They keep going during a breather or calm mode.
+  let fmBreathTimer = null;
+  function startBreathing(){
+    clearTimeout(fmBreathTimer);
+    const shape = document.querySelector("#fmInner .fm-breath");
+    if (shape){ shape.classList.remove("breathing"); void shape.offsetWidth; shape.classList.add("breathing"); }
+    let i = 0;
+    const step = () => {
+      const cue = document.getElementById("fmCue");
+      if (!cue || !focusDialog.open) return;
+      cue.textContent = fm && (fm.calm || fmElapsedMs() < FM_CUE_FOR_MS) ? FM_BREATH[i][0] : "";
+      fmBreathTimer = setTimeout(() => { i = (i + 1) % FM_BREATH.length; step(); }, FM_BREATH[i][1]);
+    };
+    step();
+  }
+  function fadeMsg(text){
+    const el = document.getElementById("fmMsg");
+    if (!el) return;
+    el.classList.add("fading");
+    setTimeout(() => { el.textContent = text; el.classList.remove("fading"); }, 700);
+  }
+
+  function enterCalm(){
+    if (!fm || fm.calm) return;
+    if (!fm.pausedAt) togglePause();
+    fm.calm = true;
+    document.getElementById("fmInner").classList.add("fm-calm");
+    let g = 0;
+    fadeMsg(FM_GROUNDING[0]);
+    fm.calmTimer = setInterval(() => { g = (g + 1) % FM_GROUNDING.length; fadeMsg(FM_GROUNDING[g]); }, 20000);
+  }
+  function leaveCalm(){
+    if (!fm || !fm.calm) return;
+    fm.calm = false;
+    clearInterval(fm.calmTimer);
+    document.getElementById("fmInner").classList.remove("fm-calm");
+    if (fm.pausedAt) togglePause();
   }
 
   function fmTick(){
@@ -3786,18 +3816,19 @@
     if (leftMs <= 0 && !fm.pausedAt){ endFocus(true); return; }
     const mins = Math.ceil(leftMs / 60000);
     timeEl.textContent = fm.pausedAt ? "Paused" : (leftMs < 60000 ? "Almost there" : mins + " min");
+    if (fm.calm) return;
     document.getElementById("fmInner").classList.toggle("fm-paused", !!fm.pausedAt);
-    if (!fm.pausedAt && Date.now() - fm.lastMsgAt > 4 * 60000){
+    if (!fm.pausedAt && Date.now() - fm.lastMsgAt > FM_MSG_EVERY){
       fm.lastMsgAt = Date.now();
-      fm.msgIdx = (fm.msgIdx + 1) % FM_MESSAGES.length;
-      document.getElementById("fmMsg").textContent = FM_MESSAGES[fm.msgIdx];
+      fm.msgIdx = (fm.msgIdx + 1) % fm.order.length;
+      fadeMsg(FM_AFFIRMATIONS[fm.order[fm.msgIdx]]);
     }
     if (!fm.checkedIn && !fm.pausedAt && fm.minutes >= 10 && fmElapsedMs() >= fm.minutes * 30000){
       fm.checkedIn = true;
       document.getElementById("fmCheck").innerHTML =
-        '<div class="fm-check"><p>Still with me? 💛</p><div class="fm-actions">' +
-          '<button type="button" class="primary-btn" data-fm="checkin-yes">Yes, keep going</button>' +
-          '<button type="button" class="ghost-btn" data-fm="pause">I need a breather</button>' +
+        '<div class="fm-check"><p>Halfway 💛 Carrying on is optional.</p><div class="fm-actions">' +
+          '<button type="button" class="primary-btn" data-fm="checkin-yes">Keep going</button>' +
+          '<button type="button" class="ghost-btn" data-fm="pause">Pause</button>' +
         '</div></div>';
       setTimeout(() => { const c = document.getElementById("fmCheck"); if (c) c.innerHTML = ""; }, 30000);
     }
@@ -3810,22 +3841,26 @@
       fm.pausedTotal += Date.now() - fm.pausedAt;
       fm.pausedAt = null;
       startNoise(fm.sound);
-      document.getElementById("fmMsg").textContent = "Welcome back. Let's carry on, gently.";
-      if (btn) btn.textContent = "Take a breather";
+      fm.lastMsgAt = Date.now();
+      fadeMsg("Welcome back. No rush.");
+      if (btn) btn.textContent = "Pause";
     } else {
       fm.pausedAt = Date.now();
       stopNoise();
-      document.getElementById("fmMsg").textContent = "Take your time. Tap Resume whenever you're ready.";
+      if (!fm.calm) fadeMsg("Paused. Resume is there whenever it suits.");
       if (btn) btn.textContent = "Resume";
     }
     document.getElementById("fmCheck").innerHTML = "";
     fmTick();
   }
 
-  function endFocus(finished){
+  function endFocus(finished, gentle){
     if (!fm) return;
     const session = fm;
     clearInterval(session.timer);
+    clearInterval(session.calmTimer);
+    clearTimeout(fmBreathTimer);
+    document.getElementById("fmInner").classList.remove("fm-calm");
     stopNoise();
     releaseWakeLock();
     const minsDone = Math.min(session.minutes, Math.round(fmElapsedMs() / 60000));
@@ -3833,10 +3868,22 @@
     if (minsDone >= 1){
       const day = todayStr();
       (state.history[day] = state.history[day] || []).push({
-        id: uid("focus"), kind: "focus", icon: "🫧", color: null, at: Math.round(actualNowMinutes()),
+        id: uid("focus"), kind: "focus", icon: "☁️", color: null, at: Math.round(actualNowMinutes()),
         title: "Focused " + fmtDuration(minsDone) + (session.subject.kind === "none" ? "" : " on " + session.subject.title)
       });
       commit();
+    }
+    if (gentle){
+      // No chime or colour burst here: nothing extra when overwhelm is high.
+      document.getElementById("fmInner").innerHTML =
+        '<div class="fm-end">' +
+          '<h2 id="fmTitle">You looked after yourself 💛</h2>' +
+          '<p>Stopping when it\'s too much is a real skill, not a failure.' + (minsDone >= 1 ? ' You still focused for ' + fmtDuration(minsDone) + ', and that counts.' : '') + '</p>' +
+          '<div class="fm-actions" style="flex-direction:column;align-items:stretch;">' +
+            '<button type="button" class="ghost-btn" data-fm="close">Close</button>' +
+          '</div>' +
+        '</div>';
+      return;
     }
     if (!finished && minsDone < 1){ focusDialog.close(); return; }
     playCompletionChime();
@@ -3845,7 +3892,7 @@
     const canMark = item && !(s.kind === "block" ? item.status === "done" : item.done);
     document.getElementById("fmInner").innerHTML =
       '<div class="fm-end">' +
-        '<h2 id="fmTitle">You did it! 🎉</h2>' +
+        '<h2 id="fmTitle">You did it! 🌈</h2>' +
         '<p>' + (minsDone >= 1 ? 'You stayed with it for ' + fmtDuration(minsDone) + '. That counts.' : 'Every bit counts.') + '</p>' +
         '<div class="fm-actions" style="flex-direction:column;align-items:stretch;">' +
           (canMark ? '<button type="button" class="primary-btn" data-fm="mark" style="justify-content:center;">' + escapeHtml(w("markDone")) + ': ' + escapeHtml(s.title) + '</button>' : '') +
@@ -3865,13 +3912,16 @@
     const act = b.dataset.fm;
     if (act === "subject"){
       fmSetup.subject = fmSubjects()[parseInt(b.dataset.i, 10)];
-      if (fmSetup.subject.mins) fmSetup.minutes = fmSetup.subject.mins;
+      fmSetup.minutes = Math.min(fmSetup.subject.mins || 10, 25);
       renderFocusSetup();
     }
     else if (act === "start") startFocus();
     else if (act === "pause") togglePause();
-    else if (act === "checkin-yes"){ document.getElementById("fmCheck").innerHTML = ""; document.getElementById("fmMsg").textContent = "Lovely. I'm still right here."; }
+    else if (act === "checkin-yes"){ document.getElementById("fmCheck").innerHTML = ""; fadeMsg("Still here, alongside you."); }
     else if (act === "finish") endFocus(true);
+    else if (act === "calm") enterCalm();
+    else if (act === "calm-resume") leaveCalm();
+    else if (act === "calm-stop") endFocus(false, true);
     else if (act === "stop") endFocus(false);
     else if (act === "again") startFocus();
     else if (act === "close") focusDialog.close();
@@ -3885,7 +3935,7 @@
   });
   // Escape / back gesture: treat as stopping, never lose the time already done.
   focusDialog.addEventListener("cancel", (e) => {
-    if (fm){ e.preventDefault(); endFocus(false); }
+    if (fm){ e.preventDefault(); endFocus(false, fm.calm); }
   });
 
   async function requestWakeLock(){
@@ -3945,18 +3995,41 @@
     } catch (e) {}
   }
 
+  (function(){
+    const splash = document.getElementById("splash");
+    if (!splash) return;
+    const done = () => splash.remove();
+    splash.addEventListener("animationend", (e) => { if (e.target === splash) done(); });
+    splash.addEventListener("click", () => splash.classList.add("skip"));
+    setTimeout(done, 4000);
+  })();
+
+  // One gentle line for the whole day (same no-demands style as focus mode),
+  // so the top of the screen is kind without changing every few seconds.
+  const DAY_LINES = [
+    "No rush. There's time.", "Small steps still count.", "Going slowly is allowed.",
+    "Nothing has to be perfect.", "Messy progress is still progress.", "Your own way is a fine way.",
+    "It's okay if today is a low day.", "Breaks are allowed, any time.", "There's no wrong way to do this.",
+    "Needs are allowed to change.", "Being here is already enough.", "Quiet is always an option.",
+    "A soft day still counts."
+  ];
+  function updateHeaderLine(){
+    const el = document.getElementById("headerLine");
+    if (!el) return;
+    const d = new Date();
+    const dayNum = Math.floor(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / 86400000);
+    const text = state.features.dailyWords
+      ? DAY_LINES[((dayNum % DAY_LINES.length) + DAY_LINES.length) % DAY_LINES.length]
+      : d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" });
+    if (el.textContent !== text) el.textContent = text;
+  }
+
   /* ---------------------------------------------------------------------
      Start-up. No accounts: everything lives on this device.
   --------------------------------------------------------------------- */
   function showMainApp(){
     document.getElementById("mainApp").style.display = "";
     document.getElementById("mainFooter").style.display = "";
-  }
-
-  function updateGreeting(){
-    const el = document.getElementById("brandTagline");
-    if (!el) return;
-    el.textContent = state.firstName ? "Hi, " + state.firstName : "TimeAnchor";
   }
 
   function finishBoot(){
@@ -3966,7 +4039,6 @@
     const already = getCurrentBlock();
     lastCurrentBlockId = already ? already.id : null; // don't chime for a block already in progress at launch
     updateSimClock();
-    updateGreeting();
     document.getElementById("dumpInput").value = state.brainDump;
     activeTab = null;
     render();
@@ -3981,11 +4053,7 @@
 
   finishBoot();
 
-  // Installable-app support: register the service worker so "Add to Home
-  // Screen" behaves like a real app (own icon, opens full-screen, keeps
-  // working offline). It fetches fresh content over the network whenever
-  // possible and only falls back to its cache when offline, so edits show
-  // up on next load rather than getting stuck on an old cached copy.
+  // Service worker: installable and works offline; network first so updates arrive straight away.
   if ("serviceWorker" in navigator){
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js").then((reg) => {
