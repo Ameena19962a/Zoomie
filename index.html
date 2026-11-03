@@ -113,6 +113,13 @@
   body[data-bg-pattern="confetti"]::before{ background-size: 140px 140px; background-position: 0 0; opacity:.8; }
   body[data-bg-pattern="confetti"]::after{ background-size: 220px 220px; background-position: 60px 80px; opacity:.5; transform:scale(1.3); }
 
+  /* Sage: a few soft leaves and dots. */
+  body[data-bg-pattern="leaves"]::before, body[data-bg-pattern="leaves"]::after{
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cpath d='M15 30 C15 18 27 12 33 12 C33 24 25 30 15 30 Z' fill='%2395b89a' opacity='0.6'/%3E%3Cpath d='M66 70 C66 60 76 54 82 55 C81 65 74 70 66 70 Z' fill='%23a9c2a0' opacity='0.55'/%3E%3Ccircle cx='48' cy='45' r='3' fill='%23b7cdb0' opacity='0.7'/%3E%3Ccircle cx='85' cy='20' r='2.5' fill='%2395b89a' opacity='0.6'/%3E%3Ccircle cx='22' cy='80' r='2' fill='%23a9c2a0' opacity='0.7'/%3E%3C/svg%3E");
+  }
+  body[data-bg-pattern="leaves"]::before{ background-size: 140px 140px; background-position: 0 0; opacity:.85; }
+  body[data-bg-pattern="leaves"]::after{ background-size: 220px 220px; background-position: 60px 80px; opacity:.5; transform:scale(1.3); }
+
   /* Sunshine: soft, muted suns and dots — warm, never bright lemon. */
   body[data-bg-pattern="suns"]::before, body[data-bg-pattern="suns"]::after{
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='18' cy='20' r='6' fill='%23f2cf6a' opacity='0.75'/%3E%3Cg stroke='%23f2cf6a' stroke-width='2' stroke-linecap='round' opacity='0.75'%3E%3Cpath d='M18 9 V6 M18 31 V34 M7 20 H4 M29 20 H32 M10 12 L8 10 M26 28 L28 30 M26 12 L28 10 M10 28 L8 30'/%3E%3C/g%3E%3Ccircle cx='70' cy='62' r='4' fill='%23efb98a' opacity='0.7'/%3E%3Ccircle cx='44' cy='84' r='3' fill='%23f5dc8f' opacity='0.9'/%3E%3Ccircle cx='86' cy='16' r='2.5' fill='%23e6c46a' opacity='0.8'/%3E%3C/svg%3E");
@@ -230,7 +237,7 @@
     border:none; background:transparent; color:var(--text);
     padding:6px 11px; border-radius:999px; font-size:12.5px; font-weight:600;
   }
-  .seg button.active{ background:var(--accent); color:#fff; }
+  .seg button.active{ background:var(--accent); color:var(--on-accent, #fff); }
   .sim-clock{ font-size:12.5px; color:var(--muted); white-space:nowrap; }
   .sim-clock strong{ color:var(--text); font-variant-numeric:tabular-nums; }
 
@@ -240,7 +247,7 @@
     font-size:16px;
   }
   .primary-btn{
-    border:none; background:var(--accent); color:#fff; font-weight:600;
+    border:none; background:var(--accent); color:var(--on-accent, #fff); font-weight:600;
     padding:9px 16px; border-radius:999px; font-size:13.5px;
     display:inline-flex; align-items:center; gap:6px;
   }
@@ -262,7 +269,7 @@
     border:1px solid var(--border); background:var(--track); color:var(--text);
     padding:5px 12px; border-radius:999px; font-size:12.5px; font-weight:600;
   }
-  .duration-chip:hover{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .duration-chip:hover{ background:var(--accent); color:var(--on-accent, #fff); border-color:var(--accent); }
 
   /* Independent feature toggles — each one hides its section outright, not
      just visually de-emphasized, so "off" really means off. No markup is
@@ -399,13 +406,14 @@
   .fm-msg{ transition:opacity .7s ease; }
   .fm-msg.fading{ opacity:0; }
   .fm-calm-link{ margin-top:14px; }
-  .fm-calm-title, .fm-calm-actions{ display:none; }
+  #fmInner .fm-calm-title, #fmInner .fm-calm-actions{ display:none; }
   .fm-calm-title{ font-size:20px; font-weight:800; line-height:1.35; margin:0 0 22px; max-width:320px; }
   #fmInner.fm-calm .fm-calm-title{ display:block; }
   #fmInner.fm-calm .fm-calm-actions{ display:flex; }
+  #fmInner .fm-actions.fm-normal-actions{ display:flex; }
   #fmInner.fm-calm .fm-with, #fmInner.fm-calm .fm-task, #fmInner.fm-calm .fm-time,
   #fmInner.fm-calm .fm-normal-actions, #fmInner.fm-calm #fmCheck, #fmInner.fm-calm .fm-close{ display:none; }
-  .fm-time{ position:relative; font-size:24px; font-weight:800; color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.25); }
+  .fm-time{ position:relative; font-size:24px; font-weight:800; color:var(--on-accent, #fff); text-shadow:0 1px 6px rgba(0,0,0,.25); }
   .fm-msg{ min-height:2.9em; margin:0 0 14px; font-size:15px; color:var(--muted); max-width:320px; }
   .fm-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
   .fm-check{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin:0 0 16px; }
@@ -455,7 +463,7 @@
     flex:1; min-width:0; aspect-ratio:1; max-width:44px; border-radius:50%;
     border:1px solid var(--border); background:var(--card); color:var(--text); font-weight:700; font-size:13px;
   }
-  .day-pick.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .day-pick.on{ background:var(--accent); border-color:var(--accent); color:var(--on-accent, #fff); }
 
   /* ---------- Done history ---------- */
   .done-hero{ font-size:15px; font-weight:700; margin:4px 0 14px; }
@@ -655,7 +663,7 @@
   .is-done .block-time{ color:var(--muted); }
   .block-meta{ font-size:12px; color:var(--muted); margin-top:3px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .status-tag{ font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted); }
-  .status-tag.now{ color:#fff; background:var(--accent); border-color:var(--accent); }
+  .status-tag.now{ color:var(--on-accent, #fff); background:var(--accent); border-color:var(--accent); }
   .status-tag.over{ color:var(--danger-quiet); border-color:var(--danger-quiet); background:transparent; }
   .status-tag.wait{ color:var(--muted); border-style:dashed; }
   .block-actions{ display:flex; gap:6px; align-items:center; flex:none; }
@@ -896,12 +904,12 @@
     // since a tinted background can be a little darker than white.
     const cardHex = (getComputedStyle(document.documentElement).getPropertyValue("--card") || "#ffffff").trim() || "#ffffff";
     const tint = mixHex(hex, cardHex, 0.16);
+    const darkCard = contrastRatio(cardHex, "#000000") < 7;
     let amt = 0;
     let cur = hex;
     while (contrastRatio(cur, tint) < 4.5 && amt < 0.9){
       amt += 0.03;
-      const [r,g,b] = hexToRgbArr(hex);
-      cur = "#" + [r,g,b].map(v => Math.round(v * (1 - amt)).toString(16).padStart(2, "0")).join("");
+      cur = darkCard ? mixHex("#ffffff", hex, amt) : mixHex("#000000", hex, amt);
     }
     return cur;
   }
@@ -988,7 +996,11 @@
     monotone: { label: "Monotone",    accent: "#5c5c5c", focusRing: "#3d3d3d", bg: "#f2f2f0", card: "#ffffff", text: "#2a2a2a", muted: "#66666a", muted2: "#6d6d74", border: "#dcdcdc", track: "#e6e6e6", colors: ["#454545", "#6b6b6b", "#8c8c8c", "#3a3a3a"] },
     blue:     { label: "Blue",        accent: "#3f6b95", focusRing: "#2a5a86", bg: "#f0f4f8", card: "#ffffff", text: "#1f3347", muted: "#5c7186", muted2: "#5e717f", border: "#d7e2ea", track: "#e2ebf1", bgPattern: "bubbles", colors: ["#2f5a80", "#4a7fa5", "#3d8fa0", "#5f7fa8"] },
     pink:     { label: "Pink",        accent: "#b0508a", focusRing: "#9a3f78", bg: "#fdeef5", card: "#fffbfd", text: "#5a2245", muted: "#8f4a72", muted2: "#97587c", border: "#f3c9df", track: "#f8ddec", bgPattern: "stars", colors: ["#c15a92", "#d97fae", "#a54f8a", "#b96a9c"] },
-    sunshine: { label: "Sunshine",    accent: "#8a6a12", focusRing: "#a37a0f", bg: "#fdf8e6", card: "#fffdf4", text: "#3a321f", muted: "#6b6044", muted2: "#71654a", border: "#efe2b8", track: "#f6ecc6", bgPattern: "suns", colors: ["#c9a227", "#d08a4c", "#8f9a52", "#b9894a"] }
+    sunshine: { label: "Sunshine",    accent: "#8a6a12", focusRing: "#a37a0f", bg: "#fdf8e6", card: "#fffdf4", text: "#3a321f", muted: "#6b6044", muted2: "#71654a", border: "#efe2b8", track: "#f6ecc6", bgPattern: "suns", colors: ["#c9a227", "#d08a4c", "#8f9a52", "#b9894a"] },
+    sage:     { label: "Sage",        accent: "#4f7a5a", focusRing: "#3c6a48", bg: "#f1f5ef", card: "#fbfdfa", text: "#253226", muted: "#5b6b5c", muted2: "#627262", border: "#d7e3d4", track: "#e3ece0", bgPattern: "leaves", colors: ["#5f8f6a", "#8aa36b", "#4f8a86", "#a39264"] },
+    lavender: { label: "Lavender",    accent: "#6d5a9c", focusRing: "#5a4889", bg: "#f5f2fa", card: "#fdfcff", text: "#2d2640", muted: "#665c7d", muted2: "#6c6283", border: "#e2dcef", track: "#ebe6f4", bgPattern: "stars", colors: ["#7d68b0", "#a084c4", "#6a7fb8", "#b07aa8"] },
+    peach:    { label: "Peach",       accent: "#a5583a", focusRing: "#8f4a2f", bg: "#fdf4ee", card: "#fffbf8", text: "#3d2a22", muted: "#76584b", muted2: "#7b5e50", border: "#f0ddd0", track: "#f7e7dc", bgPattern: "suns", colors: ["#d07a55", "#c99a5b", "#b8696f", "#8f9a6a"] },
+    night:    { label: "Night",       accent: "#9db8d9", onAccent: "#121821", focusRing: "#bcd3ee", bg: "#16181d", card: "#1f2229", text: "#e8e6e1", muted: "#a9adb6", muted2: "#9da1aa", border: "#33373f", track: "#2a2e36", danger: "#e0a172", dark: true, colors: ["#7fa6d1", "#c9a46b", "#82b394", "#b199cf"] }
   };
   function applyColorTheme(key){
     const theme = COLOR_THEMES[key] || COLOR_THEMES.mixed;
@@ -1012,6 +1024,11 @@
     // unreadable near-black banners on a light theme's dark-colored text).
     document.documentElement.style.setProperty("--cat-buffer-tint", theme.track);
     document.documentElement.style.setProperty("--cat-buffer", theme.muted2);
+    document.documentElement.style.setProperty("--on-accent", theme.onAccent || "#ffffff");
+    document.documentElement.style.setProperty("--danger-quiet", theme.danger || "#966335");
+    document.documentElement.style.colorScheme = theme.dark ? "only dark" : "only light";
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) themeMeta.setAttribute("content", theme.bg);
     if (theme.bgPattern) document.body.setAttribute("data-bg-pattern", theme.bgPattern);
     else document.body.removeAttribute("data-bg-pattern");
   }
