@@ -446,33 +446,18 @@
   .fm-with{ margin:0; color:var(--muted); font-size:13px; }
   .fm-task{ margin:4px 0 26px; font-size:22px; line-height:1.3; }
   .fm-breath-wrap{ position:relative; width:230px; height:230px; display:flex; align-items:center; justify-content:center; margin-bottom:22px; }
-  .fm-breath{ position:absolute; inset:18px; }
+  /* Box breathing, 16s: grow 4s, still 4s, shrink 4s, rest 4s. The JS below
+     sets the size and corner roundness every frame (small circle -> big box ->
+     small circle) and moves the dot along the shape's edge. */
+  .fm-breath{ position:absolute; inset:18px; transform:scale(.72); }
   .fm-orb{
     position:absolute; inset:0; border-radius:50%;
     background:radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 45%, white), color-mix(in srgb, var(--accent) 75%, transparent));
     opacity:.85; box-shadow:0 0 60px color-mix(in srgb, var(--accent) 40%, transparent);
   }
-  /* Box breathing, 16s per breath: grow 4s, still 4s, shrink 4s, rest 4s.
-     A dot travels round the box at a steady pace (one side per 4s) so the
-     holds never feel frozen; the shape swells smoothly with no wobble. */
-  .fm-box{ position:absolute; inset:4px; border:2px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius:26px; pointer-events:none; }
-  .fm-dot{ position:absolute; left:0; top:0; width:14px; height:14px; margin:-8px 0 0 -8px; border-radius:50%;
+  .fm-dot{ position:absolute; left:50%; top:50%; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%; z-index:1;
     background:var(--accent); box-shadow:0 0 0 3px var(--bg), 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent); }
-  @media not (prefers-reduced-motion: reduce){
-    .fm-breath.breathing{ animation: fmBreathe 16s infinite; }
-    .fm-dot.breathing{ animation: fmDot 16s linear infinite; }
-  }
-  @media (prefers-reduced-motion: reduce){ .fm-dot{ display:none; } }
-  @keyframes fmBreathe{
-    0%{ transform:scale(.72); animation-timing-function:cubic-bezier(.37,0,.63,1); }
-    25%{ transform:scale(1); animation-timing-function:linear; }
-    50%{ transform:scale(1); animation-timing-function:cubic-bezier(.37,0,.63,1); }
-    75%{ transform:scale(.72); animation-timing-function:linear; }
-    100%{ transform:scale(.72); }
-  }
-  @keyframes fmDot{
-    0%{ left:0; top:0; } 25%{ left:100%; top:0; } 50%{ left:100%; top:100%; } 75%{ left:0; top:100%; } 100%{ left:0; top:0; }
-  }
+  @media (prefers-reduced-motion: reduce){ .fm-dot{ display:none; } .fm-breath{ transform:scale(.86); } }
   .fm-in-shape{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; }
   .fm-cue{ margin:4px 0 0; min-height:1.4em; font-size:15px; font-weight:600; letter-spacing:.02em; color:var(--on-accent, #fff); text-shadow:0 1px 6px rgba(0,0,0,.25); }
   .fm-msg{ transition:opacity .7s ease; }
@@ -3783,7 +3768,7 @@
       '<p class="fm-with" id="fmTitle">' + (s.kind === "none" ? "Focusing" : "Focusing on") + '</p>' +
       '<h2 class="fm-task">' + (s.kind === "none" ? "Just being here " + buddyEmoji() : escapeHtml(s.title)) + '</h2>' +
       '<p class="fm-calm-title">You\'re safe. Nothing needs doing right now. 💛</p>' +
-      '<div class="fm-breath-wrap"><div class="fm-box"><div class="fm-dot"></div></div><div class="fm-breath"><div class="fm-orb"></div></div><div class="fm-in-shape"><div class="fm-time" id="fmTime" aria-live="polite"></div><p class="fm-cue" id="fmCue" aria-hidden="true"></p></div></div>' +
+      '<div class="fm-breath-wrap"><div class="fm-breath"><div class="fm-orb"></div></div><div class="fm-dot"></div><div class="fm-in-shape"><div class="fm-time" id="fmTime" aria-live="polite"></div><p class="fm-cue" id="fmCue" aria-hidden="true"></p></div></div>' +
       '<p class="fm-msg" id="fmMsg">' + FM_AFFIRMATIONS[fm.order[0]] + '</p>' +
       '<div id="fmCheck"></div>' +
       '<div class="fm-actions fm-normal-actions">' +
@@ -3799,34 +3784,58 @@
     fmTick();
   }
 
-  // The words read the shape's own animation clock, so "Growing / Still /
-  // Getting smaller / Resting" always match what the shape is doing, even
-  // after switching apps. They keep going during a breather or calm mode.
-  let fmBreathTimer = null, fmBreathT0 = 0;
+  // One clock drives everything, so the shape, the dot and the words
+  // ("Growing / Still / Getting smaller / Resting") can never drift apart,
+  // even after switching apps. They keep going during a breather or calm mode.
+  let fmBreathRaf = null, fmBreathT0 = 0;
   const FM_BREATH_CYCLE = FM_BREATH.reduce((sum, b) => sum + b[1], 0);
-  function breathPhaseMs(){
-    const shape = document.querySelector("#fmInner .fm-breath");
-    const anim = shape && shape.getAnimations ? shape.getAnimations().find(a => a.animationName === "fmBreathe") : null;
-    const t = anim && anim.currentTime != null ? Number(anim.currentTime) : performance.now() - fmBreathT0;
-    return ((t % FM_BREATH_CYCLE) + FM_BREATH_CYCLE) % FM_BREATH_CYCLE;
+  const easeSine = (x) => 0.5 - 0.5 * Math.cos(Math.PI * x);
+  // 0 = small circle, 1 = big box.
+  function breathAmount(phase){
+    if (phase < 4000) return easeSine(phase / 4000);
+    if (phase < 8000) return 1;
+    if (phase < 12000) return 1 - easeSine((phase - 8000) / 4000);
+    return 0;
+  }
+  // How far from the centre the edge of a rounded square is, in a given direction.
+  function edgeDistance(half, corner, angle){
+    const ux = Math.cos(angle), uy = Math.sin(angle);
+    const d = half / Math.max(Math.abs(ux), Math.abs(uy));
+    const inner = half - corner;
+    if (Math.abs(d * ux) <= inner || Math.abs(d * uy) <= inner) return d;
+    const cx = Math.sign(ux) * inner, cy = Math.sign(uy) * inner;
+    const along = ux * cx + uy * cy;
+    return along + Math.sqrt(Math.max(0, along * along - (cx * cx + cy * cy) + corner * corner));
   }
   function startBreathing(){
-    clearInterval(fmBreathTimer);
+    cancelAnimationFrame(fmBreathRaf);
     fmBreathT0 = performance.now();
-    const moving = document.querySelectorAll("#fmInner .fm-breath, #fmInner .fm-dot");
-    moving.forEach(el => el.classList.remove("breathing"));
-    void document.getElementById("fmInner").offsetWidth;
-    moving.forEach(el => el.classList.add("breathing"));
-    const step = () => {
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const frame = () => {
       const cue = document.getElementById("fmCue");
-      if (!cue || !focusDialog.open){ clearInterval(fmBreathTimer); return; }
-      let phase = breathPhaseMs(), i = 0;
-      while (phase >= FM_BREATH[i][1]){ phase -= FM_BREATH[i][1]; i++; }
+      if (!cue || !focusDialog.open) return;
+      const phase = (performance.now() - fmBreathT0) % FM_BREATH_CYCLE;
+      let rest = phase, i = 0;
+      while (rest >= FM_BREATH[i][1]){ rest -= FM_BREATH[i][1]; i++; }
       const text = fm && (fm.calm || fmElapsedMs() < FM_CUE_FOR_MS) ? FM_BREATH[i][0] : "";
       if (cue.textContent !== text) cue.textContent = text;
+      if (!reduceMotion){
+        const shape = document.querySelector("#fmInner .fm-breath");
+        const orb = document.querySelector("#fmInner .fm-orb");
+        const dot = document.querySelector("#fmInner .fm-dot");
+        const k = breathAmount(phase);
+        const scale = 0.72 + 0.28 * k;
+        const round = 0.5 - 0.32 * k;   // corner roundness: 50% circle -> 18% box
+        shape.style.transform = "scale(" + scale.toFixed(4) + ")";
+        orb.style.borderRadius = (round * 100).toFixed(2) + "%";
+        const half = (shape.offsetWidth / 2) * scale;
+        const angle = -Math.PI / 2 + 2 * Math.PI * (phase / FM_BREATH_CYCLE);
+        const dist = edgeDistance(half, round * 2 * half, angle);
+        dot.style.transform = "translate(" + (dist * Math.cos(angle)).toFixed(2) + "px," + (dist * Math.sin(angle)).toFixed(2) + "px)";
+      }
+      fmBreathRaf = requestAnimationFrame(frame);
     };
-    step();
-    fmBreathTimer = setInterval(step, 150);
+    frame();
   }
   // Only the newest message is shown; a pending swap is cancelled so two never mix.
   let fmMsgTimer = null;
@@ -3906,7 +3915,7 @@
     const session = fm;
     clearInterval(session.timer);
     clearInterval(session.calmTimer);
-    clearInterval(fmBreathTimer);
+    cancelAnimationFrame(fmBreathRaf);
     document.getElementById("fmInner").classList.remove("fm-calm");
     stopNoise();
     releaseWakeLock();
