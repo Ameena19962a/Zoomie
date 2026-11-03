@@ -393,16 +393,16 @@
     background:radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 45%, white), color-mix(in srgb, var(--accent) 75%, transparent));
     opacity:.85; box-shadow:0 0 60px color-mix(in srgb, var(--accent) 40%, transparent);
   }
-  /* One breath every 16s: in ~5s, hold, out ~6s, rest (matches the cue). */
+  /* Box breathing, 16s per breath: grow 4s, still 4s, shrink 4s, rest 4s. */
   @media not (prefers-reduced-motion: reduce){
     .fm-breath.breathing{ animation: fmBreathe 16s ease-in-out infinite; }
   }
   @keyframes fmBreathe{
     0%{ transform:scale(.72) rotate(0deg); border-radius:46% 54% 52% 48% / 50% 46% 54% 50%; }
-    30%, 45%{ transform:scale(1) rotate(3deg); border-radius:54% 46% 48% 52% / 46% 54% 50% 50%; }
-    85%, 100%{ transform:scale(.72) rotate(0deg); border-radius:46% 54% 52% 48% / 50% 46% 54% 50%; }
+    25%, 50%{ transform:scale(1) rotate(3deg); border-radius:54% 46% 48% 52% / 46% 54% 50% 50%; }
+    75%, 100%{ transform:scale(.72) rotate(0deg); border-radius:46% 54% 52% 48% / 50% 46% 54% 50%; }
   }
-  .fm-cue{ margin:-8px 0 12px; min-height:1.4em; font-size:14px; color:var(--muted); letter-spacing:.02em; }
+  .fm-cue{ margin:-8px 0 12px; min-height:1.4em; font-size:15px; color:var(--muted); letter-spacing:.02em; }
   .fm-msg{ transition:opacity .7s ease; }
   .fm-msg.fading{ opacity:0; }
   .fm-calm-link{ margin-top:14px; }
@@ -414,7 +414,7 @@
   #fmInner.fm-calm .fm-with, #fmInner.fm-calm .fm-task, #fmInner.fm-calm .fm-time,
   #fmInner.fm-calm .fm-normal-actions, #fmInner.fm-calm #fmCheck, #fmInner.fm-calm .fm-close{ display:none; }
   .fm-time{ position:relative; font-size:24px; font-weight:800; color:var(--on-accent, #fff); text-shadow:0 1px 6px rgba(0,0,0,.25); }
-  .fm-msg{ min-height:2.9em; margin:0 0 14px; font-size:15px; color:var(--muted); max-width:320px; }
+  .fm-msg{ min-height:2.9em; margin:0 0 16px; font-size:20px; font-weight:600; line-height:1.4; color:var(--text); max-width:300px; }
   .fm-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
   .fm-check{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin:0 0 16px; }
   .fm-check p{ margin:0 0 8px; font-weight:700; }
@@ -3751,43 +3751,45 @@
      Optional background noise is generated on the phone, nothing streamed.
   --------------------------------------------------------------------- */
   const focusDialog = document.getElementById("focusDialog");
-  const FM_START = "I'm right here with you. Breathe with the shape if it helps.";
-  // First-person, self-affirming lines for ADHD, autism and building
-  // overwhelm. Calm and validating, never "push harder".
+  // Written to be PDA-friendly: no instructions, no "should", no questions
+  // that need answering. Short, plain statements of permission and safety.
   const FM_AFFIRMATIONS = [
-    "My brain works differently, not wrongly.",
-    "Starting was the hardest part, and I've already done it.",
-    "Progress counts, even when it's small or messy.",
-    "I don't have to do it perfectly. I just have to do a bit.",
-    "If my focus wanders, I can gently come back. No harm done.",
-    "I'm not lazy. I'm doing my best with the energy I have today.",
-    "Rest isn't something I have to earn.",
-    "My needs are real and valid.",
-    "It's okay to stim. My body knows what it needs.",
-    "I'm allowed to do things my own way.",
-    "Quiet and space are allowed.",
-    "I can take a break before it gets too much.",
-    "Is anything too loud, too bright or itchy? It's okay to change it.",
-    "Unclench my jaw. Drop my shoulders. Breathe out slowly.",
-    "If it all feels like too much, I can stop. Stopping is safe.",
-    "Big feelings pass. I can let this one pass too.",
-    "I can make my world smaller right now: one task, one step.",
-    "Water, a stretch, a loo break \u2014 looking after my body is part of the work.",
-    "I am safe right now.",
-    "I'm proud of myself for being here."
+    "No rush. There's time.",
+    "Small steps still count.",
+    "Going slowly is allowed.",
+    "Stopping is allowed, at any point.",
+    "Nothing has to be perfect.",
+    "Messy progress is still progress.",
+    "Different brains do things differently.",
+    "Drifting off and coming back is normal.",
+    "Breaks are allowed, any time.",
+    "Stimming is welcome here.",
+    "Your own way is a fine way.",
+    "It's okay if today is a low day.",
+    "Being here is already enough.",
+    "Big feelings pass, like weather.",
+    "Nobody is watching or judging.",
+    "There's no wrong way to do this.",
+    "Quiet is always an option.",
+    "Needs are allowed to change."
   ];
   const FM_GROUNDING = [
-    "Breathe with the shape. In\u2026 and out\u2026",
-    "Feel your feet on the floor.",
-    "Unclench your jaw. Let your shoulders drop.",
-    "Notice one thing you can see, and one thing you can hear.",
-    "Turn things down if you can: lights, sound, screens.",
-    "Wrap up warm, hold something soft, or stim \u2014 whatever helps.",
-    "This feeling is big, but it will pass.",
-    "There's nothing you need to do right now.",
-    "You're doing really well just by being here."
+    "Nothing needs to happen right now.",
+    "There's no rush at all.",
+    "Everything else can wait.",
+    "This feeling will pass, like weather.",
+    "It's okay to just be here.",
+    "Quieter and dimmer is always allowed.",
+    "Soft, warm and comforting things are allowed.",
+    "No one needs anything from you right now.",
+    "Safe. Here. Now."
   ];
-  const FM_BREATH = [["Breathe in\u2026", 4800], ["Hold\u2026", 2400], ["Breathe out\u2026", 6400], ["Rest\u2026", 2400]];
+  // The cue describes the shape rather than telling anyone to breathe.
+  // Box breathing: four equal 4-second sides. The words show for the first
+  // couple of minutes (and in calm mode); after that the shape is just quiet company.
+  const FM_BREATH = [["Growing\u2026", 4000], ["Still", 4000], ["Getting smaller\u2026", 4000], ["Resting", 4000]];
+  const FM_CUE_FOR_MS = 2 * 60000;
+  const FM_MSG_EVERY = 40000;
   let fm = null;       // the running session
   let fmSetup = null;  // choices on the setup screen
   let fmWakeLock = null;
@@ -3806,15 +3808,16 @@
     if (fm){ focusDialog.showModal(); return; }
     const subjects = fmSubjects();
     const pick = subjects.find(s => s.kind === kind && s.id === id) || subjects[0];
-    fmSetup = { subject: pick, minutes: pick.mins || 25, sound: state.ui.focusSound };
+    fmSetup = { subject: pick, minutes: Math.min(pick.mins || 10, 25), sound: state.ui.focusSound };
     renderFocusSetup();
     focusDialog.showModal();
   }
 
   function renderFocusSetup(){
     const subjects = fmSubjects();
-    const lengths = [[10, "10 min"], [25, "25 min"], [45, "45 min"]];
-    if (fmSetup.subject.mins && !lengths.some(l => l[0] === fmSetup.subject.mins)) lengths.push([fmSetup.subject.mins, "Rest of it (" + fmSetup.subject.mins + "m)"]);
+    const lengths = [[5, "5 min"], [10, "10 min"], [15, "15 min"], [25, "25 min"]];
+    const m = fmSetup.subject.mins;
+    if (m && m < 25 && !lengths.some(l => l[0] === m)){ lengths.push([m, m + " min"]); lengths.sort((x, y) => x[0] - y[0]); }
     document.getElementById("fmInner").innerHTML =
       '<div class="fm-setup">' +
         '<button type="button" class="icon-btn fm-close" data-fm="close" aria-label="Close">✕</button>' +
@@ -3839,7 +3842,7 @@
   }
 
   function startFocus(){
-    fm = { subject: fmSetup.subject, minutes: fmSetup.minutes, sound: fmSetup.sound, startedAt: Date.now(), pausedTotal: 0, pausedAt: null, checkedIn: false, msgIdx: -1, lastMsgAt: Date.now(), calm: false,
+    fm = { subject: fmSetup.subject, minutes: fmSetup.minutes, sound: fmSetup.sound, startedAt: Date.now(), pausedTotal: 0, pausedAt: null, checkedIn: false, msgIdx: 0, lastMsgAt: Date.now(), calm: false,
       order: FM_AFFIRMATIONS.map((_, i) => i).sort(() => Math.random() - 0.5) };
     state.ui.focusSound = fmSetup.sound;
     persist();
@@ -3860,10 +3863,10 @@
       '<p class="fm-calm-title">You\'re safe. Nothing needs doing right now. 💛</p>' +
       '<div class="fm-breath-wrap"><div class="fm-breath"></div><div class="fm-time" id="fmTime" aria-live="polite"></div></div>' +
       '<p class="fm-cue" id="fmCue" aria-hidden="true"></p>' +
-      '<p class="fm-msg" id="fmMsg">' + FM_START + '</p>' +
+      '<p class="fm-msg" id="fmMsg">' + FM_AFFIRMATIONS[fm.order[0]] + '</p>' +
       '<div id="fmCheck"></div>' +
       '<div class="fm-actions fm-normal-actions">' +
-        '<button type="button" class="ghost-btn" data-fm="pause" id="fmPauseBtn">Take a breather</button>' +
+        '<button type="button" class="ghost-btn" data-fm="pause" id="fmPauseBtn">Pause</button>' +
         '<button type="button" class="primary-btn" data-fm="finish">I\'m done ✨</button>' +
       '</div>' +
       '<div class="fm-normal-actions fm-calm-link"><button type="button" class="text-btn" data-fm="calm">😮‍💨 It\'s all too much</button></div>' +
@@ -3875,7 +3878,7 @@
     fmTick();
   }
 
-  // The shape and the "Breathe in / out" cue run from the same start so
+  // The shape and its "Growing / Getting smaller" cue run from the same start so
   // they stay in step. They keep going during a breather or calm mode.
   let fmBreathTimer = null;
   function startBreathing(){
@@ -3886,7 +3889,7 @@
     const step = () => {
       const cue = document.getElementById("fmCue");
       if (!cue || !focusDialog.open) return;
-      cue.textContent = FM_BREATH[i][0];
+      cue.textContent = fm && (fm.calm || fmElapsedMs() < FM_CUE_FOR_MS) ? FM_BREATH[i][0] : "";
       fmBreathTimer = setTimeout(() => { i = (i + 1) % FM_BREATH.length; step(); }, FM_BREATH[i][1]);
     };
     step();
@@ -3905,7 +3908,7 @@
     document.getElementById("fmInner").classList.add("fm-calm");
     let g = 0;
     fadeMsg(FM_GROUNDING[0]);
-    fm.calmTimer = setInterval(() => { g = (g + 1) % FM_GROUNDING.length; fadeMsg(FM_GROUNDING[g]); }, 14000);
+    fm.calmTimer = setInterval(() => { g = (g + 1) % FM_GROUNDING.length; fadeMsg(FM_GROUNDING[g]); }, 20000);
   }
   function leaveCalm(){
     if (!fm || !fm.calm) return;
@@ -3925,7 +3928,7 @@
     timeEl.textContent = fm.pausedAt ? "Paused" : (leftMs < 60000 ? "Almost there" : mins + " min");
     if (fm.calm) return;
     document.getElementById("fmInner").classList.toggle("fm-paused", !!fm.pausedAt);
-    if (!fm.pausedAt && Date.now() - fm.lastMsgAt > 3 * 60000){
+    if (!fm.pausedAt && Date.now() - fm.lastMsgAt > FM_MSG_EVERY){
       fm.lastMsgAt = Date.now();
       fm.msgIdx = (fm.msgIdx + 1) % fm.order.length;
       fadeMsg(FM_AFFIRMATIONS[fm.order[fm.msgIdx]]);
@@ -3933,9 +3936,9 @@
     if (!fm.checkedIn && !fm.pausedAt && fm.minutes >= 10 && fmElapsedMs() >= fm.minutes * 30000){
       fm.checkedIn = true;
       document.getElementById("fmCheck").innerHTML =
-        '<div class="fm-check"><p>Still with me? 💛</p><div class="fm-actions">' +
-          '<button type="button" class="primary-btn" data-fm="checkin-yes">Yes, keep going</button>' +
-          '<button type="button" class="ghost-btn" data-fm="pause">I need a breather</button>' +
+        '<div class="fm-check"><p>Halfway 💛 Carrying on is optional.</p><div class="fm-actions">' +
+          '<button type="button" class="primary-btn" data-fm="checkin-yes">Keep going</button>' +
+          '<button type="button" class="ghost-btn" data-fm="pause">Pause</button>' +
         '</div></div>';
       setTimeout(() => { const c = document.getElementById("fmCheck"); if (c) c.innerHTML = ""; }, 30000);
     }
@@ -3949,12 +3952,12 @@
       fm.pausedAt = null;
       startNoise(fm.sound);
       fm.lastMsgAt = Date.now();
-      fadeMsg("Welcome back. Let's carry on, gently.");
-      if (btn) btn.textContent = "Take a breather";
+      fadeMsg("Welcome back. No rush.");
+      if (btn) btn.textContent = "Pause";
     } else {
       fm.pausedAt = Date.now();
       stopNoise();
-      if (!fm.calm) fadeMsg("Take your time. Unclench your jaw, drop your shoulders. Tap Resume whenever you're ready.");
+      if (!fm.calm) fadeMsg("Paused. Resume is there whenever it suits.");
       if (btn) btn.textContent = "Resume";
     }
     document.getElementById("fmCheck").innerHTML = "";
@@ -4019,12 +4022,12 @@
     const act = b.dataset.fm;
     if (act === "subject"){
       fmSetup.subject = fmSubjects()[parseInt(b.dataset.i, 10)];
-      if (fmSetup.subject.mins) fmSetup.minutes = fmSetup.subject.mins;
+      fmSetup.minutes = Math.min(fmSetup.subject.mins || 10, 25);
       renderFocusSetup();
     }
     else if (act === "start") startFocus();
     else if (act === "pause") togglePause();
-    else if (act === "checkin-yes"){ document.getElementById("fmCheck").innerHTML = ""; document.getElementById("fmMsg").textContent = "Lovely. I'm still right here."; }
+    else if (act === "checkin-yes"){ document.getElementById("fmCheck").innerHTML = ""; fadeMsg("Still here, alongside you."); }
     else if (act === "finish") endFocus(true);
     else if (act === "calm") enterCalm();
     else if (act === "calm-resume") leaveCalm();
