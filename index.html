@@ -981,7 +981,8 @@
       startTab: TAB_IDS.includes(u.startTab) ? u.startTab : "today",
       names: (u.names && typeof u.names === "object") ? u.names : {},
       textSize: ["s", "m", "l", "xl"].includes(u.textSize) ? u.textSize : "m",
-      celebrateStyle: ["burst", "sparkles", "message"].includes(u.celebrateStyle) ? u.celebrateStyle : "burst"
+      celebrateStyle: ["burst", "sparkles", "message"].includes(u.celebrateStyle) ? u.celebrateStyle : "burst",
+      soundOnSilent: u.soundOnSilent === true
     };
   }
   // Older saves only had { timeline, todoList }, where timeline:false also
@@ -1249,10 +1250,7 @@
 
   function playCompletionChime(){
     if (!state.soundEnabled) return;
-    try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === "suspended") audioCtx.resume();
-      const now = audioCtx.currentTime;
+    withAudio((audioCtx, now) => {
       const peakBase = clamp(state.soundVolume, 0, 1) * 0.32;
       // A brighter, quicker "ta-da" than the block-start chime, so the
       // two are easy to tell apart by ear — same gentle volume cap and
@@ -1275,7 +1273,7 @@
         osc.start(start);
         osc.stop(start + note.dur + 0.02);
       });
-    } catch (e) { /* the visual celebration still communicates completion without sound */ }
+    });
   }
 
   // Celebration is always centered on the row itself, never on wherever
@@ -1924,21 +1922,48 @@
      still communicates state with sound off.
   --------------------------------------------------------------------- */
   let audioCtx = null;
-  function unlockAudioOnce(){
+  // iPhones mute web audio when the ring/silent switch is on silent. Opting
+  // in to "playback" plays through it (Safari 17+), but can pause music
+  // that's already playing, so it's the user's choice.
+  function applyAudioSession(){
+    try { if (navigator.audioSession) navigator.audioSession.type = state.ui.soundOnSilent ? "playback" : "auto"; } catch (e) {}
+  }
+  applyAudioSession();
+
+  // Runs `play` once audio is actually running. Phones can leave the
+  // context "suspended" or "interrupted" (after a call, the lock screen, or
+  // another app's audio), and notes scheduled before it resumes are lost.
+  function withAudio(play){
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === "suspended") audioCtx.resume();
-    } catch (e) { /* Web Audio unavailable — silent, no functional loss */ }
+      const go = () => { try { play(audioCtx, audioCtx.currentTime + 0.02); } catch (e) {} };
+      if (audioCtx.state === "running"){ go(); return; }
+      const p = audioCtx.resume();
+      if (p && p.then) p.then(go, () => {}); else go();
+    } catch (e) { /* Web Audio unavailable — the visuals still carry the message */ }
   }
-  document.addEventListener("click", unlockAudioOnce, { once: true });
-  document.addEventListener("touchstart", unlockAudioOnce, { once: true });
+
+  // Every tap re-wakes audio if the phone paused it, so later chimes that
+  // fire on their own (no tap) still play. The 1-sample silent buffer is
+  // what actually unlocks audio on iPhones.
+  function unlockAudio(){
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state !== "running") audioCtx.resume();
+      if (!unlockAudio.done){
+        const src = audioCtx.createBufferSource();
+        src.buffer = audioCtx.createBuffer(1, 1, 22050);
+        src.connect(audioCtx.destination);
+        src.start(0);
+        unlockAudio.done = true;
+      }
+    } catch (e) {}
+  }
+  ["touchend", "click", "keydown"].forEach(t => document.addEventListener(t, unlockAudio, { passive: true }));
 
   function playAlarmChime(){
     if (!state.soundEnabled) return;
-    try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === "suspended") audioCtx.resume();
-      const now = audioCtx.currentTime;
+    withAudio((audioCtx, now) => {
       const peakBase = clamp(state.soundVolume, 0, 1) * 0.32; // gentle even at "full" volume
       // A short, cute little sparkle: a four-note rising arpeggio
       // (C5 → E5 → G5 → C6) on a soft triangle wave, which reads as more
@@ -1964,7 +1989,7 @@
         osc.start(start);
         osc.stop(start + 0.34);
       });
-    } catch (e) { /* the visual timer still communicates state without sound */ }
+    });
   }
 
   /* ---------------------------------------------------------------------
@@ -2900,10 +2925,15 @@
             '<label for="st_soundVolume">Volume</label>' +
             '<input type="range" id="st_soundVolume" min="0" max="1" step="0.1" value="' + state.soundVolume + '" style="width:100%;">' +
           '</div>' +
-          '<div class="field" style="display:flex;gap:8px;">' +
+          '<div class="field" style="display:flex;gap:8px;flex-wrap:wrap;">' +
             '<button type="button" class="quiet-btn" id="st_testSound">Test start chime</button>' +
             '<button type="button" class="quiet-btn" id="st_testDoneChime">Test done chime</button>' +
           '</div>' +
+          '<div class="checkbox-field">' +
+            '<input type="checkbox" id="st_soundOnSilent" ' + (state.ui.soundOnSilent ? "checked" : "") + '>' +
+            '<label for="st_soundOnSilent">Play even when my iPhone is on silent (may pause music that\'s playing)</label>' +
+          '</div>' +
+          '<p class="dialog-sub" style="margin:-4px 0 12px;">No sound? Check your phone\'s volume and the silent switch on the side of an iPhone &mdash; or turn on the option above.</p>' +
           (speechSupported ?
             '<div class="checkbox-field">' +
               '<input type="checkbox" id="st_speakEnabled" ' + (state.speakEnabled ? "checked" : "") + '>' +
@@ -2994,6 +3024,11 @@
     });
     document.getElementById("st_soundVolume").addEventListener("input", (e) => {
       state.soundVolume = parseFloat(e.target.value);
+    });
+    document.getElementById("st_soundOnSilent").addEventListener("change", (e) => {
+      state.ui.soundOnSilent = e.target.checked;
+      applyAudioSession();
+      persist();
     });
     document.getElementById("st_testSound").addEventListener("click", () => {
       const was = state.soundEnabled;
@@ -3172,6 +3207,7 @@
     }
     state.features = normalizeFeatures(state.features);
     state.ui = normalizeUi(state.ui);
+    applyAudioSession();
     if (typeof state.brainDump !== "string") state.brainDump = "";
     restoreThemeVars();
     finishBoot();
