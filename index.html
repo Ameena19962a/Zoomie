@@ -338,6 +338,17 @@
   button.dump-dest::after{ content:" ⇄"; font-weight:400; }
   .dump-empty{ color:var(--muted); font-size:13px; margin:14px 0 0; }
 
+  /* ---------- Energy ---------- */
+  .energy-chip{
+    flex:none; margin-left:auto; min-width:36px; height:30px; padding:0 8px; border-radius:999px;
+    border:1px dashed var(--border); background:transparent; color:var(--muted); font-size:14px; font-weight:700;
+  }
+  .energy-chip.set{ border-style:solid; background:var(--card); }
+  .energy-check{ border:1px solid var(--border); border-radius:12px; padding:12px; margin:0 0 12px; background:var(--bg); }
+  .energy-check p{ margin:0 0 8px; font-size:14px; font-weight:700; }
+  .energy-check .seg.choice{ margin-bottom:0; background:var(--card); }
+  .energy-note{ font-size:13px; color:var(--muted); margin:0 0 12px; }
+
   /* ---------- Day picker (block form) ---------- */
   .day-picks{ display:flex; gap:6px; justify-content:space-between; margin:-6px 0 4px; }
   .day-picks[hidden]{ display:none; }
@@ -688,6 +699,7 @@
   <section class="panel" id="todoPanelSection" aria-labelledby="todoHeading">
     <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
     <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
+    <div id="energyCheck"></div>
     <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
       <input type="text" id="todoInput" placeholder="Add something…" style="flex:1;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
       <button type="submit" class="primary-btn">Add</button>
@@ -978,14 +990,15 @@
         lastCategoryId: state.lastCategoryId,
         ui: state.ui,
         brainDump: state.brainDump,
-        history: state.history
+        history: state.history,
+        energy: state.energy
       });
   }
 
   /* ---------------------------------------------------------------------
      State
   --------------------------------------------------------------------- */
-  const DEFAULT_FEATURES = { focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, history: true, celebrations: true };
+  const DEFAULT_FEATURES = { focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, energy: true, history: true, celebrations: true };
   const TAB_IDS = ["today", "dump", "todo", "done"];
   const DEFAULT_NAMES = { today: "Today", dump: "Brain dump", todo: "To-do list", done: "Done list", focus: "Right now", timeline: "Today's timeline" };
   function normalizeUi(u){
@@ -1043,6 +1056,7 @@
     ui: normalizeUi(persisted.ui),
     brainDump: typeof persisted.brainDump === "string" ? persisted.brainDump : "",
     history: (persisted.history && typeof persisted.history === "object") ? persisted.history : {},
+    energy: persisted.energy || null,
     demoOffset: 0,
     speed: 1
   } : {
@@ -1062,6 +1076,7 @@
     ui: normalizeUi(null),
     brainDump: "",
     history: {},
+    energy: null,
     demoOffset: 0,
     speed: 1
   };
@@ -1989,16 +2004,47 @@
     if (e.target.open) doneOpenDays.add(d); else doneOpenDays.delete(d);
   }, true);
 
+  const ENERGY = {
+    low: { icon: "🪫", name: "Low", note: "Low-energy day. The 🪫 gentle ones are at the top — everything else can wait." },
+    med: { icon: "🔋", name: "Okay", note: "The 🔋 middle-energy ones are at the top." },
+    high: { icon: "⚡", name: "Good", note: "Good energy! The ⚡ bigger ones are at the top." }
+  };
+  const ENERGY_CYCLE = [null, "low", "med", "high"];
+  function todaysEnergy(){
+    return state.energy && state.energy.date === todayStr() ? state.energy.level : null;
+  }
+
+  function renderEnergyCheck(){
+    const el = document.getElementById("energyCheck");
+    if (!state.features.energy){ el.innerHTML = ""; return; }
+    const level = todaysEnergy();
+    el.innerHTML = level
+      ? '<p class="energy-note">' + ENERGY[level].icon + ' ' + ENERGY[level].note +
+          ' <button type="button" class="text-btn" data-action="energy-change">Change</button></p>'
+      : '<div class="energy-check"><p>How\'s your energy today?</p>' +
+          '<div class="seg choice">' + Object.keys(ENERGY).map(k =>
+            '<button type="button" data-action="energy-set" data-level="' + k + '">' + ENERGY[k].icon + ' ' + ENERGY[k].name + '</button>'
+          ).join('') + '</div></div>';
+  }
+
   function renderTodos(){
     const list = document.getElementById("todoList");
     if (!list) return;
-    list.innerHTML = state.todos.map(t =>
+    renderEnergyCheck();
+    const showEnergy = state.features.energy;
+    const level = showEnergy ? todaysEnergy() : null;
+    const rank = (t) => t.done ? 3 : !level ? 0 : t.energy === level ? 0 : !t.energy ? 1 : 2;
+    const ordered = state.todos.map((t, i) => [t, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
+    list.innerHTML = ordered.map(t =>
       '<li class="' + (t.done ? "done" : "") + '" data-id="' + t.id + '">' +
         (t.done ? "" : '<div class="swipe-bg-right">✓ Done</div>') +
         '<div class="swipe-bg-left">🗑 Delete</div>' +
         '<div class="swipe-content">' +
           '<input type="checkbox" id="todo_' + t.id + '" data-action="toggle-todo" data-id="' + t.id + '" ' + (t.done ? "checked" : "") + ' aria-label="Mark \'' + escapeAttr(t.title) + '\' done">' +
           '<label class="subtask-title" for="todo_' + t.id + '">' + escapeHtml(t.title) + '</label>' +
+          (showEnergy && !t.done
+            ? '<button type="button" class="energy-chip' + (t.energy ? ' set' : '') + '" data-action="todo-energy" data-id="' + t.id + '" aria-label="Energy: ' + (t.energy ? ENERGY[t.energy].name : 'not set') + '. Tap to change">' + (t.energy ? ENERGY[t.energy].icon : '+') + '</button>'
+            : '') +
         '</div>' +
       '</li>'
     ).join("") || '<p style="color:var(--muted);font-size:13px;margin:0;">Nothing on the list yet.</p>';
@@ -2246,6 +2292,24 @@
     if (action === "edit"){
       const b = state.blocks.find(x => x.id === t.dataset.id);
       if (b) openBlockForm(b);
+      return;
+    }
+    if (action === "energy-set"){
+      state.energy = { date: todayStr(), level: t.dataset.level };
+      commit();
+      return;
+    }
+    if (action === "energy-change"){
+      state.energy = null;
+      commit();
+      return;
+    }
+    if (action === "todo-energy"){
+      const td = state.todos.find(x => x.id === t.dataset.id);
+      if (td){
+        td.energy = ENERGY_CYCLE[(ENERGY_CYCLE.indexOf(td.energy || null) + 1) % ENERGY_CYCLE.length];
+        commit();
+      }
       return;
     }
     if (action === "insert-buffer"){
@@ -3031,6 +3095,7 @@
     { group: "today", key: "buffers", name: () => "Buffers", desc: "“+ buffer” buttons for breathing room", sub: true, requires: "timeline" },
     { group: "dump", key: "brainDump", name: () => nameOf("dump"), desc: "Empty your head, then sort it into a list" },
     { group: "todo", key: "todoList", name: () => nameOf("todo"), desc: "Untimed things to get to today" },
+    { group: "todo", key: "energy", name: () => "Energy check-in", desc: "Tag to-dos 🪫 🔋 ⚡ and see the right ones first", sub: true, requires: "todoList" },
     { group: "done", key: "history", name: () => nameOf("done"), desc: "Everything you've finished, by day" },
     { group: "all", key: "celebrations", name: () => "Celebrations", desc: "A little party when you finish something" },
     { group: "all", key: "sounds", name: () => "Sounds", desc: "Soft chime when a block starts or you finish" }
