@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>TimeAnchor</title>
+<title>Kindday</title>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="TimeAnchor" />
+<meta name="apple-mobile-web-app-title" content="Kindday" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="theme-color" content="#f6f4ef" />
 <!-- Every theme is light; stops Samsung Internet / Chrome from force-darkening it. -->
@@ -356,23 +356,43 @@
   #splash{
     position:fixed; inset:0; z-index:200; display:none; flex-direction:column; align-items:center; justify-content:center;
     background:linear-gradient(180deg, #e6eff7 0%, #f6f2ec 100%); color:#3a4a5c; cursor:pointer;
-    animation: splashOut .7s ease 2s forwards;
+    animation: splashOut .7s ease 2.4s forwards;
   }
   html.show-splash #splash{ display:flex; }
   html.splash-night #splash{ background:linear-gradient(180deg, #14171d 0%, #1d2129 100%); color:#dfe5ee; }
   #splash.skip{ animation: splashOut .3s ease forwards; }
   .splash-cloud{ overflow:visible; filter:drop-shadow(0 10px 18px rgba(70,100,135,.18)); animation: cloudIn 1.1s cubic-bezier(.2,.7,.3,1) both; }
-  .splash-cloud-body{ fill:#ffffff; }
-  html.splash-night .splash-cloud-body{ fill:#c9d4e3; }
-  .splash-eye{ fill:none; stroke:#4a5568; stroke-width:2.2; stroke-linecap:round; }
-  .splash-blush{ fill:#f4a9b8; opacity:.55; }
+  /* The cloud, wherever it appears. */
+  .cloud-svg{ overflow:visible; }
+  .cloud-body{ fill:var(--cloud-fill, #ffffff); }
+  html.splash-night #splash .cloud-body{ fill:#c9d4e3; }
+  .cloud-line{ fill:none; stroke:#3b4656; stroke-width:2.2; stroke-linecap:round; }
+  .cloud-pupil{ fill:#3b4656; }
+  .cloud-shine{ fill:#ffffff; }
+  .cloud-blush{ fill:#f4a9b8; opacity:.55; }
+  .cloud-eye{ transform-box:fill-box; transform-origin:center; }
+  /* Splash: sleepy at first, then it wakes, looks at you and smiles. */
+  #splash .face-awake{ opacity:0; animation: cloudFaceIn .3s ease 1s both; }
+  #splash .face-sleepy{ animation: cloudFaceOut .2s ease 1s both; }
+  #splash .face-awake .cloud-eye{ animation: cloudBlink .35s ease 1s both; }
+  @keyframes cloudFaceIn{ from{ opacity:0; } to{ opacity:1; } }
+  @keyframes cloudFaceOut{ to{ opacity:0; } }
+  @keyframes cloudBlink{ 0%{ transform:scaleY(.1); } 100%{ transform:scaleY(1); } }
+  #headerLine{ font-size:18px; line-height:1.3; vertical-align:middle; }
+  .brand h1{ display:flex; align-items:center; }
+  .brand-cloud{ flex:none; width:34px; height:24px; margin-right:9px; vertical-align:-3px; filter:drop-shadow(0 2px 4px rgba(70,100,135,.22)); }
+  .empty-cloud{ display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; padding:6px 0 2px; }
+  .empty-cloud svg{ filter:drop-shadow(0 4px 8px rgba(70,100,135,.18)); }
+  .empty-cloud p{ margin:0; color:var(--muted); font-size:13.5px; }
   .splash-name{ margin:18px 0 2px; font-size:26px; font-weight:800; letter-spacing:.01em; animation: splashFade .8s ease .45s both; }
   .splash-tag{ margin:0; font-size:15px; opacity:.75; animation: splashFade .8s ease .75s both; }
   @media not (prefers-reduced-motion: reduce){
     .splash-cloud{ animation: cloudIn 1.1s cubic-bezier(.2,.7,.3,1) both, cloudFloat 3s ease-in-out 1.1s infinite; }
   }
   @media (prefers-reduced-motion: reduce){
-    #splash{ animation-duration:.4s; animation-delay:1s; }
+    #splash{ animation-duration:.4s; animation-delay:1.2s; }
+    #splash .face-sleepy{ display:none; }
+    #splash .face-awake, #splash .face-awake .cloud-eye{ opacity:1; animation:none; }
     .splash-cloud, .splash-name, .splash-tag{ animation: splashFade .4s ease both; }
   }
   @keyframes cloudIn{ 0%{ opacity:0; transform:translateY(22px) scale(.88); } 100%{ opacity:1; transform:translateY(0) scale(1); } }
@@ -781,24 +801,14 @@
   })();
 </script>
 <div id="splash" aria-hidden="true">
-  <svg class="splash-cloud" viewBox="0 0 120 84" width="168" height="118">
-    <g class="splash-cloud-body">
-      <circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/>
-      <rect x="36" y="46" width="52" height="23" rx="11.5"/>
-    </g>
-    <path class="splash-eye" d="M49 52 q4 4 8 0"/>
-    <path class="splash-eye" d="M66 52 q4 4 8 0"/>
-    <ellipse class="splash-blush" cx="45" cy="59" rx="4" ry="2.4"/>
-    <ellipse class="splash-blush" cx="78" cy="59" rx="4" ry="2.4"/>
-    <path class="splash-eye" d="M58 60 q3 2.5 6 0"/>
-  </svg>
-  <p class="splash-name">TimeAnchor</p>
+  <svg class="splash-cloud cloud-svg" viewBox="0 0 120 84" width="168" height="118"><g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g><ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/><g class="face-sleepy"><path class="cloud-line" d="M49 52 q4 4 8 0"/><path class="cloud-line" d="M66 52 q4 4 8 0"/><path class="cloud-line" d="M58 60 q3 2.5 6 0"/></g><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="51" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="49.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="51" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="49.7" r="1.2"/></g><path class="cloud-line" d="M55.5 58.5 q6 6 12 0"/></g></svg>
+  <p class="splash-name">Kindday</p>
   <p class="splash-tag">your day, gently</p>
 </div>
 
 <header class="app-header">
   <div class="brand">
-    <h1 id="brandTagline">TimeAnchor</h1>
+    <h1 id="brandTagline"><svg class="brand-cloud cloud-svg" viewBox="20 10 86 62" aria-hidden="true"><g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g><ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="51" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="49.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="51" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="49.7" r="1.2"/></g><path class="cloud-line" d="M55.5 58.5 q6 6 12 0"/></g></svg><span id="headerLine">Kindday</span></h1>
   </div>
   <div class="header-controls">
     <div class="sim-clock" id="simClockWrap" title="Speed and other testing tools are in Settings"><strong id="simClockText">--:--</strong></div>
@@ -1081,6 +1091,7 @@
     document.documentElement.style.setProperty("--cat-buffer-tint", theme.track);
     document.documentElement.style.setProperty("--cat-buffer", theme.muted2);
     document.documentElement.style.setProperty("--on-accent", theme.onAccent || "#ffffff");
+    document.documentElement.style.setProperty("--cloud-fill", theme.dark ? "#c9d4e3" : "#ffffff");
     document.documentElement.style.setProperty("--danger-quiet", theme.danger || "#966335");
     document.documentElement.style.colorScheme = theme.dark ? "only dark" : "only light";
     const themeMeta = document.querySelector('meta[name="theme-color"]');
@@ -1179,7 +1190,7 @@
   /* ---------------------------------------------------------------------
      State
   --------------------------------------------------------------------- */
-  const DEFAULT_FEATURES = { categories: true, dayJar: true, focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, energy: true, history: true, celebrations: true, focusMode: true, splash: true };
+  const DEFAULT_FEATURES = { categories: true, dayJar: true, focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, energy: true, history: true, celebrations: true, focusMode: true, splash: true, dailyWords: true };
   const TAB_IDS = ["today", "dump", "todo", "done"];
   const DEFAULT_NAMES = { today: "Today", dump: "Brain dump", todo: "To-do list", done: "Done list", focus: "Right now", timeline: "Today's timeline" };
   function normalizeUi(u){
@@ -1211,7 +1222,7 @@
     behind: ["Waiting — running behind", "Whenever you're ready"],
     nextUp: ["Next up", "Coming up"],
     notifStart: ["Starting now", "Ready when you are"],
-    notifEnd: ["Time's up — check in on TimeAnchor", "Time for a gentle check-in"]
+    notifEnd: ["Time's up — check in on Kindday", "Time for a gentle check-in"]
   };
   function w(key){ return WORDS[key][state && state.ui && state.ui.gentle ? 1 : 0]; }
   // Older saves only had { timeline, todoList }, where timeline:false also
@@ -1367,7 +1378,7 @@
       notifPermission = "unavailable";
     }
     if (notifPermission !== "granted"){
-      showNotice("Reminders are off — allow notifications in your device settings if you'd like TimeAnchor to alert you when blocks start and end.");
+      showNotice("Reminders are off — allow notifications in your device settings if you'd like Kindday to alert you when blocks start and end.");
     }
     scheduleNotifications();
   }
@@ -1866,9 +1877,9 @@
             FOCUS_LAUNCH_HTML +
           '</div>' + lowCapacityLinkHtml();
       } else if (sortedBlocks().length === 0){
-        el.innerHTML = '<div class="focus-empty"><p>Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.</p>' + FOCUS_LAUNCH_HTML + '</div>';
+        el.innerHTML = '<div class="focus-empty">' + emptyCloud("happy", 'Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.') + FOCUS_LAUNCH_HTML + '</div>';
       } else {
-        el.innerHTML = '<div class="focus-empty"><p>Nothing else is scheduled for today.</p>' + FOCUS_LAUNCH_HTML + '</div>' + lowCapacityLinkHtml();
+        el.innerHTML = '<div class="focus-empty">' + emptyCloud("happy", 'Nothing else is scheduled for today.') + FOCUS_LAUNCH_HTML + '</div>' + lowCapacityLinkHtml();
       }
       updateAriaLive("Nothing is currently active.");
       return;
@@ -2067,6 +2078,7 @@
     cl.toggle("feat-dayjar-off", !f.dayJar);
     cl.toggle("feat-focusmode-off", !f.focusMode);
     cl.toggle("feat-categories-off", !f.categories);
+    updateHeaderLine();
     cl.toggle("feat-timeline-off", !f.timeline);
     cl.toggle("feat-blocks-off", !f.focus && !f.timeline);
     cl.toggle("feat-quickadd-off", !f.quickAdd);
@@ -2190,7 +2202,7 @@
     doneSig = sig;
     const todayCount = (state.history[todayStr()] || []).length;
     if (!days.length){
-      el.innerHTML = '<p class="dump-empty" style="margin:0;">Nothing here yet. Finished things will land here &mdash; even the tiny ones count.</p>';
+      el.innerHTML = emptyCloud("sleepy", "Nothing here yet. Finished things will land here &mdash; even the tiny ones count.");
       return;
     }
     el.innerHTML =
@@ -2347,7 +2359,7 @@
             : '') +
         '</div>' +
       '</li>'
-    ).join("") || '<p style="color:var(--muted);font-size:13px;margin:0;">Nothing on the list yet.</p>';
+    ).join("") || emptyCloud("sleepy", "Nothing on the list yet.");
   }
 
   // Structural changes (add/edit/delete/reflow/etc) need to be saved and
@@ -3356,12 +3368,12 @@
      upgrades as a normal start.
   --------------------------------------------------------------------- */
   async function exportBackup(){
-    const json = JSON.stringify({ app: "TimeAnchor", version: 1, savedAt: new Date().toISOString(), data: snapshot() }, null, 2);
-    const name = "timeanchor-backup-" + todayStr() + ".json";
+    const json = JSON.stringify({ app: "Kindday", version: 1, savedAt: new Date().toISOString(), data: snapshot() }, null, 2);
+    const name = "kindday-backup-" + todayStr() + ".json";
     try {
       const file = new File([json], name, { type: "application/json" });
       if (navigator.canShare && navigator.canShare({ files: [file] })){
-        await navigator.share({ files: [file], title: "TimeAnchor backup" });
+        await navigator.share({ files: [file], title: "Kindday backup" });
         return;
       }
     } catch (e) {
@@ -3375,17 +3387,18 @@
   }
 
   function importBackup(file){
-    if (file.size > 5 * 1024 * 1024){ showNotice("That file is too big to be a TimeAnchor backup."); return; }
+    if (file.size > 5 * 1024 * 1024){ showNotice("That file is too big to be a Kindday backup."); return; }
     const reader = new FileReader();
     reader.onload = () => {
       let data;
       try {
         const parsed = JSON.parse(reader.result);
-        data = parsed && parsed.app === "TimeAnchor" ? parsed.data : parsed;
+        // Backups saved under the app's old name (TimeAnchor) still load.
+        data = parsed && (parsed.app === "Kindday" || parsed.app === "TimeAnchor") ? parsed.data : parsed;
       } catch (e) { data = null; }
       if (!data || !Array.isArray(data.blocks) || !Array.isArray(data.categories)){
         settingsDialog.close();
-        showNotice("That doesn't look like a TimeAnchor backup, so nothing was changed.");
+        showNotice("That doesn't look like a Kindday backup, so nothing was changed.");
         return;
       }
       showConfirm("Replace everything on this phone with this backup? What's here now will be overwritten.", () => {
@@ -3411,6 +3424,7 @@
     { group: "todo", key: "energy", name: () => "Energy check-in", desc: "Tag to-dos 🪫 🔋 ⚡ and see the right ones first", sub: true, requires: "todoList" },
     { group: "done", key: "history", name: () => nameOf("done"), desc: "Everything you've finished, by day" },
     { group: "all", key: "focusMode", name: () => "Focus with me", desc: "A calm companion that keeps you company while you work" },
+    { group: "all", key: "dailyWords", name: () => "Kind words at the top", desc: "One gentle line for the day. Off shows today's date instead" },
     { group: "all", key: "splash", name: () => "Opening animation", desc: "A sleepy cloud says hello when the app opens" },
     { group: "all", key: "celebrations", name: () => "Celebrations", desc: "A little party when you finish something" },
     { group: "all", key: "sounds", name: () => "Sounds", desc: "Soft chime when a block starts or you finish" }
@@ -4165,18 +4179,45 @@
     setTimeout(done, 4000);
   })();
 
+  const CLOUD_PARTS = {
+    body: '<g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g>',
+    blush: '<ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/>',
+    sleepy: '<g class="face-sleepy"><path class="cloud-line" d="M49 52 q4 4 8 0"/><path class="cloud-line" d="M66 52 q4 4 8 0"/><path class="cloud-line" d="M58 60 q3 2.5 6 0"/></g>',
+    happy: '<g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="51" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="49.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="51" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="49.7" r="1.2"/></g><path class="cloud-line" d="M55.5 58.5 q6 6 12 0"/></g>'
+  };
+  function cloudSvg(mood, width){
+    return '<svg class="cloud-svg" viewBox="20 10 86 62" width="' + width + '" height="' + Math.round(width * 62 / 86) + '" aria-hidden="true">' +
+      CLOUD_PARTS.body + CLOUD_PARTS.blush + (mood === "sleepy" ? CLOUD_PARTS.sleepy : CLOUD_PARTS.happy) + '</svg>';
+  }
+  // One gentle line for the whole day (same no-demands style as focus mode),
+  // so the top of the screen is kind without changing every few seconds.
+  const DAY_LINES = [
+    "No rush. There's time.", "Small steps still count.", "Going slowly is allowed.",
+    "Nothing has to be perfect.", "Messy progress is still progress.", "Your own way is a fine way.",
+    "It's okay if today is a low day.", "Breaks are allowed, any time.", "There's no wrong way to do this.",
+    "Needs are allowed to change.", "Being here is already enough.", "Quiet is always an option.",
+    "A soft day still counts."
+  ];
+  function updateHeaderLine(){
+    const el = document.getElementById("headerLine");
+    if (!el) return;
+    const d = new Date();
+    const dayNum = Math.floor(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / 86400000);
+    const text = state.features.dailyWords
+      ? DAY_LINES[((dayNum % DAY_LINES.length) + DAY_LINES.length) % DAY_LINES.length]
+      : d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" });
+    if (el.textContent !== text) el.textContent = text;
+  }
+  function emptyCloud(mood, html){
+    return '<div class="empty-cloud">' + cloudSvg(mood, 72) + '<p>' + html + '</p></div>';
+  }
+
   /* ---------------------------------------------------------------------
      Start-up. No accounts: everything lives on this device.
   --------------------------------------------------------------------- */
   function showMainApp(){
     document.getElementById("mainApp").style.display = "";
     document.getElementById("mainFooter").style.display = "";
-  }
-
-  function updateGreeting(){
-    const el = document.getElementById("brandTagline");
-    if (!el) return;
-    el.textContent = "TimeAnchor";
   }
 
   function finishBoot(){
@@ -4186,7 +4227,6 @@
     const already = getCurrentBlock();
     lastCurrentBlockId = already ? already.id : null; // don't chime for a block already in progress at launch
     updateSimClock();
-    updateGreeting();
     document.getElementById("dumpInput").value = state.brainDump;
     activeTab = null;
     render();

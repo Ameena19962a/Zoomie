@@ -1,5 +1,5 @@
 // Network first so updates show up right away; the cache is only used offline.
-const CACHE = "timeanchor-v1";
+const CACHE = "kindday-v2";
 const SHELL = [
   "./",
   "./index.html",
