@@ -285,6 +285,63 @@
   .switch:checked{ background:var(--accent); }
   .switch:checked::after{ transform:translateX(18px); }
   .switch:disabled{ cursor:default; }
+  .feature-group-label{ font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin:0 0 6px 2px; }
+
+  /* ---------- Tabs ---------- */
+  .tab-panel{ display:flex; flex-direction:column; gap:16px; }
+  .tab-panel[hidden]{ display:none; }
+  body:not(.tab-today) #newBlockBtn{ display:none; }
+  .tab-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:30;
+    display:flex; justify-content:center; gap:4px;
+    background:var(--card); border-top:1px solid var(--border);
+    padding:6px 10px calc(6px + var(--safe-bottom));
+  }
+  .tab-bar[hidden]{ display:none; }
+  .tab-bar button{
+    flex:1; max-width:150px; min-width:0; border:none; background:transparent; color:var(--muted);
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:7px 4px; border-radius:14px; font-size:12px; font-weight:700;
+  }
+  .tab-bar button .tab-icon{ font-size:21px; line-height:1; }
+  .tab-bar button .tab-label{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tab-bar button[aria-current="page"]{ color:var(--accent); background:color-mix(in srgb, var(--accent) 13%, transparent); }
+  body.has-tabbar footer.app-footer{ padding-bottom:calc(100px + var(--safe-bottom)); }
+
+  /* ---------- Brain dump ---------- */
+  #dumpInput{
+    width:100%; min-height:150px; resize:vertical; padding:12px; font-size:16px; line-height:1.5;
+    border:1px solid var(--border); border-radius:12px; background:var(--bg); color:var(--text); font-family:inherit;
+  }
+  .dump-actions{ display:flex; align-items:center; gap:12px; margin-top:10px; }
+  .dump-results-head{ margin:20px 0 4px; font-size:14px; }
+  .dump-list{ list-style:none; margin:10px 0 14px; padding:0; display:flex; flex-direction:column; gap:8px; }
+  .dump-item{ display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:12px; background:var(--bg); }
+  .dump-item.is-off{ opacity:.45; }
+  .dump-item input[type=checkbox]{ width:20px; height:20px; margin-top:6px; flex:none; accent-color:var(--accent); }
+  .dump-item-body{ flex:1; min-width:0; }
+  .dump-item-title{
+    width:100%; min-width:0; border:none; border-bottom:1px dashed transparent; background:transparent; color:var(--text);
+    font-size:16px; font-weight:600; padding:4px 0; font-family:inherit;
+  }
+  .dump-item-title:focus{ outline:none; border-bottom-color:var(--accent); }
+  .dump-item-meta{ display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+  .dump-chip{ font-size:12px; font-weight:600; padding:3px 9px; border-radius:999px; border:1px solid var(--border); color:var(--muted); background:var(--card); }
+  button.dump-dest{ cursor:pointer; color:var(--accent); border-color:var(--accent); }
+  button.dump-dest::after{ content:" ⇄"; font-weight:400; }
+  .dump-empty{ color:var(--muted); font-size:13px; margin:14px 0 0; }
+
+  /* ---------- Look & feel ---------- */
+  .seg.choice{ border:1px solid var(--border); border-radius:999px; padding:4px; width:100%; margin-bottom:14px; }
+  .seg.choice button{ flex:1; }
+  .tab-order-row{ display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .tab-order-row:last-child{ border-bottom:none; }
+  .tab-order-row .name{ flex:1; font-weight:600; }
+  .tab-order-row .off-tag{ font-size:11.5px; color:var(--muted); font-weight:400; margin-left:6px; }
+  /* Whole-app text size: zoom scales every px-sized rule at once. */
+  body.ts-s header.app-header, body.ts-s main.layout, body.ts-s .tab-bar, body.ts-s .dialog-inner{ zoom:.9; }
+  body.ts-l header.app-header, body.ts-l main.layout, body.ts-l .tab-bar, body.ts-l .dialog-inner{ zoom:1.12; }
+  body.ts-xl header.app-header, body.ts-xl main.layout, body.ts-xl .tab-bar, body.ts-xl .dialog-inner{ zoom:1.25; }
 
   /* Progressive disclosure for the New block form: steps and extras stay
      tucked away until asked for, so the form that opens by default is
@@ -583,6 +640,7 @@
 </div>
 
 <main class="layout" id="mainApp" style="display:none;">
+ <div class="tab-panel" data-tab="today">
   <section class="panel focus-panel" id="focusPanelSection" aria-labelledby="focusHeading">
     <h2 id="focusHeading">Right now</h2>
     <div id="focusPanelBody"></div>
@@ -598,8 +656,23 @@
     </form>
     <div class="timeline-list" id="timelineList"></div>
   </section>
+ </div>
 
-  <section class="panel" id="todoPanelSection" aria-labelledby="todoHeading" style="grid-column:1 / -1;">
+ <div class="tab-panel" data-tab="dump">
+  <section class="panel" id="dumpPanelSection" aria-labelledby="dumpHeading">
+    <h2 id="dumpHeading" style="margin:0 0 4px;">Brain dump</h2>
+    <p class="dialog-sub" style="margin:0 0 12px;">Get it all out of your head &mdash; messy is fine. Then tap Sort it and it becomes a list.</p>
+    <textarea id="dumpInput" rows="7" placeholder="call GP at 3pm, buy milk and eggs&#10;finish essay for 2 hours&#10;reply to Sam&#10;book dentist tomorrow"></textarea>
+    <div class="dump-actions">
+      <button type="button" class="primary-btn" id="dumpSortBtn">✨ Sort it</button>
+      <button type="button" class="text-btn" id="dumpClearBtn">Clear</button>
+    </div>
+    <div id="dumpResults"></div>
+  </section>
+ </div>
+
+ <div class="tab-panel" data-tab="todo">
+  <section class="panel" id="todoPanelSection" aria-labelledby="todoHeading">
     <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
     <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
     <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
@@ -608,6 +681,7 @@
     </form>
     <ul class="subtask-list" id="todoList" style="margin:0;"></ul>
   </section>
+ </div>
 
   <p id="allOffNotice">Everything's switched off right now.</p>
   <div class="customize-row">
@@ -619,6 +693,8 @@
   <span id="footerStorageNote">Your schedule is saved on this device only (no account, no cloud sync).</span>
   The speed control is a testing aid that fast-forwards the on-screen clock — it never changes the real reminder times.
 </footer>
+
+<nav class="tab-bar" id="tabBar" aria-label="Sections" hidden></nav>
 
 <div id="ariaLive" class="visually-hidden" aria-live="polite"></div>
 
@@ -874,7 +950,9 @@
         colorTheme: state.colorTheme,
         todos: state.todos,
         features: state.features,
-        lastCategoryId: state.lastCategoryId
+        lastCategoryId: state.lastCategoryId,
+        ui: state.ui,
+        brainDump: state.brainDump
       }));
     } catch (e) { /* storage unavailable — app still works for this session */ }
   }
@@ -882,7 +960,21 @@
   /* ---------------------------------------------------------------------
      State
   --------------------------------------------------------------------- */
-  const DEFAULT_FEATURES = { focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, todoList: true, celebrations: true };
+  const DEFAULT_FEATURES = { focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, celebrations: true };
+  const TAB_IDS = ["today", "dump", "todo"];
+  const DEFAULT_NAMES = { today: "Today", dump: "Brain dump", todo: "To-do list", focus: "Right now", timeline: "Today's timeline" };
+  function normalizeUi(u){
+    u = u || {};
+    const order = (Array.isArray(u.tabOrder) ? u.tabOrder : []).filter(id => TAB_IDS.includes(id));
+    TAB_IDS.forEach(id => { if (!order.includes(id)) order.push(id); });
+    return {
+      tabOrder: order,
+      startTab: TAB_IDS.includes(u.startTab) ? u.startTab : "today",
+      names: (u.names && typeof u.names === "object") ? u.names : {},
+      textSize: ["s", "m", "l", "xl"].includes(u.textSize) ? u.textSize : "m",
+      celebrateStyle: ["burst", "sparkles", "message"].includes(u.celebrateStyle) ? u.celebrateStyle : "burst"
+    };
+  }
   // Older saves only had { timeline, todoList }, where timeline:false also
   // hid the focus card and timer — keep that meaning for them.
   function normalizeFeatures(f){
@@ -906,6 +998,8 @@
     todos: Array.isArray(persisted.todos) ? persisted.todos : [],
     features: normalizeFeatures(persisted.features),
     lastCategoryId: persisted.lastCategoryId || null,
+    ui: normalizeUi(persisted.ui),
+    brainDump: typeof persisted.brainDump === "string" ? persisted.brainDump : "",
     demoOffset: 0,
     speed: 1
   } : {
@@ -922,6 +1016,8 @@
     todos: [],
     features: normalizeFeatures(null),
     lastCategoryId: null,
+    ui: normalizeUi(null),
+    brainDump: "",
     demoOffset: 0,
     speed: 1
   };
@@ -1097,11 +1193,14 @@
   const CELEBRATE_MESSAGES = ["Nice work!", "Done. ✓", "One down.", "Nailed it.", "Task complete.", "You did it!", "That's a wrap.", "Off the list."];
   function celebrateBurst(x, y){
     const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const style = state.ui.celebrateStyle;
+    if (style === "burst") celebrateFlash(x, y);
+    if (!reduceMotion && style !== "message") celebrateSparkles(x, y);
+    celebrateMessage(x, y);
+  }
 
-    // The full-screen color wash — always shown (even for reduced-motion,
-    // just as a fade rather than a scaling pulse) so the celebration is
-    // obvious no matter where on the page the tap happened, not just a
-    // handful of sparkles that are easy to miss.
+  // Full-screen color wash; reduced-motion gets a fade instead of a pulse.
+  function celebrateFlash(x, y){
     const flash = document.createElement("div");
     flash.className = "celebrate-flash";
     const vw = window.innerWidth || 1, vh = window.innerHeight || 1;
@@ -1109,21 +1208,24 @@
     flash.style.setProperty("--fy", ((y / vh) * 100) + "%");
     document.body.appendChild(flash);
     setTimeout(() => flash.remove(), 800);
+  }
 
-    if (!reduceMotion){
-      const emojis = ["✨", "🎉", "⭐", "💫"];
-      for (let i = 0; i < 5; i++){
-        const el = document.createElement("span");
-        el.className = "celebrate-burst";
-        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-        el.style.left = (x + (Math.random() - 0.5) * 34) + "px";
-        el.style.top = (y - 8) + "px";
-        el.style.setProperty("--dx", ((Math.random() - 0.5) * 80) + "px");
-        el.style.animationDelay = (Math.random() * 120) + "ms";
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 1200);
-      }
+  function celebrateSparkles(x, y){
+    const emojis = ["✨", "🎉", "⭐", "💫"];
+    for (let i = 0; i < 5; i++){
+      const el = document.createElement("span");
+      el.className = "celebrate-burst";
+      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      el.style.left = (x + (Math.random() - 0.5) * 34) + "px";
+      el.style.top = (y - 8) + "px";
+      el.style.setProperty("--dx", ((Math.random() - 0.5) * 80) + "px");
+      el.style.animationDelay = (Math.random() * 120) + "ms";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1200);
     }
+  }
+
+  function celebrateMessage(x, y){
     const msg = document.createElement("span");
     msg.className = "celebrate-message";
     msg.textContent = CELEBRATE_MESSAGES[Math.floor(Math.random() * CELEBRATE_MESSAGES.length)];
@@ -1618,8 +1720,59 @@
     cl.toggle("feat-quickadd-off", !f.quickAdd);
     cl.toggle("feat-buffers-off", !f.buffers);
     cl.toggle("feat-todo-off", !f.todoList);
-    cl.toggle("feat-all-off", !f.focus && !f.timeline && !f.todoList);
+    cl.toggle("feat-all-off", visibleTabs().length === 0);
+    applyTabs();
   }
+
+  /* ---------------------------------------------------------------------
+     Tabs. A tab disappears when every feature inside it is switched off;
+     the bar itself only shows when there's more than one tab to pick.
+  --------------------------------------------------------------------- */
+  const TAB_ICONS = { today: "🗓️", dump: "🧠", todo: "✅" };
+  let activeTab = null;
+  function nameOf(key){
+    const n = (state.ui.names[key] || "").trim();
+    return n || DEFAULT_NAMES[key];
+  }
+  function tabVisible(id){
+    const f = state.features;
+    if (id === "today") return f.focus || f.timeline;
+    if (id === "dump") return f.brainDump;
+    return f.todoList;
+  }
+  function visibleTabs(){ return state.ui.tabOrder.filter(tabVisible); }
+  function applyTabs(){
+    const vis = visibleTabs();
+    if (!vis.includes(activeTab)) activeTab = vis.includes(state.ui.startTab) ? state.ui.startTab : (vis[0] || null);
+    document.querySelectorAll(".tab-panel").forEach(p => { p.hidden = p.dataset.tab !== activeTab; });
+    const bar = document.getElementById("tabBar");
+    const showBar = vis.length > 1 && document.getElementById("mainApp").style.display !== "none";
+    bar.hidden = !showBar;
+    document.body.classList.toggle("has-tabbar", showBar);
+    document.body.classList.toggle("tab-today", activeTab === "today");
+    const sig = vis.map(id => id + ":" + nameOf(id)).join(",") + "|" + activeTab;
+    if (bar.dataset.sig !== sig){
+      bar.dataset.sig = sig;
+      bar.innerHTML = vis.map(id =>
+        '<button type="button" data-tab="' + id + '"' + (id === activeTab ? ' aria-current="page"' : '') + '>' +
+          '<span class="tab-icon" aria-hidden="true">' + TAB_ICONS[id] + '</span>' +
+          '<span class="tab-label">' + escapeHtml(nameOf(id)) + '</span>' +
+        '</button>'
+      ).join("");
+    }
+    document.getElementById("focusHeading").textContent = nameOf("focus");
+    document.getElementById("timelineHeading").textContent = nameOf("timeline");
+    document.getElementById("dumpHeading").textContent = nameOf("dump");
+    document.getElementById("todoHeading").textContent = nameOf("todo");
+    ["s", "l", "xl"].forEach(s => document.body.classList.toggle("ts-" + s, state.ui.textSize === s));
+  }
+  document.getElementById("tabBar").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-tab]");
+    if (!btn || btn.dataset.tab === activeTab) return;
+    activeTab = btn.dataset.tab;
+    applyTabs();
+    window.scrollTo(0, 0);
+  });
 
   // Runs every 200ms (tick) without touching any button/row markup — only
   // the live numbers (pie fraction, "Xm remaining" text, soundtrack bar)
@@ -1956,6 +2109,267 @@
     commit();
   });
 
+  /* ---------------------------------------------------------------------
+     Brain dump → tidy list. Plain rules that run on the phone: no network,
+     nothing typed here ever leaves the device. It splits on lines, bullets,
+     sentences, commas, "then", and "and" when a new action verb follows
+     ("buy milk and eggs" stays one item); strips filler like "I need to";
+     and spots times ("at 3pm", "14:30", "noon") and lengths ("for 2 hours").
+  --------------------------------------------------------------------- */
+  const DUMP_VERBS = "call|phone|ring|text|email|message|reply|ask|tell|remind|book|cancel|schedule|buy|order|get|pick|collect|drop|return|post|send|pay|renew|submit|apply|clean|tidy|wash|hoover|vacuum|empty|cook|make|fix|sort|do|finish|start|write|read|study|revise|check|update|plan|pack|prepare|walk|feed|water|take|bring|go|visit|see|meet|watch|charge|change|put|grab|find|print|file|organise|organize|shower|eat|drink|stretch|exercise|practise|practice|learn|look|research|move|try";
+  const DUMP_AND_VERB = new RegExp("\\s+(?:and|also|plus)\\s+(?=(?:" + DUMP_VERBS + ")\\b)", "gi");
+  const DUMP_CONTINUATION = /^(?:because|cos|cuz|coz|since|but|so that|which|who|as|she|he|it|they|we|that's|it's|its|she's|he's|they're|i'm|for her|for him|for them)\b/i;
+  const DUMP_FILLER = /^(?:(?:oh|ok|okay|so|and|also|then|plus|maybe|um+|uh+|right|erm|hmm+)\b[,\s]*|(?:i\s+)?(?:really\s+)?(?:need|have|want|got|ought)\s+to\s+|i'?ve\s+got\s+to\s+|i\s+gotta\s+|gotta\s+|i\s+(?:must|should)\s+|must\s+|should\s+|(?:please\s+)?(?:remember|don'?t\s+forget)\s+to\s+|i'?d\s+like\s+to\s+|try\s+(?:to|and)\s+|i'?m\s+(?:going\s+to|gonna)\s+|going\s+to\s+|gonna\s+|to\s+)/i;
+  const DUMP_TIME_PREFIX = "(?:\\b(?:at|by|around|from|before|after|until|til)\\s+|@\\s*)?";
+
+  function dumpSplit(text){
+    const parts = [];
+    text.split(/\r?\n/).forEach(line => {
+      line = line.replace(/^\s*(?:[-*•·–—]|\d+[.)]|\[\s?x?\])\s*/i, "")
+        .replace(/([!?]|\.(?!\d))\s+/g, "$1\n")
+        .replace(/[;•]/g, "\n")
+        .replace(/,(?!\d)/g, "\n")
+        .replace(/\s+(?:and\s+then|then)\s+/gi, "\n")
+        .replace(DUMP_AND_VERB, "\n");
+      line.split("\n").forEach(p => {
+        p = p.trim();
+        if (!p) return;
+        if (parts.length && DUMP_CONTINUATION.test(p)) parts[parts.length - 1] += ", " + p;
+        else parts.push(p);
+      });
+    });
+    return parts;
+  }
+
+  function dumpExtractTime(s){
+    const pre = DUMP_TIME_PREFIX;
+    const ampm = "(a\\.?m\\.?|p\\.?m\\.?)";
+    const tries = [
+      { re: new RegExp(pre + "\\b(\\d{1,2})[:.](\\d{2})\\s*" + ampm + "?(?![\\w])", "i"), h: 1, m: 2, ap: 3 },
+      { re: new RegExp(pre + "\\b(\\d{1,2})\\s*" + ampm + "(?![\\w])", "i"), h: 1, ap: 2 },
+      { re: /\b(?:at|around|by)\s+(\d{1,2})\b(?!\s*(?:[:.%]|(?:min|mins|minutes|m|h|hr|hrs|hour|hours|x|kg|k|st|nd|rd|th|people|pm|am)\b))/i, h: 1, guess: true },
+      { re: /\b(?:at\s+|by\s+|around\s+)?(noon|midday)\b/i, noon: true }
+    ];
+    for (const t of tries){
+      const m = s.match(t.re);
+      if (!m) continue;
+      const before = s.slice(0, m.index + m[0].search(/\d|noon|midday/i));
+      if (/[£$€]\s*$/.test(before)) continue;
+      let mins;
+      if (t.noon) mins = 720;
+      else {
+        let h = parseInt(m[t.h], 10);
+        const mm = t.m ? parseInt(m[t.m], 10) : 0;
+        const ap = t.ap && m[t.ap] ? m[t.ap].replace(/\./g, "").toLowerCase() : null;
+        if (mm > 59) continue;
+        if (ap){
+          if (h < 1 || h > 12) continue;
+          if (ap === "pm" && h < 12) h += 12;
+          if (ap === "am" && h === 12) h = 0;
+        } else if (t.guess){
+          if (h < 1 || h > 12) continue;
+          if (h <= 6) h += 12;
+        } else if (h > 23) continue;
+        mins = h * 60 + mm;
+      }
+      return { time: mins, rest: (s.slice(0, m.index) + " " + s.slice(m.index + m[0].length)).trim() };
+    }
+    return { time: null, rest: s };
+  }
+
+  function dumpExtractDuration(s){
+    const tries = [
+      [/\b(?:for\s+)?(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\s*(?:and\s+)?(\d+)\s*(?:minutes?|mins?|m)\b/i, m => Math.round(parseFloat(m[1]) * 60) + parseInt(m[2], 10)],
+      [/\b(?:for\s+)?(?:an?|one)\s+hour\s+and\s+a\s+half\b/i, () => 90],
+      [/\b(?:for\s+)?(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\b/i, m => Math.round(parseFloat(m[1]) * 60)],
+      [/\b(?:for\s+)?(\d+)\s*(?:minutes?|mins?|m)\b/i, m => parseInt(m[1], 10)],
+      [/\b(?:for\s+)?half\s+(?:an\s+)?hour\b/i, () => 30],
+      [/\b(?:for\s+)?(?:a\s+)?quarter\s+(?:of\s+)?(?:an\s+)?hour\b/i, () => 15],
+      [/\bfor\s+(?:an?|one)\s+hour\b/i, () => 60]
+    ];
+    for (const [re, fn] of tries){
+      const m = s.match(re);
+      if (!m) continue;
+      const d = fn(m);
+      if (!(d >= 1)) continue;
+      return { duration: clamp(d, 5, 720), rest: (s.slice(0, m.index) + " " + s.slice(m.index + m[0].length)).trim() };
+    }
+    return { duration: null, rest: s };
+  }
+
+  function dumpCleanTitle(s){
+    let prev;
+    s = s.trim();
+    do { prev = s; s = s.replace(DUMP_FILLER, "").trim(); } while (s !== prev);
+    s = s.replace(/^[\s,.;:!?&-]+|[\s,.;:&-]+$/g, "").replace(/\s{2,}/g, " ").replace(/\s+([,!?])/g, "$1");
+    return s ? (s.charAt(0).toUpperCase() + s.slice(1)).slice(0, 120) : "";
+  }
+
+  function dumpDefaultDest(item){
+    const f = state.features;
+    if (item.time != null && !item.tomorrow && f.timeline) return "timeline";
+    if (f.todoList) return "todo";
+    return f.timeline ? "timeline" : null;
+  }
+
+  function sortBrainDump(text){
+    const seen = new Set();
+    const items = [];
+    dumpSplit(text).forEach(raw => {
+      const t = dumpExtractTime(raw);
+      const d = dumpExtractDuration(t.rest);
+      const title = dumpCleanTitle(d.rest);
+      if (title.length < 2) return;
+      const key = title.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      const item = { id: uid("dump"), title, time: t.time, duration: d.duration, tomorrow: /\b(?:tomorrow|tmrw|tmr)\b/i.test(raw), include: true };
+      item.dest = dumpDefaultDest(item);
+      items.push(item);
+    });
+    return items;
+  }
+
+  let dumpItems = [];
+  let dumpSortedEmpty = false;
+
+  function renderDumpResults(){
+    const el = document.getElementById("dumpResults");
+    if (!dumpItems.length){
+      el.innerHTML = dumpSortedEmpty ? '<p class="dump-empty">Nothing to sort yet &mdash; type a few things above first.</p>' : "";
+      return;
+    }
+    const f = state.features;
+    const canSwitch = f.timeline && f.todoList;
+    const anyDest = f.timeline || f.todoList;
+    const destLabel = (d) => d === "timeline" ? "🗓️ " + escapeHtml(nameOf("timeline")) : "✅ " + escapeHtml(nameOf("todo"));
+    el.innerHTML =
+      '<h3 class="dump-results-head">Here\'s your list</h3>' +
+      '<p class="dialog-sub" style="margin:0;">Untick anything you don\'t want and tap any item to edit it' + (canSwitch ? ', or tap where it\'s going to switch it' : '') + '.</p>' +
+      '<ul class="dump-list">' + dumpItems.map(it =>
+        '<li class="dump-item' + (it.include ? '' : ' is-off') + '" data-id="' + it.id + '">' +
+          '<input type="checkbox" data-dump="include" aria-label="Include ' + escapeAttr(it.title) + '"' + (it.include ? ' checked' : '') + '>' +
+          '<div class="dump-item-body">' +
+            '<input type="text" class="dump-item-title" data-dump="title" value="' + escapeAttr(it.title) + '" aria-label="Item">' +
+            '<div class="dump-item-meta">' +
+              (it.dest ? (canSwitch
+                ? '<button type="button" class="dump-chip dump-dest" data-dump="dest" aria-label="Goes to ' + escapeAttr(it.dest === "timeline" ? nameOf("timeline") : nameOf("todo")) + ', tap to switch">' + destLabel(it.dest) + '</button>'
+                : '<span class="dump-chip">' + destLabel(it.dest) + '</span>') : '') +
+              (it.time != null ? '<span class="dump-chip">' + fmtClock(it.time) + '</span>' : '') +
+              (it.duration ? '<span class="dump-chip">' + fmtDuration(it.duration) + '</span>' : '') +
+              (it.tomorrow ? '<span class="dump-chip">Tomorrow</span>' : '') +
+            '</div>' +
+          '</div>' +
+        '</li>'
+      ).join('') + '</ul>' +
+      (anyDest
+        ? '<button type="button" class="primary-btn" id="dumpAddBtn"></button>'
+        : '<p class="dump-empty">Switch on the timeline or the to-do list in Settings to add these.</p>');
+    updateDumpAddBtn();
+  }
+
+  function dumpChosen(){ return dumpItems.filter(it => it.include && it.title.trim() && it.dest); }
+  function updateDumpAddBtn(){
+    const btn = document.getElementById("dumpAddBtn");
+    if (!btn) return;
+    const n = dumpChosen().length;
+    btn.textContent = n ? "Add " + n + (n === 1 ? " item" : " items") : "Nothing selected";
+    btn.disabled = !n;
+  }
+
+  function addDumpItems(){
+    const chosen = dumpChosen();
+    if (!chosen.length) return;
+    const catId = state.lastCategoryId || (state.categories[0] ? state.categories[0].id : null);
+    const cat = state.categories.find(c => c.id === catId);
+    const blockIds = [], todoIds = [];
+    chosen.forEach(it => {
+      const title = it.title.trim().slice(0, 120);
+      if (it.dest === "timeline"){
+        const start = it.time != null ? it.time : suggestedNewStart();
+        const b = mkBlock(title, catId, start, it.duration || (cat && cat.defaultMinutes) || 30, false, [], false);
+        state.blocks.push(b);
+        blockIds.push(b.id);
+      } else {
+        const extra = [it.time != null ? fmtClock(it.time) : "", it.duration ? fmtDuration(it.duration) : ""].filter(Boolean).join(", ");
+        const t = { id: uid("todo"), title: extra ? title + " (" + extra + ")" : title, done: false };
+        state.todos.push(t);
+        todoIds.push(t.id);
+      }
+    });
+    const prevText = state.brainDump, prevItems = dumpItems;
+    state.brainDump = "";
+    document.getElementById("dumpInput").value = "";
+    dumpItems = [];
+    dumpSortedEmpty = false;
+    commit();
+    renderDumpResults();
+    const bits = [];
+    if (blockIds.length) bits.push(blockIds.length + " to " + nameOf("timeline"));
+    if (todoIds.length) bits.push(todoIds.length + " to " + nameOf("todo"));
+    showNotice("Added " + bits.join(" and ") + ".", () => {
+      state.blocks = state.blocks.filter(b => !blockIds.includes(b.id));
+      state.todos = state.todos.filter(t => !todoIds.includes(t.id));
+      state.brainDump = prevText;
+      document.getElementById("dumpInput").value = prevText;
+      dumpItems = prevItems;
+      commit();
+      renderDumpResults();
+    });
+    window.scrollTo(0, 0);
+  }
+
+  document.getElementById("dumpInput").addEventListener("input", (e) => {
+    state.brainDump = e.target.value;
+    persist();
+  });
+  document.getElementById("dumpSortBtn").addEventListener("click", (e) => {
+    dumpItems = sortBrainDump(document.getElementById("dumpInput").value);
+    dumpSortedEmpty = !dumpItems.length;
+    renderDumpResults();
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (dumpItems.length && state.features.celebrations && !reduceMotion){
+      const [x, y] = rowCenter(e.currentTarget);
+      celebrateSparkles(x, y);
+    }
+  });
+  document.getElementById("dumpClearBtn").addEventListener("click", () => {
+    const clear = () => {
+      state.brainDump = "";
+      document.getElementById("dumpInput").value = "";
+      dumpItems = [];
+      dumpSortedEmpty = false;
+      persist();
+      renderDumpResults();
+    };
+    if (document.getElementById("dumpInput").value.trim()) showConfirm("Clear your brain dump?", clear, "Clear");
+    else clear();
+  });
+  const dumpResultsEl = document.getElementById("dumpResults");
+  dumpResultsEl.addEventListener("change", (e) => {
+    if (e.target.dataset.dump !== "include") return;
+    const li = e.target.closest(".dump-item");
+    const it = dumpItems.find(x => x.id === li.dataset.id);
+    if (!it) return;
+    it.include = e.target.checked;
+    li.classList.toggle("is-off", !it.include);
+    updateDumpAddBtn();
+  });
+  dumpResultsEl.addEventListener("input", (e) => {
+    if (e.target.dataset.dump !== "title") return;
+    const it = dumpItems.find(x => x.id === e.target.closest(".dump-item").dataset.id);
+    if (it){ it.title = e.target.value; updateDumpAddBtn(); }
+  });
+  dumpResultsEl.addEventListener("click", (e) => {
+    if (e.target.closest("#dumpAddBtn")){ addDumpItems(); return; }
+    const destBtn = e.target.closest('[data-dump="dest"]');
+    if (!destBtn) return;
+    const it = dumpItems.find(x => x.id === destBtn.closest(".dump-item").dataset.id);
+    if (!it) return;
+    it.dest = it.dest === "timeline" ? "todo" : "timeline";
+    renderDumpResults();
+  });
+
   document.addEventListener("change", function(e){
     const todoChk = e.target.closest("[data-action='toggle-todo']");
     if (todoChk){
@@ -2277,16 +2691,69 @@
 
   // `requires` greys a row out while the feature it lives inside is off.
   const FEATURE_TOGGLES = [
-    { key: "focus", name: "Right now card", desc: "What you're on now, with its buttons" },
-    { key: "timer", name: "Countdown timer", desc: "Time left on the current block" },
-    { key: "timerShape", name: "Show as a shrinking circle", desc: "Off shows just the minutes", sub: true, requires: "timer" },
-    { key: "timeline", name: "Day timeline", desc: "Today's blocks, in order" },
-    { key: "quickAdd", name: "Quick add", desc: "One-line box to add a block fast", sub: true, requires: "timeline" },
-    { key: "buffers", name: "Buffers", desc: "“+ buffer” buttons for breathing room", sub: true, requires: "timeline" },
-    { key: "todoList", name: "To-do list", desc: "Untimed things to get to today" },
-    { key: "celebrations", name: "Celebrations", desc: "Burst of color when you finish something" },
-    { key: "sounds", name: "Sounds", desc: "Soft chime when a block starts or you finish" }
+    { group: "today", key: "focus", name: () => nameOf("focus") + " card", desc: "What you're on now, with its buttons" },
+    { group: "today", key: "timer", name: () => "Countdown timer", desc: "Time left on the current block" },
+    { group: "today", key: "timerShape", name: () => "Show as a shrinking circle", desc: "Off shows just the minutes", sub: true, requires: "timer" },
+    { group: "today", key: "timeline", name: () => nameOf("timeline"), desc: "Today's blocks, in order" },
+    { group: "today", key: "quickAdd", name: () => "Quick add", desc: "One-line box to add a block fast", sub: true, requires: "timeline" },
+    { group: "today", key: "buffers", name: () => "Buffers", desc: "“+ buffer” buttons for breathing room", sub: true, requires: "timeline" },
+    { group: "dump", key: "brainDump", name: () => nameOf("dump"), desc: "Empty your head, then sort it into a list" },
+    { group: "todo", key: "todoList", name: () => nameOf("todo"), desc: "Untimed things to get to today" },
+    { group: "all", key: "celebrations", name: () => "Celebrations", desc: "A little party when you finish something" },
+    { group: "all", key: "sounds", name: () => "Sounds", desc: "Soft chime when a block starts or you finish" }
   ];
+  const TEXT_SIZES = [["s", "Small"], ["m", "Medium"], ["l", "Large"], ["xl", "Extra large"]];
+  const CELEBRATE_STYLES = [["burst", "Big burst"], ["sparkles", "Sparkles"], ["message", "Just words"]];
+
+  function featureListHtml(){
+    const groups = [["today", nameOf("today") + " tab"], ["dump", nameOf("dump") + " tab"], ["todo", nameOf("todo") + " tab"], ["all", "Everywhere"]];
+    return groups.map(([g, label]) =>
+      '<p class="feature-group-label">' + escapeHtml(label) + '</p>' +
+      '<div class="feature-list">' +
+        FEATURE_TOGGLES.filter(t => t.group === g).map(t =>
+          '<label class="feature-row' + (t.sub ? ' sub' : '') + '" data-feature="' + t.key + '">' +
+            '<span class="feature-text">' +
+              '<span class="feature-name">' + escapeHtml(t.name()) + '</span>' +
+              '<span class="feature-desc" style="display:block;">' + t.desc + '</span>' +
+            '</span>' +
+            '<input type="checkbox" class="switch" role="switch" data-feature="' + t.key + '" aria-label="' + escapeAttr(t.name()) + '"' + (featureValue(t.key) ? ' checked' : '') + '>' +
+          '</label>'
+        ).join('') +
+      '</div>'
+    ).join('');
+  }
+
+  function tabsSectionHtml(){
+    const order = state.ui.tabOrder;
+    return order.map((id, i) =>
+      '<div class="tab-order-row">' +
+        '<span aria-hidden="true">' + TAB_ICONS[id] + '</span>' +
+        '<span class="name">' + escapeHtml(nameOf(id)) + (tabVisible(id) ? '' : '<span class="off-tag">(switched off)</span>') + '</span>' +
+        '<button type="button" class="icon-mini" data-move="' + id + '" data-dir="-1" aria-label="Move ' + escapeAttr(nameOf(id)) + ' up"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+        '<button type="button" class="icon-mini" data-move="' + id + '" data-dir="1" aria-label="Move ' + escapeAttr(nameOf(id)) + ' down"' + (i === order.length - 1 ? ' disabled' : '') + '>↓</button>' +
+      '</div>'
+    ).join('') +
+    '<p class="dialog-sub" style="margin:12px 0 6px;">Opens on</p>' +
+    '<div class="seg choice" id="st_startTab">' +
+      order.map(id => '<button type="button" data-start="' + id + '" class="' + (state.ui.startTab === id ? 'active' : '') + '">' + escapeHtml(nameOf(id)) + '</button>').join('') +
+    '</div>';
+  }
+
+  const SIZE_PREVIEW_PX = { s: 12, m: 14.5, l: 17, xl: 20 };
+  function segHtml(id, options, current, attr){
+    const isSize = attr === "size";
+    return '<div class="seg choice" id="' + id + '">' +
+      options.map(([val, label]) =>
+        '<button type="button" data-' + attr + '="' + val + '" class="' + (current === val ? 'active' : '') + '"' +
+          (isSize ? ' aria-label="' + label + ' text" style="font-size:' + SIZE_PREVIEW_PX[val] + 'px;"' : '') + '>' +
+          (isSize ? 'A' : label) +
+        '</button>'
+      ).join('') +
+    '</div>';
+  }
+  function markActive(seg, btn){
+    seg.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
+  }
   function featureValue(key){
     if (key === "sounds") return state.soundEnabled;
     if (key === "timerShape") return state.showTimer;
@@ -2300,7 +2767,7 @@
   function syncFeatureRows(){
     FEATURE_TOGGLES.forEach(t => {
       if (!t.requires) return;
-      const row = document.querySelector('#st_featureList .feature-row[data-feature="' + t.key + '"]');
+      const row = document.querySelector('#st_features .feature-row[data-feature="' + t.key + '"]');
       if (!row) return;
       const enabled = featureValue(t.requires);
       row.classList.toggle("is-disabled", !enabled);
@@ -2315,18 +2782,31 @@
       '<p class="dialog-sub">Saved on this device' + (cloudEnabled && currentUser && !offlineMode ? ' and synced to your account.' : '.') + '</p>' +
 
       '<h3 style="font-size:13.5px;margin:0 0 4px;">Features</h3>' +
-      '<p class="dialog-sub" style="margin-bottom:10px;">Switch off anything you don\'t need. Nothing is deleted &mdash; switch it back on any time.</p>' +
-      '<div class="feature-list" id="st_featureList">' +
-        FEATURE_TOGGLES.map(t =>
-          '<label class="feature-row' + (t.sub ? ' sub' : '') + '" data-feature="' + t.key + '">' +
-            '<span class="feature-text">' +
-              '<span class="feature-name">' + t.name + '</span>' +
-              '<span class="feature-desc" style="display:block;">' + t.desc + '</span>' +
-            '</span>' +
-            '<input type="checkbox" class="switch" role="switch" data-feature="' + t.key + '" aria-label="' + escapeAttr(t.name) + '"' + (featureValue(t.key) ? ' checked' : '') + '>' +
-          '</label>'
-        ).join('') +
-      '</div>' +
+      '<p class="dialog-sub" style="margin-bottom:10px;">Switch off anything you don\'t need. Nothing is deleted &mdash; switch it back on any time. A tab disappears when everything in it is off.</p>' +
+      '<div id="st_features">' + featureListHtml() + '</div>' +
+
+      '<h3 style="font-size:13.5px;margin:6px 0 8px;">Look &amp; feel</h3>' +
+      '<p class="dialog-sub" style="margin:0 0 6px;">Text size</p>' +
+      segHtml("st_textSize", TEXT_SIZES, state.ui.textSize, "size") +
+      '<p class="dialog-sub" style="margin:0 0 6px;">Celebration style</p>' +
+      segHtml("st_celebrate", CELEBRATE_STYLES, state.ui.celebrateStyle, "celebrate") +
+      '<div class="field"><button type="button" class="quiet-btn" id="st_previewCelebrate">Preview celebration</button></div>' +
+
+      '<details class="more-options" id="st_tabsDetails">' +
+        '<summary>Tabs <span>&mdash; order and which opens first</span></summary>' +
+        '<div class="more-options-body" id="st_tabsBody">' + tabsSectionHtml() + '</div>' +
+      '</details>' +
+
+      '<details class="more-options" id="st_namesDetails" style="margin-bottom:16px;">' +
+        '<summary>Rename things</summary>' +
+        '<div class="more-options-body">' +
+          '<p class="dialog-sub" style="margin-bottom:8px;">Call things whatever makes sense to you. Leave a box empty to use the original name.</p>' +
+          ["today", "dump", "todo", "focus", "timeline"].map(k =>
+            '<div class="field"><label for="st_name_' + k + '">' + escapeHtml(DEFAULT_NAMES[k]) + '</label>' +
+            '<input type="text" id="st_name_' + k + '" data-name="' + k + '" maxlength="24" value="' + escapeAttr(state.ui.names[k] || "") + '" placeholder="' + escapeAttr(DEFAULT_NAMES[k]) + '"></div>'
+          ).join('') +
+        '</div>' +
+      '</details>' +
 
       '<div class="field"><label for="st_firstName">Your name</label>' +
         '<input type="text" id="st_firstName" value="' + escapeAttr(state.firstName) + '" placeholder="e.g. Sam"></div>' +
@@ -2391,14 +2871,62 @@
 
       '<div class="dialog-actions"><div></div><div class="right-group"><button type="button" class="primary-btn" id="st_done">Save &amp; close</button></div></div>';
 
-    document.getElementById("st_featureList").querySelectorAll("input.switch").forEach(sw => {
-      sw.addEventListener("change", () => {
-        setFeatureValue(sw.dataset.feature, sw.checked);
-        syncFeatureRows();
-        commit();
-      });
+    document.getElementById("st_features").addEventListener("change", (e) => {
+      const sw = e.target.closest("input.switch");
+      if (!sw) return;
+      setFeatureValue(sw.dataset.feature, sw.checked);
+      syncFeatureRows();
+      commit();
+      document.getElementById("st_tabsBody").innerHTML = tabsSectionHtml();
     });
     syncFeatureRows();
+    document.getElementById("st_textSize").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-size]");
+      if (!b) return;
+      state.ui.textSize = b.dataset.size;
+      markActive(e.currentTarget, b);
+      commit();
+    });
+    document.getElementById("st_celebrate").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-celebrate]");
+      if (!b) return;
+      state.ui.celebrateStyle = b.dataset.celebrate;
+      markActive(e.currentTarget, b);
+      persist();
+    });
+    document.getElementById("st_previewCelebrate").addEventListener("click", (e) => {
+      const [x, y] = rowCenter(e.currentTarget);
+      celebrateBurst(x, y);
+      playCompletionChime();
+    });
+    document.getElementById("st_tabsBody").addEventListener("click", (e) => {
+      const mv = e.target.closest("button[data-move]");
+      const st = e.target.closest("button[data-start]");
+      if (mv){
+        const order = state.ui.tabOrder;
+        const i = order.indexOf(mv.dataset.move), j = i + parseInt(mv.dataset.dir, 10);
+        if (j < 0 || j >= order.length) return;
+        [order[i], order[j]] = [order[j], order[i]];
+      } else if (st){
+        state.ui.startTab = st.dataset.start;
+      } else return;
+      commit();
+      document.getElementById("st_tabsBody").innerHTML = tabsSectionHtml();
+    });
+    document.getElementById("st_namesDetails").addEventListener("input", (e) => {
+      const k = e.target.dataset.name;
+      if (!k) return;
+      const v = e.target.value.trim();
+      if (v) state.ui.names[k] = v; else delete state.ui.names[k];
+      applyTabs();
+      renderDumpResults();
+      persist();
+    });
+    document.getElementById("st_namesDetails").addEventListener("change", () => {
+      document.getElementById("st_features").innerHTML = featureListHtml();
+      syncFeatureRows();
+      document.getElementById("st_tabsBody").innerHTML = tabsSectionHtml();
+    });
     document.getElementById("st_soundVolume").addEventListener("input", (e) => {
       state.soundVolume = parseFloat(e.target.value);
     });
@@ -2489,6 +3017,8 @@
     document.getElementById("authScreen").style.display = "";
     document.getElementById("mainApp").style.display = "none";
     document.getElementById("mainFooter").style.display = "none";
+    document.getElementById("tabBar").hidden = true;
+    document.body.classList.remove("has-tabbar");
     document.getElementById("signOutBtn").style.display = "none";
     document.getElementById("authEmail").focus();
   }
@@ -2518,6 +3048,8 @@
     lastCurrentBlockId = already ? already.id : null; // don't chime for a block already in progress at launch
     updateSimClock();
     updateGreeting();
+    document.getElementById("dumpInput").value = state.brainDump;
+    activeTab = null;
     render();
     initNotifications();
   }
@@ -2538,7 +3070,8 @@
         blocks: state.blocks, savedForDate: state.savedForDate,
         soundEnabled: state.soundEnabled, soundVolume: state.soundVolume, speakEnabled: state.speakEnabled,
         firstName: state.firstName, showTimer: state.showTimer,
-        colorTheme: state.colorTheme, todos: state.todos, features: state.features, lastCategoryId: state.lastCategoryId
+        colorTheme: state.colorTheme, todos: state.todos, features: state.features, lastCategoryId: state.lastCategoryId,
+        ui: state.ui, brainDump: state.brainDump
       };
       const { error } = await sb.from("timeanchor_state").upsert({
         user_id: currentUser.id, data: payload, updated_at: new Date().toISOString()
@@ -2563,7 +3096,8 @@
       Object.assign(state, local || {
         nudgeThreshold: 45, categories: defaultCategories(), blocks: defaultBlocks(), savedForDate: todayStr(),
         soundEnabled: true, soundVolume: 0.6, speakEnabled: false, firstName: "", showTimer: true,
-        colorTheme: "mixed", todos: [], features: normalizeFeatures(null), lastCategoryId: null
+        colorTheme: "mixed", todos: [], features: normalizeFeatures(null), lastCategoryId: null,
+        ui: normalizeUi(null), brainDump: ""
       });
       // The name typed at signup only fills in if nothing's already set
       // (e.g. no leftover local-only data on this device/browser already
@@ -2572,6 +3106,8 @@
       await saveCloudState();
     }
     state.features = normalizeFeatures(state.features);
+    state.ui = normalizeUi(state.ui);
+    if (typeof state.brainDump !== "string") state.brainDump = "";
     restoreThemeVars();
     finishBoot();
     setCloudStatus("synced", "Synced");
