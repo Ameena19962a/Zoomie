@@ -15,13 +15,11 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <link rel="icon" href="icons/icon-512.png" />
 <!--
-  Cloud accounts (Supabase). This only works with real network access (the
-  native app, or a normally-hosted copy of this page) — it will not work
-  inside a sandboxed preview that blocks outside requests. If the two
-  constants in the script below are left as placeholders, the app just runs
-  in local-only mode as before; nothing breaks.
+  Security: the app only runs its own code and never sends data anywhere.
+  No outside scripts can load, and the page can't connect to, post to, or
+  pull images from any other site, so nothing typed here can leave the phone.
 -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; media-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <style>
   :root{
     --bg: #f6f4ef;
@@ -631,8 +629,6 @@
   <div class="header-controls">
     <div class="sim-clock" id="simClockWrap" title="Speed and other testing tools are in Settings"><strong id="simClockText">--:--</strong></div>
     <button type="button" class="icon-btn" id="speakNowBtn" aria-label="Speak the time and current plan" title="Speak the time and current plan" style="display:none;">🔊</button>
-    <span class="cloud-status" id="cloudStatus" style="display:none;"><span class="dot"></span><span id="cloudStatusText">Local only</span></span>
-    <button type="button" class="icon-btn" id="signOutBtn" aria-label="Sign out" title="Sign out" style="display:none;">↩️</button>
     <button type="button" class="icon-btn" id="settingsBtn" aria-label="Settings: categories, sound, and more" title="Settings">⚙️</button>
     <button type="button" class="primary-btn" id="newBlockBtn" data-action="new-block">+ New block</button>
   </div>
@@ -645,26 +641,6 @@
       <button type="button" class="text-btn" id="noticeUndo" style="display:none;">Undo</button>
       <button type="button" class="text-btn" id="noticeDismiss">Dismiss</button>
     </span>
-  </div>
-</div>
-
-<div class="auth-screen" id="authScreen" style="display:none;">
-  <div class="auth-card">
-    <h1>TimeAnchor</h1>
-    <p class="auth-sub">Sign in to keep your timeline synced across devices.</p>
-    <div class="auth-tabs" role="tablist">
-      <button type="button" role="tab" id="authTabLogin" class="active" aria-selected="true">Log in</button>
-      <button type="button" role="tab" id="authTabSignup" aria-selected="false">Sign up</button>
-    </div>
-    <p class="auth-error" id="authError" role="alert"></p>
-    <form id="authForm">
-      <div class="field" id="authNameField" style="display:none;"><label for="authName">Your name</label><input type="text" id="authName" autocomplete="name" placeholder="e.g. Sam"></div>
-      <div class="field"><label for="authEmail">Email</label><input type="email" id="authEmail" autocomplete="email" required></div>
-      <div class="field"><label for="authPassword">Password</label><input type="password" id="authPassword" autocomplete="current-password" required minlength="6"></div>
-      <div class="field" id="authConfirmField" style="display:none;"><label for="authConfirm">Confirm password</label><input type="password" id="authConfirm" autocomplete="new-password" minlength="6"></div>
-      <button type="submit" class="primary-btn" id="authSubmit">Log in</button>
-    </form>
-    <a href="#" class="auth-offline-link text-btn" id="authOfflineLink">Continue without an account (this device only)</a>
   </div>
 </div>
 
@@ -727,7 +703,7 @@
 </main>
 
 <footer class="app-footer" id="mainFooter" style="display:none;">
-  <span id="footerStorageNote">Your schedule is saved on this device only (no account, no cloud sync).</span>
+  <span id="footerStorageNote">Everything is saved on this device only &mdash; no account, nothing sent anywhere.</span>
   The speed control is a testing aid that fast-forwards the on-screen clock — it never changes the real reminder times.
 </footer>
 
@@ -876,18 +852,6 @@
   const BUFFER_META = { name: "Buffer", color: "#9aa0a1", icon: "⏳" };
   const STORAGE_KEY = "timeanchor_state_v1";
 
-  /* ---------------------------------------------------------------------
-     Cloud accounts (optional). Leave these two as placeholders to run
-     fully local-only — nothing else in the app requires them. Fill them
-     in with a Supabase project's URL + anon/public key (never the
-     service_role key) to turn on sign-in and cross-device sync.
-  --------------------------------------------------------------------- */
-  const SUPABASE_URL = "REPLACE_WITH_YOUR_SUPABASE_URL";
-  const SUPABASE_ANON_KEY = "REPLACE_WITH_YOUR_SUPABASE_ANON_KEY";
-  const cloudEnabled = /^https:\/\/.+\.supabase\.co\/?$/.test(SUPABASE_URL) && SUPABASE_ANON_KEY.length > 20;
-  const sb = (cloudEnabled && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-  let currentUser = null;
-  let offlineMode = false;
   let appBooted = false;
 
   /* ---------------------------------------------------------------------
@@ -2016,16 +1980,10 @@
 
   // Structural changes (add/edit/delete/reflow/etc) need to be saved and
   // re-scheduled — plain ticking does not.
-  let cloudSaveTimer = null;
   function commit(){
     persist();
     scheduleNotifications();
     render();
-    if (cloudEnabled && currentUser && !offlineMode){
-      setCloudStatus("syncing", "Saving…");
-      clearTimeout(cloudSaveTimer);
-      cloudSaveTimer = setTimeout(saveCloudState, 700);
-    }
   }
 
   function updateSimClock(){
@@ -3045,7 +3003,7 @@
     const inner = document.getElementById("settingsDialogInner");
     inner.innerHTML =
       '<h2 id="settingsDialogTitle">Settings</h2>' +
-      '<p class="dialog-sub">Saved on this device' + (cloudEnabled && currentUser && !offlineMode ? ' and synced to your account.' : '.') + '</p>' +
+      '<p class="dialog-sub">Saved on this device only &mdash; nothing you type is ever sent anywhere.</p>' +
 
       '<h3 style="font-size:13.5px;margin:0 0 4px;">Features</h3>' +
       '<p class="dialog-sub" style="margin-bottom:10px;">Switch off anything you don\'t need. Nothing is deleted &mdash; switch it back on any time. A tab disappears when everything in it is off.</p>' +
@@ -3279,35 +3237,11 @@
   }
 
   /* ---------------------------------------------------------------------
-     Cloud auth screen + boot sequence
+     Start-up. No accounts: everything lives on this device.
   --------------------------------------------------------------------- */
-  function setCloudStatus(mode, text){
-    const el = document.getElementById("cloudStatus");
-    if (!cloudEnabled || offlineMode || !currentUser){ el.style.display = "none"; return; }
-    el.style.display = "";
-    el.className = "cloud-status " + mode;
-    document.getElementById("cloudStatusText").textContent = text;
-  }
-
-  function showAuthScreen(){
-    document.getElementById("authScreen").style.display = "";
-    document.getElementById("mainApp").style.display = "none";
-    document.getElementById("mainFooter").style.display = "none";
-    document.getElementById("tabBar").hidden = true;
-    document.body.classList.remove("has-tabbar");
-    document.getElementById("signOutBtn").style.display = "none";
-    document.getElementById("authEmail").focus();
-  }
-
   function showMainApp(){
-    const signedIn = cloudEnabled && currentUser && !offlineMode;
-    document.getElementById("authScreen").style.display = "none";
     document.getElementById("mainApp").style.display = "";
     document.getElementById("mainFooter").style.display = "";
-    document.getElementById("signOutBtn").style.display = signedIn ? "" : "none";
-    document.getElementById("footerStorageNote").textContent = signedIn
-      ? "Your schedule is synced to your account."
-      : "Your schedule is saved on this device only (no account, no cloud sync).";
   }
 
   function updateGreeting(){
@@ -3330,162 +3264,13 @@
     initNotifications();
   }
 
-  async function loadCloudState(userId){
-    try {
-      const { data, error } = await sb.from("timeanchor_state").select("data").eq("user_id", userId).maybeSingle();
-      if (error) throw error;
-      return data ? data.data : null;
-    } catch (e) { return null; }
-  }
-
-  async function saveCloudState(){
-    if (!cloudEnabled || !currentUser || offlineMode) return;
-    try {
-      const payload = {
-        nudgeThreshold: state.nudgeThreshold, categories: state.categories,
-        blocks: state.blocks, savedForDate: state.savedForDate,
-        soundEnabled: state.soundEnabled, soundVolume: state.soundVolume, speakEnabled: state.speakEnabled,
-        firstName: state.firstName, showTimer: state.showTimer,
-        colorTheme: state.colorTheme, todos: state.todos, features: state.features, lastCategoryId: state.lastCategoryId,
-        ui: state.ui, brainDump: state.brainDump, history: state.history
-      };
-      const { error } = await sb.from("timeanchor_state").upsert({
-        user_id: currentUser.id, data: payload, updated_at: new Date().toISOString()
-      });
-      if (error) throw error;
-      setCloudStatus("synced", "Synced");
-    } catch (e) {
-      setCloudStatus("error", "Sync failed — saved on this device");
-    }
-  }
-
-  async function onAuthed(user){
-    currentUser = user;
-    setCloudStatus("syncing", "Loading…");
-    const cloud = await loadCloudState(user.id);
-    if (cloud){
-      Object.assign(state, cloud);
-    } else {
-      // First login for this account — seed from any existing on-device
-      // schedule if there is one, otherwise the default day template.
-      const local = loadPersisted();
-      Object.assign(state, local || {
-        nudgeThreshold: 45, categories: defaultCategories(), blocks: defaultBlocks(), savedForDate: todayStr(),
-        soundEnabled: true, soundVolume: 0.6, speakEnabled: false, firstName: "", showTimer: true,
-        colorTheme: "mixed", todos: [], features: normalizeFeatures(null), lastCategoryId: null,
-        ui: normalizeUi(null), brainDump: "", history: {}
-      });
-      // The name typed at signup only fills in if nothing's already set
-      // (e.g. no leftover local-only data on this device/browser already
-      // has one) — never silently overwrites a name someone chose.
-      if (!state.firstName) state.firstName = (user.user_metadata && user.user_metadata.full_name) || "";
-      await saveCloudState();
-    }
-    state.features = normalizeFeatures(state.features);
-    state.ui = normalizeUi(state.ui);
-    applyAudioSession();
-    if (typeof state.brainDump !== "string") state.brainDump = "";
-    if (!state.history || typeof state.history !== "object") state.history = {};
-    normalizeBlocks(state.blocks);
-    restoreThemeVars();
-    finishBoot();
-    setCloudStatus("synced", "Synced");
-  }
-
-  let authMode = "login";
-  function setAuthMode(mode){
-    authMode = mode;
-    document.getElementById("authTabLogin").classList.toggle("active", mode === "login");
-    document.getElementById("authTabLogin").setAttribute("aria-selected", String(mode === "login"));
-    document.getElementById("authTabSignup").classList.toggle("active", mode === "signup");
-    document.getElementById("authTabSignup").setAttribute("aria-selected", String(mode === "signup"));
-    document.getElementById("authSubmit").textContent = mode === "login" ? "Log in" : "Sign up";
-    document.getElementById("authPassword").autocomplete = mode === "login" ? "current-password" : "new-password";
-    document.getElementById("authNameField").style.display = mode === "signup" ? "" : "none";
-    document.getElementById("authName").required = mode === "signup";
-    document.getElementById("authConfirmField").style.display = mode === "signup" ? "" : "none";
-    document.getElementById("authConfirm").required = mode === "signup";
-    document.getElementById("authError").textContent = "";
-  }
-  document.getElementById("authTabLogin").addEventListener("click", () => setAuthMode("login"));
-  document.getElementById("authTabSignup").addEventListener("click", () => setAuthMode("signup"));
-
-  document.getElementById("authForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const email = document.getElementById("authEmail").value.trim();
-    const password = document.getElementById("authPassword").value;
-    const name = document.getElementById("authName").value.trim();
-    const confirm = document.getElementById("authConfirm").value;
-    const errEl = document.getElementById("authError");
-    const submitBtn = document.getElementById("authSubmit");
-    errEl.textContent = "";
-
-    if (authMode === "signup"){
-      if (!name){
-        errEl.textContent = "Enter your name.";
-        document.getElementById("authName").focus();
-        return;
-      }
-      if (password !== confirm){
-        errEl.textContent = "Passwords don't match.";
-        document.getElementById("authConfirm").focus();
-        return;
-      }
-    }
-
-    submitBtn.disabled = true;
-    try {
-      const { data, error } = authMode === "login"
-        ? await sb.auth.signInWithPassword({ email, password })
-        : await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
-      if (error) { errEl.textContent = error.message; return; }
-      if (authMode === "signup" && !data.session){
-        errEl.textContent = "Check your email to confirm your account, then log in.";
-        setAuthMode("login");
-        return;
-      }
-      await onAuthed(data.user);
-    } catch (err) {
-      errEl.textContent = "Something went wrong — please try again.";
-    } finally {
-      submitBtn.disabled = false;
-    }
-  });
-
-  document.getElementById("authOfflineLink").addEventListener("click", (e) => {
-    e.preventDefault();
-    offlineMode = true;
-    finishBoot();
-  });
-
-  document.getElementById("signOutBtn").addEventListener("click", async () => {
-    if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
-    location.reload();
-  });
-
   if (speechSupported){
     const speakBtn = document.getElementById("speakNowBtn");
     speakBtn.style.display = "";
     speakBtn.addEventListener("click", () => speakNow());
   }
 
-  async function boot(){
-    if (!cloudEnabled){
-      finishBoot();
-      return;
-    }
-    try {
-      const { data } = await sb.auth.getSession();
-      if (data && data.session && data.session.user){
-        await onAuthed(data.session.user);
-      } else {
-        showAuthScreen();
-      }
-    } catch (e) {
-      finishBoot(); // cloud unreachable — fall back to local-only rather than block the app
-    }
-  }
-  boot();
+  finishBoot();
 
   // Installable-app support: register the service worker so "Add to Home
   // Screen" behaves like a real app (own icon, opens full-screen, keeps
