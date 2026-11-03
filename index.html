@@ -875,10 +875,7 @@
   </div>
 </main>
 
-<footer class="app-footer" id="mainFooter" style="display:none;">
-  <span id="footerStorageNote">Everything is saved on this device only &mdash; no account, nothing sent anywhere.</span>
-  The speed control is a testing aid that fast-forwards the on-screen clock — it never changes the real reminder times.
-</footer>
+<footer class="app-footer" id="mainFooter" style="display:none;" aria-hidden="true"></footer>
 
 <nav class="tab-bar" id="tabBar" aria-label="Sections" hidden></nav>
 
@@ -1212,9 +1209,7 @@
     ui: normalizeUi(persisted.ui),
     brainDump: typeof persisted.brainDump === "string" ? persisted.brainDump : "",
     history: (persisted.history && typeof persisted.history === "object") ? persisted.history : {},
-    energy: persisted.energy || null,
-    demoOffset: 0,
-    speed: 1
+    energy: persisted.energy || null
   } : {
     nudgeThreshold: 45,
     categories: defaultCategories(),
@@ -1232,9 +1227,7 @@
     ui: normalizeUi(null),
     brainDump: "",
     history: {},
-    energy: null,
-    demoOffset: 0,
-    speed: 1
+    energy: null
   };
 
   // Restore just the theme's CSS vars (accent/focus-ring/bg/card/sparkle) —
@@ -2296,9 +2289,6 @@
 
   function updateSimClock(){
     document.getElementById("simClockText").textContent = fmtClock(state.simNow);
-    document.querySelectorAll("#speedSeg button").forEach(b => {
-      b.classList.toggle("active", parseInt(b.dataset.speed,10) === state.speed);
-    });
   }
 
   /* ---------- Chimes: soft fade-in tones with a low volume cap (sound sensitivity is common) ---------- */
@@ -2426,19 +2416,10 @@
   let lastOverrun = false;
   let ticksSinceStructuralRender = 0;
   const STRUCTURAL_RENDER_EVERY_TICKS = 150; // ~30s safety-net resync (e.g. "Upcoming" -> "Waiting" labels)
-  let lastTickMs = performance.now();
   function tick(){
     if (!appBooted) return;
     updateHeaderLine();
-    const now = performance.now();
-    const deltaSec = (now - lastTickMs) / 1000;
-    lastTickMs = now;
-    const deltaMin = deltaSec / 60;
-    // At 1x this is always real wall-clock time. Faster speeds only pile up
-    // a temporary on-screen offset for testing — they never touch what's
-    // actually scheduled or when real reminders fire.
-    if (state.speed !== 1) state.demoOffset += deltaMin * (state.speed - 1);
-    state.simNow = actualNowMinutes() + state.demoOffset;
+    state.simNow = actualNowMinutes();
     if (state.simNow >= 1440) { state.simNow -= 1440; }
     updateSimClock();
     if (state.features.dayJar) updateJarFill();
@@ -2502,11 +2483,6 @@
     if (!t) return;
     const action = t.dataset.action;
 
-    if (action === "speed"){
-      state.speed = parseInt(t.dataset.speed, 10);
-      updateSimClock();
-      return;
-    }
     if (action === "new-block"){ openBlockForm(null); return; }
     if (action === "edit"){
       const b = state.blocks.find(x => x.id === t.dataset.id);
@@ -3495,18 +3471,6 @@
             '<button type="button" class="ghost-btn" id="st_exportBtn">💾 Save a backup</button>' +
             '<button type="button" class="ghost-btn" id="st_importBtn">📂 Load a backup</button>' +
             '<input type="file" id="st_importFile" accept=".json,application/json" hidden>' +
-          '</div>' +
-        '</div>' +
-      '</details>' +
-
-      '<details class="more-options" id="st_testingDetails">' +
-        '<summary>Testing tools</summary>' +
-        '<div class="more-options-body">' +
-          '<p class="dialog-sub" style="margin-bottom:8px;">Speeds up the on-screen clock so you can see timers shrink without waiting — not a real feature, and it never changes when real reminders fire.</p>' +
-          '<div class="seg" id="speedSeg" style="border:1px solid var(--border); border-radius:999px; padding:4px; width:max-content;">' +
-            '<button type="button" data-action="speed" data-speed="1">1x</button>' +
-            '<button type="button" data-action="speed" data-speed="10">10x</button>' +
-            '<button type="button" data-action="speed" data-speed="60">60x</button>' +
           '</div>' +
         '</div>' +
       '</details>' +
