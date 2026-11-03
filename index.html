@@ -1877,9 +1877,9 @@
             FOCUS_LAUNCH_HTML +
           '</div>' + lowCapacityLinkHtml();
       } else if (sortedBlocks().length === 0){
-        el.innerHTML = '<div class="focus-empty">' + emptyCloud("happy", 'Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.') + FOCUS_LAUNCH_HTML + '</div>';
+        el.innerHTML = '<div class="focus-empty"><p>Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.</p>' + FOCUS_LAUNCH_HTML + '</div>';
       } else {
-        el.innerHTML = '<div class="focus-empty">' + emptyCloud("happy", 'Nothing else is scheduled for today.') + FOCUS_LAUNCH_HTML + '</div>' + lowCapacityLinkHtml();
+        el.innerHTML = '<div class="focus-empty"><p>Nothing else is scheduled for today.</p>' + FOCUS_LAUNCH_HTML + '</div>' + lowCapacityLinkHtml();
       }
       updateAriaLive("Nothing is currently active.");
       return;
