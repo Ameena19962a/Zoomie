@@ -9,17 +9,17 @@
 <meta name="apple-mobile-web-app-title" content="TimeAnchor" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="theme-color" content="#f6f4ef" />
+<!-- Every theme is light; stops Samsung Internet / Chrome from force-darkening it. -->
+<meta name="color-scheme" content="only light" />
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <link rel="icon" href="icons/icon-512.png" />
 <!--
-  Cloud accounts (Supabase). This only works with real network access (the
-  native app, or a normally-hosted copy of this page) — it will not work
-  inside a sandboxed preview that blocks outside requests. If the two
-  constants in the script below are left as placeholders, the app just runs
-  in local-only mode as before; nothing breaks.
+  Security: the app only runs its own code and never sends data anywhere.
+  No outside scripts can load, and the page can't connect to, post to, or
+  pull images from any other site, so nothing typed here can leave the phone.
 -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; media-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'" />
 <style>
   :root{
     --bg: #f6f4ef;
@@ -138,6 +138,15 @@
   @keyframes celebrateFloat{
     0%{ opacity:1; transform:translate(0,0) scale(.6) rotate(0deg); }
     100%{ opacity:0; transform:translate(var(--dx,0px),-55px) scale(1.15) rotate(20deg); }
+  }
+  .delete-poof{
+    position:fixed; pointer-events:none; z-index:50; font-size:24px; line-height:1;
+    opacity:0; animation: deletePoof 750ms ease-out forwards;
+  }
+  @keyframes deletePoof{
+    0%{ opacity:0; transform:translate(-50%,-50%) scale(.5); }
+    25%{ opacity:1; transform:translate(-50%,-50%) scale(1.15); }
+    100%{ opacity:0; transform:translate(calc(-50% - 46px), calc(-50% - 26px)) scale(1.4); }
   }
   .celebrate-message{
     position:fixed; pointer-events:none; z-index:50; font-weight:700; font-size:14px;
@@ -283,6 +292,173 @@
   .switch:checked{ background:var(--accent); }
   .switch:checked::after{ transform:translateX(18px); }
   .switch:disabled{ cursor:default; }
+  .feature-group-label{ font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin:0 0 6px 2px; }
+
+  /* ---------- Tabs ---------- */
+  .tab-panel{ display:flex; flex-direction:column; gap:16px; }
+  .tab-panel[hidden]{ display:none; }
+  body:not(.tab-today) #newBlockBtn{ display:none; }
+  .tab-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:30;
+    display:flex; justify-content:center; gap:4px;
+    background:var(--card); border-top:1px solid var(--border);
+    padding:6px 10px calc(6px + var(--safe-bottom));
+  }
+  .tab-bar[hidden]{ display:none; }
+  .tab-bar button{
+    flex:1; max-width:150px; min-width:0; border:none; background:transparent; color:var(--muted);
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:7px 4px; border-radius:14px; font-size:12px; font-weight:700;
+  }
+  .tab-bar button .tab-icon{ font-size:21px; line-height:1; }
+  .tab-bar button .tab-label{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tab-bar button[aria-current="page"]{ color:var(--accent); background:color-mix(in srgb, var(--accent) 13%, transparent); }
+  body.has-tabbar footer.app-footer{ padding-bottom:calc(100px + var(--safe-bottom)); }
+
+  /* ---------- Brain dump ---------- */
+  #dumpInput{
+    width:100%; min-height:150px; resize:vertical; padding:12px; font-size:16px; line-height:1.5;
+    border:1px solid var(--border); border-radius:12px; background:var(--bg); color:var(--text); font-family:inherit;
+  }
+  .dump-actions{ display:flex; align-items:center; gap:12px; margin-top:10px; }
+  .dump-results-head{ margin:20px 0 4px; font-size:14px; }
+  .dump-list{ list-style:none; margin:10px 0 14px; padding:0; display:flex; flex-direction:column; gap:8px; }
+  .dump-item{ display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:12px; background:var(--bg); }
+  .dump-item.is-off{ opacity:.45; }
+  .dump-item input[type=checkbox]{ width:20px; height:20px; margin-top:6px; flex:none; accent-color:var(--accent); }
+  .dump-item-body{ flex:1; min-width:0; }
+  .dump-item-title{
+    width:100%; min-width:0; border:none; border-bottom:1px dashed transparent; background:transparent; color:var(--text);
+    font-size:16px; font-weight:600; padding:4px 0; font-family:inherit;
+  }
+  .dump-item-title:focus{ outline:none; border-bottom-color:var(--accent); }
+  .dump-item-meta{ display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+  .dump-chip{ font-size:12px; font-weight:600; padding:3px 9px; border-radius:999px; border:1px solid var(--border); color:var(--muted); background:var(--card); }
+  button.dump-dest{ cursor:pointer; color:var(--accent); border-color:var(--accent); }
+  button.dump-dest::after{ content:" ⇄"; font-weight:400; }
+  .dump-empty{ color:var(--muted); font-size:13px; margin:14px 0 0; }
+
+  /* ---------- Steps dropdown (timeline rows) ---------- */
+  .steps-toggle{
+    border:1px solid var(--border); background:var(--bg); color:var(--muted); border-radius:999px;
+    font-size:12px; font-weight:700; padding:3px 10px;
+  }
+  .steps-toggle[aria-expanded="true"]{ color:var(--accent); border-color:var(--accent); }
+  .row-steps{ list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:5px; }
+  .row-steps li{ display:flex; align-items:center; gap:9px; font-size:14px; padding:7px 9px; border-radius:9px; background:var(--bg); border:1px solid var(--border); }
+  .row-steps li .t{ flex:1; min-width:0; }
+  .row-steps li.done .t{ text-decoration:line-through; color:var(--muted); }
+  .row-steps input{ width:19px; height:19px; flex:none; accent-color:var(--accent); }
+
+  /* ---------- Focus with me ---------- */
+  body.feat-focusmode-off .fm-launch{ display:none; }
+  .fm-launch-row{ margin:-4px 0 10px; }
+  dialog#focusDialog{
+    width:100%; height:100%; max-width:none; max-height:none; margin:0; border-radius:0;
+    background:var(--bg); color:var(--text);
+  }
+  dialog#focusDialog::backdrop{ background:var(--bg); }
+  #fmInner{ min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+    padding:calc(24px + var(--safe-top)) 22px calc(24px + var(--safe-bottom)); max-width:520px; margin:0 auto; }
+  .fm-close{ position:fixed; top:calc(14px + var(--safe-top)); right:16px; }
+  .fm-setup{ width:100%; text-align:left; }
+  .fm-setup h2{ font-size:20px; margin:0 0 4px; }
+  .fm-label{ font-size:13px; font-weight:700; margin:18px 0 8px; color:var(--muted); }
+  .fm-choices{ display:flex; flex-direction:column; gap:8px; }
+  .fm-choice{ text-align:left; border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:12px; padding:12px 14px; font-size:15px; font-weight:600; }
+  .fm-choice.on{ border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
+  .fm-start{ width:100%; justify-content:center; margin-top:22px; padding:14px; font-size:16px; }
+  .fm-with{ margin:0; color:var(--muted); font-size:13px; }
+  .fm-task{ margin:4px 0 26px; font-size:22px; line-height:1.3; }
+  .fm-breath-wrap{ position:relative; width:230px; height:230px; display:flex; align-items:center; justify-content:center; margin-bottom:22px; }
+  .fm-breath{
+    position:absolute; inset:18px; border-radius:46% 54% 52% 48% / 50% 46% 54% 50%;
+    background:radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 45%, white), color-mix(in srgb, var(--accent) 75%, transparent));
+    opacity:.85; box-shadow:0 0 60px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  @media not (prefers-reduced-motion: reduce){
+    .fm-breath{ animation: fmBreathe 10s ease-in-out infinite; }
+    .fm-paused .fm-breath{ animation-play-state:paused; }
+  }
+  @keyframes fmBreathe{
+    0%, 100%{ transform:scale(.78) rotate(0deg); border-radius:46% 54% 52% 48% / 50% 46% 54% 50%; }
+    45%{ transform:scale(1) rotate(8deg); border-radius:54% 46% 48% 52% / 46% 54% 50% 50%; }
+    55%{ transform:scale(1) rotate(8deg); }
+  }
+  .fm-time{ position:relative; font-size:24px; font-weight:800; color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.25); }
+  .fm-msg{ min-height:2.9em; margin:0 0 14px; font-size:15px; color:var(--muted); max-width:320px; }
+  .fm-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .fm-check{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin:0 0 16px; }
+  .fm-check p{ margin:0 0 8px; font-weight:700; }
+  .fm-end h2{ font-size:24px; margin:0 0 8px; }
+  .fm-end p{ color:var(--muted); margin:0 0 20px; }
+
+  /* ---------- Day jar ---------- */
+  body.feat-dayjar-off #jarPanelSection{ display:none; }
+  .jar-panel{ padding:14px 18px; }
+  .jar-wrap{ display:flex; align-items:center; gap:16px; }
+  .jar-svg{ width:78px; height:100px; flex:none; overflow:visible; }
+  .jar-outline{ fill:none; stroke:var(--muted); stroke-width:3; stroke-linejoin:round; }
+  .jar-lid{ fill:var(--track); stroke:var(--muted); stroke-width:3; }
+  .jar-fill{ fill:var(--accent); opacity:.2; transition:y 1s ease, height 1s ease; }
+  .jar-surface{ stroke:var(--accent); stroke-width:2; opacity:.45; transition:transform 1s ease; }
+  .jar-marble{ stroke:rgba(0,0,0,.18); stroke-width:1; }
+  .jar-shine{ fill:#fff; opacity:.55; }
+  .jar-text h2{ margin:0 0 4px; font-size:15px; }
+  .jar-text p{ margin:0; font-size:13px; color:var(--muted); line-height:1.45; }
+  .jar-text .jar-period{ color:var(--text); font-weight:700; font-size:14px; margin-bottom:4px; }
+  @media not (prefers-reduced-motion: reduce){
+    .jar-marble-g.drop{ animation: marbleDrop 700ms cubic-bezier(.3,.6,.4,1.2) both; }
+  }
+  @keyframes marbleDrop{
+    0%{ transform:translateY(-95px); opacity:0; }
+    20%{ opacity:1; }
+    80%{ transform:translateY(3px); }
+    100%{ transform:translateY(0); }
+  }
+
+  /* ---------- Energy ---------- */
+  .energy-chip{
+    flex:none; margin-left:auto; min-width:36px; height:30px; padding:0 8px; border-radius:999px;
+    border:1px dashed var(--border); background:transparent; color:var(--muted); font-size:14px; font-weight:700;
+  }
+  .energy-chip.set{ border-style:solid; background:var(--card); }
+  .energy-check{ border:1px solid var(--border); border-radius:12px; padding:12px; margin:0 0 12px; background:var(--bg); }
+  .energy-check p{ margin:0 0 8px; font-size:14px; font-weight:700; }
+  .energy-check .seg.choice{ margin-bottom:0; background:var(--card); }
+  .energy-note{ font-size:13px; color:var(--muted); margin:0 0 12px; }
+
+  /* ---------- Day picker (block form) ---------- */
+  .day-picks{ display:flex; gap:6px; justify-content:space-between; margin:-6px 0 4px; }
+  .day-picks[hidden]{ display:none; }
+  .day-pick{
+    flex:1; min-width:0; aspect-ratio:1; max-width:44px; border-radius:50%;
+    border:1px solid var(--border); background:var(--card); color:var(--text); font-weight:700; font-size:13px;
+  }
+  .day-pick.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  /* ---------- Done history ---------- */
+  .done-hero{ font-size:15px; font-weight:700; margin:4px 0 14px; }
+  .done-day{ border:1px solid var(--border); border-radius:12px; background:var(--bg); margin-bottom:10px; overflow:hidden; }
+  .done-day summary{ list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 14px; font-weight:700; font-size:14px; }
+  .done-day summary::-webkit-details-marker{ display:none; }
+  .done-day summary .done-count{ font-weight:600; font-size:12px; color:var(--muted); white-space:nowrap; }
+  .done-day ul{ list-style:none; margin:0; padding:0 14px 10px; display:flex; flex-direction:column; gap:6px; }
+  .done-day li{ display:flex; align-items:center; gap:10px; font-size:14px; padding:6px 0; border-top:1px solid var(--border); }
+  .done-day li .t{ flex:1; min-width:0; }
+  .done-day li .at{ font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+
+  /* ---------- Look & feel ---------- */
+  .seg.choice{ border:1px solid var(--border); border-radius:999px; padding:4px; width:100%; margin-bottom:14px; }
+  .seg.choice button{ flex:1; }
+  .tab-order-row{ display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .tab-order-row:last-child{ border-bottom:none; }
+  .tab-order-row .name{ flex:1; font-weight:600; }
+  .tab-order-row .off-tag{ font-size:11.5px; color:var(--muted); font-weight:400; margin-left:6px; }
+  /* Whole-app text size: zoom scales every px-sized rule at once. */
+  body.ts-s header.app-header, body.ts-s main.layout, body.ts-s .tab-bar, body.ts-s .dialog-inner{ zoom:.9; }
+  body.ts-l header.app-header, body.ts-l main.layout, body.ts-l .tab-bar, body.ts-l .dialog-inner{ zoom:1.12; }
+  body.ts-xl header.app-header, body.ts-xl main.layout, body.ts-xl .tab-bar, body.ts-xl .dialog-inner{ zoom:1.25; }
 
   /* Progressive disclosure for the New block form: steps and extras stay
      tucked away until asked for, so the form that opens by default is
@@ -507,7 +683,7 @@
   .dialog-actions .right-group{ display:flex; gap:8px; }
   .color-swatch-input{ width:44px; height:32px; padding:2px; border:1px solid var(--border); border-radius:6px; background:var(--bg); }
   .cat-manage-row{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
-  .cat-manage-row input[type=text].cname{ flex:1; }
+  .cat-manage-row input[type=text].cname{ flex:1; min-width:0; }
   .cat-manage-row input[type=text].cicon{ width:44px; text-align:center; }
 
   /* ---------- Auth screen ---------- */
@@ -543,8 +719,6 @@
   <div class="header-controls">
     <div class="sim-clock" id="simClockWrap" title="Speed and other testing tools are in Settings"><strong id="simClockText">--:--</strong></div>
     <button type="button" class="icon-btn" id="speakNowBtn" aria-label="Speak the time and current plan" title="Speak the time and current plan" style="display:none;">🔊</button>
-    <span class="cloud-status" id="cloudStatus" style="display:none;"><span class="dot"></span><span id="cloudStatusText">Local only</span></span>
-    <button type="button" class="icon-btn" id="signOutBtn" aria-label="Sign out" title="Sign out" style="display:none;">↩️</button>
     <button type="button" class="icon-btn" id="settingsBtn" aria-label="Settings: categories, sound, and more" title="Settings">⚙️</button>
     <button type="button" class="primary-btn" id="newBlockBtn" data-action="new-block">+ New block</button>
   </div>
@@ -560,27 +734,11 @@
   </div>
 </div>
 
-<div class="auth-screen" id="authScreen" style="display:none;">
-  <div class="auth-card">
-    <h1>TimeAnchor</h1>
-    <p class="auth-sub">Sign in to keep your timeline synced across devices.</p>
-    <div class="auth-tabs" role="tablist">
-      <button type="button" role="tab" id="authTabLogin" class="active" aria-selected="true">Log in</button>
-      <button type="button" role="tab" id="authTabSignup" aria-selected="false">Sign up</button>
-    </div>
-    <p class="auth-error" id="authError" role="alert"></p>
-    <form id="authForm">
-      <div class="field" id="authNameField" style="display:none;"><label for="authName">Your name</label><input type="text" id="authName" autocomplete="name" placeholder="e.g. Sam"></div>
-      <div class="field"><label for="authEmail">Email</label><input type="email" id="authEmail" autocomplete="email" required></div>
-      <div class="field"><label for="authPassword">Password</label><input type="password" id="authPassword" autocomplete="current-password" required minlength="6"></div>
-      <div class="field" id="authConfirmField" style="display:none;"><label for="authConfirm">Confirm password</label><input type="password" id="authConfirm" autocomplete="new-password" minlength="6"></div>
-      <button type="submit" class="primary-btn" id="authSubmit">Log in</button>
-    </form>
-    <a href="#" class="auth-offline-link text-btn" id="authOfflineLink">Continue without an account (this device only)</a>
-  </div>
-</div>
-
 <main class="layout" id="mainApp" style="display:none;">
+ <div class="tab-panel" data-tab="today">
+  <section class="panel jar-panel" id="jarPanelSection" aria-label="Your day jar">
+    <div id="jarBody"></div>
+  </section>
   <section class="panel focus-panel" id="focusPanelSection" aria-labelledby="focusHeading">
     <h2 id="focusHeading">Right now</h2>
     <div id="focusPanelBody"></div>
@@ -591,21 +749,47 @@
       <h2 id="timelineHeading" style="margin:0;">Today's timeline</h2>
     </div>
     <form id="quickBlockForm" style="display:flex;gap:8px;margin-bottom:14px;">
-      <input type="text" id="quickBlockInput" placeholder="Add a task…" style="flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
+      <input type="text" id="quickBlockInput" placeholder="Add a task…" style="flex:1;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
       <button type="submit" class="primary-btn">Add</button>
     </form>
     <div class="timeline-list" id="timelineList"></div>
   </section>
+ </div>
 
-  <section class="panel" id="todoPanelSection" aria-labelledby="todoHeading" style="grid-column:1 / -1;">
+ <div class="tab-panel" data-tab="dump">
+  <section class="panel" id="dumpPanelSection" aria-labelledby="dumpHeading">
+    <h2 id="dumpHeading" style="margin:0 0 4px;">Brain dump</h2>
+    <p class="dialog-sub" style="margin:0 0 12px;">Get it all out of your head &mdash; messy is fine. Then tap Sort it and it becomes a list.</p>
+    <textarea id="dumpInput" rows="7" placeholder="call GP at 3pm, buy milk and eggs&#10;finish essay for 2 hours&#10;reply to Sam&#10;book dentist tomorrow"></textarea>
+    <div class="dump-actions">
+      <button type="button" class="primary-btn" id="dumpSortBtn">✨ Sort it</button>
+      <button type="button" class="text-btn" id="dumpClearBtn">Clear</button>
+    </div>
+    <div id="dumpResults"></div>
+  </section>
+ </div>
+
+ <div class="tab-panel" data-tab="done">
+  <section class="panel" id="donePanelSection" aria-labelledby="doneHeading">
+    <h2 id="doneHeading" style="margin:0 0 4px;">Done list</h2>
+    <p class="dialog-sub" style="margin:0 0 12px;">Everything you've finished, day by day. No streaks, no pressure &mdash; just proof you did things.</p>
+    <div id="doneList"></div>
+  </section>
+ </div>
+
+ <div class="tab-panel" data-tab="todo">
+  <section class="panel" id="todoPanelSection" aria-labelledby="todoHeading">
     <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
     <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
+    <div class="fm-launch-row"><button type="button" class="text-btn fm-launch" data-action="focus-with-me">🫧 Focus with me</button></div>
+    <div id="energyCheck"></div>
     <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
-      <input type="text" id="todoInput" placeholder="Add something…" style="flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
+      <input type="text" id="todoInput" placeholder="Add something…" style="flex:1;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
       <button type="submit" class="primary-btn">Add</button>
     </form>
     <ul class="subtask-list" id="todoList" style="margin:0;"></ul>
   </section>
+ </div>
 
   <p id="allOffNotice">Everything's switched off right now.</p>
   <div class="customize-row">
@@ -614,9 +798,15 @@
 </main>
 
 <footer class="app-footer" id="mainFooter" style="display:none;">
-  <span id="footerStorageNote">Your schedule is saved on this device only (no account, no cloud sync).</span>
+  <span id="footerStorageNote">Everything is saved on this device only &mdash; no account, nothing sent anywhere.</span>
   The speed control is a testing aid that fast-forwards the on-screen clock — it never changes the real reminder times.
 </footer>
+
+<nav class="tab-bar" id="tabBar" aria-label="Sections" hidden></nav>
+
+<dialog id="focusDialog" aria-labelledby="fmTitle">
+  <div id="fmInner"></div>
+</dialog>
 
 <div id="ariaLive" class="visually-hidden" aria-live="polite"></div>
 
@@ -761,18 +951,6 @@
   const BUFFER_META = { name: "Buffer", color: "#9aa0a1", icon: "⏳" };
   const STORAGE_KEY = "timeanchor_state_v1";
 
-  /* ---------------------------------------------------------------------
-     Cloud accounts (optional). Leave these two as placeholders to run
-     fully local-only — nothing else in the app requires them. Fill them
-     in with a Supabase project's URL + anon/public key (never the
-     service_role key) to turn on sign-in and cross-device sync.
-  --------------------------------------------------------------------- */
-  const SUPABASE_URL = "REPLACE_WITH_YOUR_SUPABASE_URL";
-  const SUPABASE_ANON_KEY = "REPLACE_WITH_YOUR_SUPABASE_ANON_KEY";
-  const cloudEnabled = /^https:\/\/.+\.supabase\.co\/?$/.test(SUPABASE_URL) && SUPABASE_ANON_KEY.length > 20;
-  const sb = (cloudEnabled && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-  let currentUser = null;
-  let offlineMode = false;
   let appBooted = false;
 
   /* ---------------------------------------------------------------------
@@ -833,12 +1011,32 @@
     return []; // start empty — add your own; no sample day to clear out first
   }
 
+  // repeat: "once" (only on `date`), "daily", or "weekly" (on `days`, 0=Sun).
+  // New blocks default to just today; routines are opted into in the form.
   function mkBlock(title, categoryId, start, duration, isBuffer, subtasks, soundtrackEnabled){
     return {
       id: uid("blk"), title, categoryId, start, duration,
       isBuffer: !!isBuffer, subtasks: subtasks || [],
-      soundtrackEnabled: !!soundtrackEnabled, status: "pending"
+      soundtrackEnabled: !!soundtrackEnabled, status: "pending",
+      repeat: "once", date: todayStr(), days: []
     };
+  }
+  function copyRepeat(from, to){
+    to.repeat = from.repeat; to.date = from.date; to.days = (from.days || []).slice();
+    return to;
+  }
+  // Blocks saved before per-day schedules existed were all a daily template.
+  function normalizeBlocks(list){
+    (list || []).forEach(b => {
+      if (!["once", "daily", "weekly"].includes(b.repeat)){ b.repeat = "daily"; b.date = null; b.days = []; }
+      if (!Array.isArray(b.days)) b.days = [];
+    });
+    return list || [];
+  }
+  function blockIsToday(b){
+    if (b.repeat === "once") return b.date === todayStr();
+    if (b.repeat === "weekly") return b.days.includes(new Date().getDay());
+    return true;
   }
   function mkBuffer(start, duration){
     return mkBlock("Buffer", null, start, duration, true, [], false);
@@ -859,7 +1057,11 @@
   }
   function persist(){
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot()));
+    } catch (e) { /* storage unavailable — app still works for this session */ }
+  }
+  function snapshot(){
+    return ({
         nudgeThreshold: state.nudgeThreshold,
         categories: state.categories,
         blocks: state.blocks,
@@ -872,15 +1074,52 @@
         colorTheme: state.colorTheme,
         todos: state.todos,
         features: state.features,
-        lastCategoryId: state.lastCategoryId
-      }));
-    } catch (e) { /* storage unavailable — app still works for this session */ }
+        lastCategoryId: state.lastCategoryId,
+        ui: state.ui,
+        brainDump: state.brainDump,
+        history: state.history,
+        energy: state.energy
+      });
   }
 
   /* ---------------------------------------------------------------------
      State
   --------------------------------------------------------------------- */
-  const DEFAULT_FEATURES = { focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, todoList: true, celebrations: true };
+  const DEFAULT_FEATURES = { dayJar: true, focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, energy: true, history: true, celebrations: true, focusMode: true };
+  const TAB_IDS = ["today", "dump", "todo", "done"];
+  const DEFAULT_NAMES = { today: "Today", dump: "Brain dump", todo: "To-do list", done: "Done list", focus: "Right now", timeline: "Today's timeline" };
+  function normalizeUi(u){
+    u = u || {};
+    const order = (Array.isArray(u.tabOrder) ? u.tabOrder : []).filter(id => TAB_IDS.includes(id));
+    TAB_IDS.forEach(id => { if (!order.includes(id)) order.push(id); });
+    return {
+      tabOrder: order,
+      startTab: TAB_IDS.includes(u.startTab) ? u.startTab : "today",
+      names: (u.names && typeof u.names === "object") ? u.names : {},
+      textSize: ["s", "m", "l", "xl"].includes(u.textSize) ? u.textSize : "m",
+      celebrateStyle: ["burst", "sparkles", "message"].includes(u.celebrateStyle) ? u.celebrateStyle : "burst",
+      soundOnSilent: u.soundOnSilent === true,
+      headsUp: [0, 2, 5, 10].includes(u.headsUp) ? u.headsUp : 5,
+      gentle: u.gentle === true,
+      dayStart: Number.isFinite(u.dayStart) ? u.dayStart : 7 * 60,
+      dayEnd: Number.isFinite(u.dayEnd) ? u.dayEnd : 22 * 60,
+      focusSound: ["off", "brown", "rain"].includes(u.focusSound) ? u.focusSound : "off"
+    };
+  }
+
+  // Gentle wording: invitations instead of instructions, for anyone who
+  // finds demands hard (including pathological demand avoidance).
+  const WORDS = {
+    startNow: ["Start it now", "Want to start now?"],
+    markDone: ["Mark done", "I did it ✨"],
+    timesUp: ["Time's up", "All set?"],
+    runningOver: ["Running over", "Taking a bit longer"],
+    behind: ["Waiting — running behind", "Whenever you're ready"],
+    nextUp: ["Next up", "Coming up"],
+    notifStart: ["Starting now", "Ready when you are"],
+    notifEnd: ["Time's up — check in on TimeAnchor", "Time for a gentle check-in"]
+  };
+  function w(key){ return WORDS[key][state && state.ui && state.ui.gentle ? 1 : 0]; }
   // Older saves only had { timeline, todoList }, where timeline:false also
   // hid the focus card and timer — keep that meaning for them.
   function normalizeFeatures(f){
@@ -893,7 +1132,7 @@
   const state = persisted ? {
     nudgeThreshold: persisted.nudgeThreshold || 45,
     categories: persisted.categories,
-    blocks: persisted.blocks,
+    blocks: normalizeBlocks(persisted.blocks),
     savedForDate: persisted.savedForDate || todayStr(),
     soundEnabled: persisted.soundEnabled !== false,
     soundVolume: typeof persisted.soundVolume === "number" ? persisted.soundVolume : 0.6,
@@ -904,6 +1143,10 @@
     todos: Array.isArray(persisted.todos) ? persisted.todos : [],
     features: normalizeFeatures(persisted.features),
     lastCategoryId: persisted.lastCategoryId || null,
+    ui: normalizeUi(persisted.ui),
+    brainDump: typeof persisted.brainDump === "string" ? persisted.brainDump : "",
+    history: (persisted.history && typeof persisted.history === "object") ? persisted.history : {},
+    energy: persisted.energy || null,
     demoOffset: 0,
     speed: 1
   } : {
@@ -920,6 +1163,10 @@
     todos: [],
     features: normalizeFeatures(null),
     lastCategoryId: null,
+    ui: normalizeUi(null),
+    brainDump: "",
+    history: {},
+    energy: null,
     demoOffset: 0,
     speed: 1
   };
@@ -932,19 +1179,40 @@
   }
   restoreThemeVars();
 
-  // New day: the schedule is a repeating daily template — carry the same
-  // blocks forward but clear yesterday's "done" marks.
+  // New day: repeating blocks come back unticked, past one-offs go, and
+  // finished to-dos leave the list (they're already in the Done history).
+  function rollOverDay(){
+    const today = todayStr();
+    state.blocks = state.blocks.filter(b => !(b.repeat === "once" && b.date && b.date < today));
+    state.blocks.forEach(b => { b.status = "pending"; (b.subtasks || []).forEach(s => { s.done = false; }); });
+    state.todos = state.todos.filter(t => !t.done);
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 400);
+    const cutoffStr = cutoff.getFullYear() + "-" + String(cutoff.getMonth() + 1).padStart(2, "0") + "-" + String(cutoff.getDate()).padStart(2, "0");
+    Object.keys(state.history).forEach(d => { if (d < cutoffStr) delete state.history[d]; });
+    state.savedForDate = today;
+  }
   if (state.savedForDate !== todayStr()){
-    state.blocks.forEach(b => { b.status = "pending"; });
-    state.savedForDate = todayStr();
+    rollOverDay();
     persist();
+  }
+
+  function recordDone(kind, item){
+    const day = todayStr();
+    const list = state.history[day] || (state.history[day] = []);
+    if (list.some(e => e.id === item.id)) return;
+    const cat = kind === "block" ? catFor(item) : null;
+    list.push({ id: item.id, kind, title: item.title, icon: cat ? cat.icon : "✅", color: cat ? cat.color : null, at: Math.round(actualNowMinutes()) });
+  }
+  function unrecordDone(id){
+    const list = state.history[todayStr()];
+    if (list) state.history[todayStr()] = list.filter(e => e.id !== id);
   }
 
   function catFor(block){
     if (block.isBuffer || !block.categoryId) return BUFFER_META;
     return state.categories.find(c => c.id === block.categoryId) || BUFFER_META;
   }
-  function sortedBlocks(){ return [...state.blocks].sort((a,b) => a.start - b.start); }
+  function sortedBlocks(){ return state.blocks.filter(blockIsToday).sort((a,b) => a.start - b.start); }
 
   function getCurrentBlock(){
     for (const b of sortedBlocks()){
@@ -966,7 +1234,7 @@
 
   function shiftBlocksFrom(pointMinutes, deltaMinutes, excludeIds){
     excludeIds = excludeIds || new Set();
-    state.blocks.forEach(b => {
+    sortedBlocks().forEach(b => {
       if (!excludeIds.has(b.id) && b.start >= pointMinutes) b.start += deltaMinutes;
     });
   }
@@ -1026,17 +1294,18 @@
         const cat = catFor(b);
         const startDate = minutesToRealDate(b.start);
         if (startDate) toSchedule.push({
-          id: notifIdCounter++, title: "Starting now", body: b.title + " (" + cat.name + ")", schedule: { at: startDate }
+          id: notifIdCounter++, title: w("notifStart"), body: b.title + " (" + cat.name + ")", schedule: { at: startDate }
         });
-        if (b.duration >= 10){
-          const soonDate = minutesToRealDate(b.start + b.duration - 5);
+        const hu = state.ui.headsUp;
+        if (hu && b.duration > hu){
+          const soonDate = minutesToRealDate(b.start + b.duration - hu);
           if (soonDate) toSchedule.push({
-            id: notifIdCounter++, title: b.title, body: "Ends in 5 minutes", schedule: { at: soonDate }
+            id: notifIdCounter++, title: b.title, body: "About " + hu + " minutes left", schedule: { at: soonDate }
           });
         }
         const endDate = minutesToRealDate(b.start + b.duration);
         if (endDate) toSchedule.push({
-          id: notifIdCounter++, title: b.title, body: "Time's up — check in on TimeAnchor", schedule: { at: endDate }
+          id: notifIdCounter++, title: b.title, body: w("notifEnd"), schedule: { at: endDate }
         });
       });
       if (toSchedule.length) await LocalNotifications.schedule({ notifications: toSchedule });
@@ -1055,11 +1324,11 @@
       const endKey = b.id + ":end";
       if (!webNotifiedKeys.has(startKey) && state.simNow >= b.start && state.simNow < b.start + 1){
         webNotifiedKeys.add(startKey);
-        new Notification("Starting now", { body: b.title, tag: startKey });
+        new Notification(w("notifStart"), { body: b.title, tag: startKey });
       }
       if (!webNotifiedKeys.has(endKey) && state.simNow >= b.start + b.duration && state.simNow < b.start + b.duration + 1){
         webNotifiedKeys.add(endKey);
-        new Notification(b.title, { body: "Time's up", tag: endKey });
+        new Notification(b.title, { body: w("notifEnd"), tag: endKey });
       }
     });
   }
@@ -1095,11 +1364,14 @@
   const CELEBRATE_MESSAGES = ["Nice work!", "Done. ✓", "One down.", "Nailed it.", "Task complete.", "You did it!", "That's a wrap.", "Off the list."];
   function celebrateBurst(x, y){
     const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const style = state.ui.celebrateStyle;
+    if (style === "burst") celebrateFlash(x, y);
+    if (!reduceMotion && style !== "message") celebrateSparkles(x, y);
+    celebrateMessage(x, y);
+  }
 
-    // The full-screen color wash — always shown (even for reduced-motion,
-    // just as a fade rather than a scaling pulse) so the celebration is
-    // obvious no matter where on the page the tap happened, not just a
-    // handful of sparkles that are easy to miss.
+  // Full-screen color wash; reduced-motion gets a fade instead of a pulse.
+  function celebrateFlash(x, y){
     const flash = document.createElement("div");
     flash.className = "celebrate-flash";
     const vw = window.innerWidth || 1, vh = window.innerHeight || 1;
@@ -1107,21 +1379,24 @@
     flash.style.setProperty("--fy", ((y / vh) * 100) + "%");
     document.body.appendChild(flash);
     setTimeout(() => flash.remove(), 800);
+  }
 
-    if (!reduceMotion){
-      const emojis = ["✨", "🎉", "⭐", "💫"];
-      for (let i = 0; i < 5; i++){
-        const el = document.createElement("span");
-        el.className = "celebrate-burst";
-        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-        el.style.left = (x + (Math.random() - 0.5) * 34) + "px";
-        el.style.top = (y - 8) + "px";
-        el.style.setProperty("--dx", ((Math.random() - 0.5) * 80) + "px");
-        el.style.animationDelay = (Math.random() * 120) + "ms";
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 1200);
-      }
+  function celebrateSparkles(x, y){
+    const emojis = ["✨", "🎉", "⭐", "💫"];
+    for (let i = 0; i < 5; i++){
+      const el = document.createElement("span");
+      el.className = "celebrate-burst";
+      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      el.style.left = (x + (Math.random() - 0.5) * 34) + "px";
+      el.style.top = (y - 8) + "px";
+      el.style.setProperty("--dx", ((Math.random() - 0.5) * 80) + "px");
+      el.style.animationDelay = (Math.random() * 120) + "ms";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1200);
     }
+  }
+
+  function celebrateMessage(x, y){
     const msg = document.createElement("span");
     msg.className = "celebrate-message";
     msg.textContent = CELEBRATE_MESSAGES[Math.floor(Math.random() * CELEBRATE_MESSAGES.length)];
@@ -1136,10 +1411,7 @@
 
   function playCompletionChime(){
     if (!state.soundEnabled) return;
-    try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === "suspended") audioCtx.resume();
-      const now = audioCtx.currentTime;
+    withAudio((audioCtx, now) => {
       const peakBase = clamp(state.soundVolume, 0, 1) * 0.32;
       // A brighter, quicker "ta-da" than the block-start chime, so the
       // two are easy to tell apart by ear — same gentle volume cap and
@@ -1162,7 +1434,7 @@
         osc.start(start);
         osc.stop(start + note.dur + 0.02);
       });
-    } catch (e) { /* the visual celebration still communicates completion without sound */ }
+    });
   }
 
   // Celebration is always centered on the row itself, never on wherever
@@ -1175,6 +1447,7 @@
   function completeBlock(b, x, y){
     if (!b || b.status === "done" || b.status === "skipped") return;
     b.status = "done";
+    recordDone("block", b);
     commit();
     if (state.features.celebrations) celebrateBurst(x, y);
     playCompletionChime();
@@ -1182,14 +1455,19 @@
   function completeTodo(t, x, y){
     if (!t || t.done) return;
     t.done = true;
+    recordDone("todo", t);
     commit();
     if (state.features.celebrations) celebrateBurst(x, y);
     playCompletionChime();
   }
   function deleteBlockWithConfirm(b){
     if (!b) return;
-    showConfirm('Delete "' + b.title + '"? This can\'t be undone.', () => {
-      state.blocks = state.blocks.filter(x => x.id !== b.id);
+    showConfirm('Delete "' + b.title + '"? This can\'t be undone.', () => removeBlockAnimated(b.id));
+  }
+  function removeBlockAnimated(id){
+    const row = document.querySelector('#timelineList .block-row[data-id="' + id + '"]');
+    animateRemoval(row, () => {
+      state.blocks = state.blocks.filter(x => x.id !== id);
       commit();
     });
   }
@@ -1197,6 +1475,59 @@
     if (!t) return;
     state.todos = state.todos.filter(x => x.id !== t.id);
     commit();
+  }
+
+  // Delete: the card slides off over the red layer with a little puff, then
+  // the gap closes so the list doesn't jump. Reduced motion just fades.
+  // Re-renders pause meanwhile so the row isn't swapped out mid-animation.
+  function animateRemoval(row, done){
+    if (!row || !row.isConnected){ done(); return; }
+    swipeGestureActive = true;
+    const finish = () => { swipeGestureActive = false; done(); };
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion){
+      row.style.transition = "opacity 160ms ease";
+      row.style.opacity = "0";
+      setTimeout(finish, 170);
+      return;
+    }
+    const content = row.querySelector(".swipe-content");
+    const gap = row.nextElementSibling && row.nextElementSibling.classList.contains("tl-gap") ? row.nextElementSibling : null;
+    row.classList.add("swipe-left");
+    row.classList.remove("swipe-right", "swipe-armed-right");
+    const [x, y] = rowCenter(row);
+    deletePoof(x, y);
+    if (content){
+      content.style.transition = "transform 210ms ease-in, opacity 210ms ease-in";
+      content.style.transform = "translateX(-115%) rotate(-3deg)";
+      content.style.opacity = "0";
+    }
+    setTimeout(() => {
+      const parts = [row, gap].filter(Boolean);
+      parts.forEach(el => { el.style.height = el.offsetHeight + "px"; el.style.overflow = "hidden"; });
+      void row.offsetHeight;
+      parts.forEach(el => {
+        el.style.transition = "height 230ms ease, margin 230ms ease, padding 230ms ease, opacity 230ms ease";
+        el.style.height = "0px";
+        el.style.marginTop = el.style.marginBottom = "0px";
+        el.style.paddingTop = el.style.paddingBottom = "0px";
+        el.style.opacity = "0";
+      });
+      setTimeout(finish, 240);
+    }, 200);
+  }
+
+  function deletePoof(x, y){
+    ["💨", "✨"].forEach((emoji, i) => {
+      const el = document.createElement("span");
+      el.className = "delete-poof";
+      el.textContent = emoji;
+      el.style.left = (x - 30 + i * 24) + "px";
+      el.style.top = y + "px";
+      el.style.animationDelay = (i * 70) + "ms";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 900);
+    });
   }
 
   /* ---------------------------------------------------------------------
@@ -1375,12 +1706,12 @@
      copy, no streak-breaking, no "missed" language, and a one-tap undo.
   --------------------------------------------------------------------- */
   function hasClearableBlocksToday(){
-    return state.blocks.some(b => b.status === "pending");
+    return sortedBlocks().some(b => b.status === "pending");
   }
   function clearLowCapacityDay(){
     showConfirm("Clear the rest of today's plan? Nothing is lost — your schedule comes back fresh tomorrow.", () => {
       const clearedIds = [];
-      state.blocks.forEach(b => { if (b.status === "pending"){ clearedIds.push(b.id); b.status = "skipped"; } });
+      sortedBlocks().forEach(b => { if (b.status === "pending"){ clearedIds.push(b.id); b.status = "skipped"; } });
       commit();
       showNotice("Today's plan is cleared — no pressure. Tomorrow starts fresh.", () => {
         state.blocks.forEach(b => { if (clearedIds.includes(b.id)) b.status = "pending"; });
@@ -1418,6 +1749,7 @@
   /* ---------------------------------------------------------------------
      Rendering: Focus panel
   --------------------------------------------------------------------- */
+  const FOCUS_LAUNCH_HTML = '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me">🫧 Focus with me</button></div>';
   function renderFocusPanel(){
     const el = document.getElementById("focusPanelBody");
     const cur = getCurrentBlock();
@@ -1429,13 +1761,14 @@
         el.innerHTML =
           '<div class="focus-empty">' +
             '<p>Nothing scheduled right now &mdash; this is open time.</p>' +
-            '<p class="next-line">Next up: <strong>' + escapeHtml(next.title) + '</strong> (' + cat.icon + ' ' + escapeHtml(cat.name) + ') at ' + fmtClock(next.start) + '.</p>' +
-            '<div class="focus-actions"><button type="button" class="ghost-btn" data-action="start-now" data-id="' + next.id + '">Start it now</button></div>' +
+            '<p class="next-line">' + w("nextUp") + ': <strong>' + escapeHtml(next.title) + '</strong> (' + cat.icon + ' ' + escapeHtml(cat.name) + ') at ' + fmtClock(next.start) + '.</p>' +
+            '<div class="focus-actions"><button type="button" class="ghost-btn" data-action="start-now" data-id="' + next.id + '">' + w("startNow") + '</button></div>' +
+            FOCUS_LAUNCH_HTML +
           '</div>' + lowCapacityLinkHtml();
-      } else if (state.blocks.length === 0){
-        el.innerHTML = '<div class="focus-empty"><p>Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.</p></div>';
+      } else if (sortedBlocks().length === 0){
+        el.innerHTML = '<div class="focus-empty"><p>Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.</p>' + FOCUS_LAUNCH_HTML + '</div>';
       } else {
-        el.innerHTML = '<div class="focus-empty"><p>Nothing else is scheduled for today.</p></div>' + lowCapacityLinkHtml();
+        el.innerHTML = '<div class="focus-empty"><p>Nothing else is scheduled for today.</p>' + FOCUS_LAUNCH_HTML + '</div>' + lowCapacityLinkHtml();
       }
       updateAriaLive("Nothing is currently active.");
       return;
@@ -1443,7 +1776,7 @@
 
     const cat = catFor(cur);
     const { remaining, fraction, overrun } = timeInfo(cur);
-    const holeLabel = overrun ? "Time's up" : (Math.ceil(remaining) + "m");
+    const holeLabel = overrun ? w("timesUp") : (Math.ceil(remaining) + "m");
     const timerOn = state.features.timer;
     const pie = !timerOn ? ""
       : state.showTimer
@@ -1479,7 +1812,9 @@
       const suggested = Math.max(5, Math.ceil(Math.abs(remaining)/5)*5);
       overrunHtml =
         '<div class="overrun-banner">' +
-          '<p>This block ran over by about ' + Math.ceil(Math.abs(remaining)) + ' minutes. You can extend it, or push the rest of today later so the schedule matches reality.</p>' +
+          '<p>' + (state.ui.gentle
+            ? 'This one is taking a bit longer (about ' + Math.ceil(Math.abs(remaining)) + ' minutes) &mdash; totally fine. If you like, give it more time or move the rest of today along.'
+            : 'This block ran over by about ' + Math.ceil(Math.abs(remaining)) + ' minutes. You can extend it, or push the rest of today later so the schedule matches reality.') + '</p>' +
           '<div class="overrun-row">' +
             '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="5">Reflow +5m</button>' +
             '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="10">Reflow +10m</button>' +
@@ -1501,8 +1836,9 @@
         '<div class="focus-actions">' +
           '<button type="button" class="ghost-btn" data-action="extend" data-id="' + cur.id + '" data-min="5">+5m</button>' +
           '<button type="button" class="ghost-btn" data-action="extend" data-id="' + cur.id + '" data-min="10">+10m</button>' +
-          '<button type="button" class="primary-btn" data-action="done" data-id="' + cur.id + '">Mark done</button>' +
+          '<button type="button" class="primary-btn" data-action="done" data-id="' + cur.id + '">' + w("markDone") + '</button>' +
         '</div>' +
+        '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me" data-kind="block" data-id="' + cur.id + '">🫧 Focus with me</button></div>' +
       '</div>' + lowCapacityLinkHtml();
   }
 
@@ -1512,8 +1848,12 @@
   }
 
   function remainingSentence(block, remaining, overrun){
+    const n = Math.ceil(remaining), mins = n + " minute" + (n === 1 ? "" : "s");
+    if (state.ui.gentle) return overrun
+      ? block.title + " is taking a bit longer — that's okay. More time, or move on whenever you're ready."
+      : "About " + mins + " left on " + block.title + " — no rush.";
     if (overrun) return block.title + ": time is up. Extend it or reflow the rest of today.";
-    return Math.ceil(remaining) + " minute" + (Math.ceil(remaining) === 1 ? "" : "s") + " remaining on " + block.title + ".";
+    return mins + " remaining on " + block.title + ".";
   }
 
   let lastAnnounced = "";
@@ -1531,15 +1871,16 @@
     if (block.status === "skipped") return { label: "Skipped today", cls: "wait" };
     if (block.id === curId){
       const { overrun } = timeInfo(block);
-      return overrun ? { label: "Running over", cls: "over" } : { label: "In progress", cls: "now" };
+      return overrun ? { label: w("runningOver"), cls: "over" } : { label: "In progress", cls: "now" };
     }
     // "Upcoming" is the default, expected state for most rows — a pill on
     // every single one just adds noise, so only call out states that are
     // actually informative (in progress, done, running late/over, skipped).
     if (block.start > state.simNow) return null;
-    return { label: "Waiting — running behind", cls: "wait" };
+    return { label: w("behind"), cls: "wait" };
   }
 
+  const openStepBlocks = new Set();
   function renderTimeline(){
     const list = sortedBlocks();
     const cur = getCurrentBlock();
@@ -1556,10 +1897,18 @@
         const { fraction, overrun } = timeInfo(block);
         miniTimer = pieMarkup(fraction, cat.color, 40, 0.5, "", overrun, "timelineMiniPie");
       }
-      let subtaskBadge = "";
+      let subtaskBadge = "", stepsList = "";
       if (!block.isBuffer && block.subtasks && block.subtasks.length){
         const done = block.subtasks.filter(s => s.done).length;
-        subtaskBadge = '<span class="subtask-badge">' + done + '/' + block.subtasks.length + ' steps</span>';
+        const open = openStepBlocks.has(block.id);
+        subtaskBadge = '<button type="button" class="steps-toggle" data-action="toggle-steps" data-id="' + block.id + '" aria-expanded="' + open + '">' + (open ? '▾ ' : '▸ ') + done + '/' + block.subtasks.length + ' steps</button>';
+        if (open) stepsList = '<ul class="row-steps">' + block.subtasks.map(st =>
+          '<li class="' + (st.done ? 'done' : '') + '">' +
+            '<input type="checkbox" id="tsub_' + st.id + '" data-action="toggle-subtask" data-block="' + block.id + '" data-sub="' + st.id + '"' + (st.done ? ' checked' : '') + '>' +
+            '<label class="t" for="tsub_' + st.id + '">' + escapeHtml(st.title) + '</label>' +
+            '<span class="subtask-est">' + st.est + 'm</span>' +
+          '</li>'
+        ).join('') + '</ul>';
       }
 
       const swipeable = block.status !== "done" && block.status !== "skipped";
@@ -1570,15 +1919,17 @@
           '<div class="swipe-content' + (block.isBuffer ? " is-buffer" : "") + '" style="border-left-color:' + cat.color + ';">' +
             (miniTimer ? miniTimer : "") +
             '<div class="block-main">' +
-              '<p class="block-time"><span style="white-space:nowrap;">' + fmtClock(block.start) + ' &ndash; ' + fmtClock(block.start + block.duration) + '</span> <span class="block-dur">' + fmtDuration(block.duration) + '</span></p>' +
+              '<p class="block-time"><span style="white-space:nowrap;">' + fmtClock(block.start) + ' &ndash;</span> <span style="white-space:nowrap;">' + fmtClock(block.start + block.duration) + '</span> <span class="block-dur">' + fmtDuration(block.duration) + '</span></p>' +
               '<div class="block-top-line">' +
                 '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
                 '<p class="block-title">' + escapeHtml(block.title) + '</p>' +
               '</div>' +
-              (st || subtaskBadge ? '<div class="block-meta">' +
+              (st || subtaskBadge || block.repeat !== "once" ? '<div class="block-meta">' +
                 (st ? '<span class="status-tag ' + st.cls + '">' + st.label + '</span>' : "") +
                 subtaskBadge +
+                (block.repeat !== "once" ? '<span class="subtask-badge">🔁 ' + escapeHtml(repeatLabel(block)) + '</span>' : "") +
               '</div>' : '') +
+              stepsList +
             '</div>' +
             '<div class="block-actions">' +
               '<button type="button" class="icon-mini" data-action="edit" data-id="' + block.id + '" aria-label="Edit ' + escapeAttr(block.title) + '">✏️</button>' +
@@ -1605,19 +1956,76 @@
     renderFocusPanel();
     renderTimeline();
     renderTodos();
+    renderDone();
+    renderJar();
   }
 
   function applyFeatureVisibility(){
     const f = state.features;
     const cl = document.body.classList;
     cl.toggle("feat-focus-off", !f.focus);
+    cl.toggle("feat-dayjar-off", !f.dayJar);
+    cl.toggle("feat-focusmode-off", !f.focusMode);
     cl.toggle("feat-timeline-off", !f.timeline);
     cl.toggle("feat-blocks-off", !f.focus && !f.timeline);
     cl.toggle("feat-quickadd-off", !f.quickAdd);
     cl.toggle("feat-buffers-off", !f.buffers);
     cl.toggle("feat-todo-off", !f.todoList);
-    cl.toggle("feat-all-off", !f.focus && !f.timeline && !f.todoList);
+    cl.toggle("feat-all-off", visibleTabs().length === 0);
+    applyTabs();
   }
+
+  /* ---------------------------------------------------------------------
+     Tabs. A tab disappears when every feature inside it is switched off;
+     the bar itself only shows when there's more than one tab to pick.
+  --------------------------------------------------------------------- */
+  const TAB_ICONS = { today: "🗓️", dump: "🧠", todo: "✅", done: "🌟" };
+  let activeTab = null;
+  function nameOf(key){
+    const n = (state.ui.names[key] || "").trim();
+    return n || DEFAULT_NAMES[key];
+  }
+  function tabVisible(id){
+    const f = state.features;
+    if (id === "today") return f.dayJar || f.focus || f.timeline;
+    if (id === "dump") return f.brainDump;
+    if (id === "done") return f.history;
+    return f.todoList;
+  }
+  function visibleTabs(){ return state.ui.tabOrder.filter(tabVisible); }
+  function applyTabs(){
+    const vis = visibleTabs();
+    if (!vis.includes(activeTab)) activeTab = vis.includes(state.ui.startTab) ? state.ui.startTab : (vis[0] || null);
+    document.querySelectorAll(".tab-panel").forEach(p => { p.hidden = p.dataset.tab !== activeTab; });
+    const bar = document.getElementById("tabBar");
+    const showBar = vis.length > 1 && document.getElementById("mainApp").style.display !== "none";
+    bar.hidden = !showBar;
+    document.body.classList.toggle("has-tabbar", showBar);
+    document.body.classList.toggle("tab-today", activeTab === "today");
+    const sig = vis.map(id => id + ":" + nameOf(id)).join(",") + "|" + activeTab;
+    if (bar.dataset.sig !== sig){
+      bar.dataset.sig = sig;
+      bar.innerHTML = vis.map(id =>
+        '<button type="button" data-tab="' + id + '"' + (id === activeTab ? ' aria-current="page"' : '') + '>' +
+          '<span class="tab-icon" aria-hidden="true">' + TAB_ICONS[id] + '</span>' +
+          '<span class="tab-label">' + escapeHtml(nameOf(id)) + '</span>' +
+        '</button>'
+      ).join("");
+    }
+    document.getElementById("focusHeading").textContent = nameOf("focus");
+    document.getElementById("timelineHeading").textContent = nameOf("timeline");
+    document.getElementById("dumpHeading").textContent = nameOf("dump");
+    document.getElementById("todoHeading").textContent = nameOf("todo");
+    document.getElementById("doneHeading").textContent = nameOf("done");
+    ["s", "l", "xl"].forEach(s => document.body.classList.toggle("ts-" + s, state.ui.textSize === s));
+  }
+  document.getElementById("tabBar").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-tab]");
+    if (!btn || btn.dataset.tab === activeTab) return;
+    activeTab = btn.dataset.tab;
+    applyTabs();
+    window.scrollTo(0, 0);
+  });
 
   // Runs every 200ms (tick) without touching any button/row markup — only
   // the live numbers (pie fraction, "Xm remaining" text, soundtrack bar)
@@ -1639,7 +2047,7 @@
     const cur = getCurrentBlock();
     if (!cur) return;
     const { remaining, fraction, overrun } = timeInfo(cur);
-    const holeLabel = overrun ? "Time's up" : (Math.ceil(remaining) + "m");
+    const holeLabel = overrun ? w("timesUp") : (Math.ceil(remaining) + "m");
 
     if (state.showTimer){
       updatePieEl(document.getElementById("focusPie"), fraction, overrun, holeLabel);
@@ -1658,16 +2066,184 @@
     }
   }
 
+  function dayLabel(d){
+    const dt = new Date(d + "T12:00:00");
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    const yStr = y.getFullYear() + "-" + String(y.getMonth() + 1).padStart(2, "0") + "-" + String(y.getDate()).padStart(2, "0");
+    const nice = dt.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" });
+    if (d === todayStr()) return "Today · " + nice;
+    if (d === yStr) return "Yesterday · " + nice;
+    return nice;
+  }
+
+  // Only days with something in them are listed — empty days never show
+  // up as gaps or "missed" days.
+  const doneOpenDays = new Set([todayStr()]);
+  let doneSig = "";
+  function renderDone(){
+    const el = document.getElementById("doneList");
+    if (!el) return;
+    const days = Object.keys(state.history).filter(d => state.history[d].length).sort().reverse().slice(0, 60);
+    const sig = days.map(d => d + ":" + state.history[d].length).join(",") + "|" + todayStr();
+    if (sig === doneSig) return;
+    doneSig = sig;
+    const todayCount = (state.history[todayStr()] || []).length;
+    if (!days.length){
+      el.innerHTML = '<p class="dump-empty" style="margin:0;">Nothing here yet. Finished things will land here &mdash; even the tiny ones count.</p>';
+      return;
+    }
+    el.innerHTML =
+      (todayCount ? '<p class="done-hero">🌟 You\'ve done ' + todayCount + (todayCount === 1 ? ' thing' : ' things') + ' today.</p>' : '') +
+      days.map(d => {
+        const items = state.history[d].slice().sort((a, b) => a.at - b.at);
+        return '<details class="done-day" data-day="' + d + '"' + (doneOpenDays.has(d) ? ' open' : '') + '>' +
+          '<summary><span>' + escapeHtml(dayLabel(d)) + '</span><span class="done-count">' + items.length + (items.length === 1 ? ' thing' : ' things') + '</span></summary>' +
+          '<ul>' + items.map(e =>
+            '<li><span aria-hidden="true">' + e.icon + '</span><span class="t">' + escapeHtml(e.title) + '</span><span class="at">' + fmtClock(e.at) + '</span></li>'
+          ).join('') + '</ul>' +
+        '</details>';
+      }).join('');
+  }
+  document.getElementById("doneList").addEventListener("toggle", (e) => {
+    const d = e.target.dataset && e.target.dataset.day;
+    if (!d) return;
+    if (e.target.open) doneOpenDays.add(d); else doneOpenDays.delete(d);
+  }, true);
+
+  const ENERGY = {
+    low: { icon: "🪫", name: "Low", note: "Low-energy day. The 🪫 gentle ones are at the top — everything else can wait." },
+    med: { icon: "🔋", name: "Okay", note: "The 🔋 middle-energy ones are at the top." },
+    high: { icon: "⚡", name: "Good", note: "Good energy! The ⚡ bigger ones are at the top." }
+  };
+  const ENERGY_CYCLE = [null, "low", "med", "high"];
+  function todaysEnergy(){
+    return state.energy && state.energy.date === todayStr() ? state.energy.level : null;
+  }
+
+  function renderEnergyCheck(){
+    const el = document.getElementById("energyCheck");
+    if (!state.features.energy){ el.innerHTML = ""; return; }
+    const level = todaysEnergy();
+    el.innerHTML = level
+      ? '<p class="energy-note">' + ENERGY[level].icon + ' ' + ENERGY[level].note +
+          ' <button type="button" class="text-btn" data-action="energy-change">Change</button></p>'
+      : '<div class="energy-check"><p>How\'s your energy today?</p>' +
+          '<div class="seg choice">' + Object.keys(ENERGY).map(k =>
+            '<button type="button" data-action="energy-set" data-level="' + k + '">' + ENERGY[k].icon + ' ' + ENERGY[k].name + '</button>'
+          ).join('') + '</div></div>';
+  }
+
+  /* ---------------------------------------------------------------------
+     Day jar: a calm colour rises with the time of day, and every finished
+     thing drops a marble in. It never counts down or shows "missed".
+  --------------------------------------------------------------------- */
+  const JAR_INNER_TOP = 24, JAR_INNER_BOTTOM = 118;
+  const MARBLE_SPOTS = [];
+  (function(){
+    for (let row = 0; row < 6; row++){
+      const off = row % 2 ? 7 : 0;
+      for (let i = 0; i < 4; i++){
+        const x = 29 + off + i * 14;
+        if (x > 74) continue;
+        MARBLE_SPOTS.push([x, 110 - row * 12]);
+      }
+    }
+  })();
+  // Works for days that run past midnight too (e.g. 10 AM to 2 AM).
+  function dayPosition(){
+    const s = state.ui.dayStart, e = state.ui.dayEnd, now = state.simNow;
+    const length = ((e - s) % 1440 + 1440) % 1440 || 1440;
+    const elapsed = ((now - s) % 1440 + 1440) % 1440;
+    if (elapsed <= length) return { phase: "during", fraction: elapsed / length };
+    const sinceEnd = ((now - e) % 1440 + 1440) % 1440;
+    const untilStart = ((s - now) % 1440 + 1440) % 1440;
+    return sinceEnd <= untilStart ? { phase: "after", fraction: 1 } : { phase: "before", fraction: 0 };
+  }
+  function dayFraction(){ return dayPosition().fraction; }
+  function dayPeriodText(){
+    const p = dayPosition();
+    if (p.phase === "before") return "Your day hasn't started yet";
+    if (p.phase === "after") return "Day's done — rest well 🌙";
+    return p.fraction < 0.34 ? "Morning ☀️" : p.fraction < 0.67 ? "Afternoon 🌤️" : "Evening 🌆";
+  }
+  let jarRenderedCount = -1;
+  let jarRenderedDay = "";
+  let jarRenderedTheme = "";
+  function renderJar(){
+    const el = document.getElementById("jarBody");
+    if (!el || !state.features.dayJar) return;
+    const done = state.history[todayStr()] || [];
+    const count = done.length;
+    const palette = (COLOR_THEMES[state.colorTheme] || COLOR_THEMES.mixed).colors;
+    if (count === jarRenderedCount && jarRenderedDay === todayStr() && jarRenderedTheme === state.colorTheme){ updateJarFill(); return; }
+    const isNew = jarRenderedCount >= 0 && count > jarRenderedCount && jarRenderedDay === todayStr();
+    jarRenderedCount = count;
+    jarRenderedDay = todayStr();
+    jarRenderedTheme = state.colorTheme;
+    const shown = done.slice(0, MARBLE_SPOTS.length);
+    const marbles = shown.map((e, i) => {
+      const [x, y] = MARBLE_SPOTS[i];
+      const color = palette[i % palette.length];
+      return '<g class="jar-marble-g' + (isNew && i === shown.length - 1 ? ' drop' : '') + '">' +
+        '<circle class="jar-marble" cx="' + x + '" cy="' + y + '" r="6" fill="' + escapeAttr(color) + '"/>' +
+        '<circle class="jar-shine" cx="' + (x - 2) + '" cy="' + (y - 2) + '" r="1.6"/></g>';
+    }).join('');
+    const extra = count - shown.length;
+    el.innerHTML =
+      '<div class="jar-wrap">' +
+        '<svg class="jar-svg" viewBox="0 0 100 130" role="img" aria-label="Day jar with ' + count + (count === 1 ? ' marble' : ' marbles') + '">' +
+          '<defs><clipPath id="jarClip"><path d="M30 20 Q16 26 16 40 L16 112 Q16 120 24 120 L76 120 Q84 120 84 112 L84 40 Q84 26 70 20 Z"/></clipPath></defs>' +
+          '<g clip-path="url(#jarClip)">' +
+            '<rect id="jarFill" class="jar-fill" x="0" y="' + JAR_INNER_BOTTOM + '" width="100" height="0"/>' +
+            '<line id="jarSurface" class="jar-surface" x1="0" x2="100" y1="0" y2="0"/>' +
+            marbles +
+          '</g>' +
+          '<path class="jar-outline" d="M30 20 Q16 26 16 40 L16 112 Q16 120 24 120 L76 120 Q84 120 84 112 L84 40 Q84 26 70 20 Z"/>' +
+          '<rect class="jar-lid" x="27" y="8" width="46" height="12" rx="4"/>' +
+        '</svg>' +
+        '<div class="jar-text">' +
+          '<h2>Your day</h2>' +
+          '<p class="jar-period" id="jarPeriod">' + dayPeriodText() + '</p>' +
+          '<p>' + (count
+            ? count + (count === 1 ? ' marble' : ' marbles') + ' — one for everything you finished today 🌟' + (extra > 0 ? ' (the jar\'s overflowing!)' : '')
+            : 'Every little thing you finish drops a marble in 💫') + '</p>' +
+        '</div>' +
+      '</div>';
+    updateJarFill();
+  }
+  function updateJarFill(){
+    const rect = document.getElementById("jarFill");
+    if (!rect) return;
+    const h = dayFraction() * (JAR_INNER_BOTTOM - JAR_INNER_TOP);
+    const y = JAR_INNER_BOTTOM - h;
+    rect.setAttribute("y", y.toFixed(1));
+    rect.setAttribute("height", h.toFixed(1));
+    const surf = document.getElementById("jarSurface");
+    surf.setAttribute("y1", y.toFixed(1)); surf.setAttribute("y2", y.toFixed(1));
+    surf.style.display = h > 0.5 ? "" : "none";
+    const period = document.getElementById("jarPeriod");
+    const txt = dayPeriodText();
+    if (period && period.textContent !== txt) period.textContent = txt;
+  }
+
   function renderTodos(){
     const list = document.getElementById("todoList");
     if (!list) return;
-    list.innerHTML = state.todos.map(t =>
+    renderEnergyCheck();
+    const showEnergy = state.features.energy;
+    const level = showEnergy ? todaysEnergy() : null;
+    const rank = (t) => t.done ? 3 : !level ? 0 : t.energy === level ? 0 : !t.energy ? 1 : 2;
+    const ordered = state.todos.map((t, i) => [t, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
+    list.innerHTML = ordered.map(t =>
       '<li class="' + (t.done ? "done" : "") + '" data-id="' + t.id + '">' +
         (t.done ? "" : '<div class="swipe-bg-right">✓ Done</div>') +
         '<div class="swipe-bg-left">🗑 Delete</div>' +
         '<div class="swipe-content">' +
           '<input type="checkbox" id="todo_' + t.id + '" data-action="toggle-todo" data-id="' + t.id + '" ' + (t.done ? "checked" : "") + ' aria-label="Mark \'' + escapeAttr(t.title) + '\' done">' +
           '<label class="subtask-title" for="todo_' + t.id + '">' + escapeHtml(t.title) + '</label>' +
+          (showEnergy && !t.done
+            ? '<button type="button" class="energy-chip' + (t.energy ? ' set' : '') + '" data-action="todo-energy" data-id="' + t.id + '" aria-label="Energy: ' + (t.energy ? ENERGY[t.energy].name : 'not set') + '. Tap to change">' + (t.energy ? ENERGY[t.energy].icon : '+') + '</button>'
+            : '') +
         '</div>' +
       '</li>'
     ).join("") || '<p style="color:var(--muted);font-size:13px;margin:0;">Nothing on the list yet.</p>';
@@ -1675,16 +2251,10 @@
 
   // Structural changes (add/edit/delete/reflow/etc) need to be saved and
   // re-scheduled — plain ticking does not.
-  let cloudSaveTimer = null;
   function commit(){
     persist();
     scheduleNotifications();
     render();
-    if (cloudEnabled && currentUser && !offlineMode){
-      setCloudStatus("syncing", "Saving…");
-      clearTimeout(cloudSaveTimer);
-      cloudSaveTimer = setTimeout(saveCloudState, 700);
-    }
   }
 
   function updateSimClock(){
@@ -1703,21 +2273,74 @@
      still communicates state with sound off.
   --------------------------------------------------------------------- */
   let audioCtx = null;
-  function unlockAudioOnce(){
+  // iPhones mute web audio when the ring/silent switch is on silent. Opting
+  // in to "playback" plays through it (Safari 17+), but can pause music
+  // that's already playing, so it's the user's choice.
+  function applyAudioSession(){
+    try { if (navigator.audioSession) navigator.audioSession.type = state.ui.soundOnSilent ? "playback" : "auto"; } catch (e) {}
+  }
+  applyAudioSession();
+
+  // Runs `play` once audio is actually running. Phones can leave the
+  // context "suspended" or "interrupted" (after a call, the lock screen, or
+  // another app's audio), and notes scheduled before it resumes are lost.
+  function withAudio(play){
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === "suspended") audioCtx.resume();
-    } catch (e) { /* Web Audio unavailable — silent, no functional loss */ }
+      const go = () => { try { play(audioCtx, audioCtx.currentTime + 0.02); } catch (e) {} };
+      if (audioCtx.state === "running"){ go(); return; }
+      const p = audioCtx.resume();
+      if (p && p.then) p.then(go, () => {}); else go();
+    } catch (e) { /* Web Audio unavailable — the visuals still carry the message */ }
   }
-  document.addEventListener("click", unlockAudioOnce, { once: true });
-  document.addEventListener("touchstart", unlockAudioOnce, { once: true });
+
+  // Every tap re-wakes audio if the phone paused it, so later chimes that
+  // fire on their own (no tap) still play. The 1-sample silent buffer is
+  // what actually unlocks audio on iPhones.
+  function unlockAudio(){
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state !== "running") audioCtx.resume();
+      if (!unlockAudio.done){
+        const src = audioCtx.createBufferSource();
+        src.buffer = audioCtx.createBuffer(1, 1, 22050);
+        src.connect(audioCtx.destination);
+        src.start(0);
+        unlockAudio.done = true;
+      }
+    } catch (e) {}
+  }
+  ["touchend", "click", "keydown"].forEach(t => document.addEventListener(t, unlockAudio, { passive: true }));
+
+  // Heads-up: two soft, falling notes, deliberately unlike the rising
+  // start/done chimes so "nearly time to switch" is recognisable by ear.
+  const headsUpGiven = new Set();
+  function headsUpText(b, mins){
+    return "⏳ About " + mins + " minute" + (mins === 1 ? "" : "s") + " left on " + b.title + (state.ui.gentle ? ". Wrap up whenever it feels right." : " — a good moment to start wrapping up.");
+  }
+  function playHeadsUpChime(){
+    if (!state.soundEnabled) return;
+    withAudio((audioCtx, now) => {
+      const peak = clamp(state.soundVolume, 0, 1) * 0.22;
+      [{ freq: 783.99, at: 0 }, { freq: 587.33, at: 0.22 }].forEach(note => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = note.freq;
+        const start = now + note.at;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(peak, start + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.5);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(start);
+        osc.stop(start + 0.52);
+      });
+    });
+  }
 
   function playAlarmChime(){
     if (!state.soundEnabled) return;
-    try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === "suspended") audioCtx.resume();
-      const now = audioCtx.currentTime;
+    withAudio((audioCtx, now) => {
       const peakBase = clamp(state.soundVolume, 0, 1) * 0.32; // gentle even at "full" volume
       // A short, cute little sparkle: a four-note rising arpeggio
       // (C5 → E5 → G5 → C6) on a soft triangle wave, which reads as more
@@ -1743,7 +2366,7 @@
         osc.start(start);
         osc.stop(start + 0.34);
       });
-    } catch (e) { /* the visual timer still communicates state without sound */ }
+    });
   }
 
   /* ---------------------------------------------------------------------
@@ -1759,11 +2382,11 @@
     if (cur){
       const { remaining, overrun } = timeInfo(cur);
       return clockPart + " " + (overrun
-        ? cur.title + ", time is up."
+        ? cur.title + (state.ui.gentle ? " is taking a bit longer, and that's okay." : ", time is up.")
         : "You're in " + cur.title + ", " + Math.ceil(remaining) + " minute" + (Math.ceil(remaining) === 1 ? "" : "s") + " left.");
     }
     const next = getNextUpcoming();
-    return clockPart + " " + (next ? "Next up: " + next.title + " at " + fmtClock(next.start) + "." : "Nothing else scheduled today.");
+    return clockPart + " " + (next ? w("nextUp") + ": " + next.title + " at " + fmtClock(next.start) + "." : "Nothing else scheduled today.");
   }
 
   function speakNow(){
@@ -1795,6 +2418,7 @@
     state.simNow = actualNowMinutes() + state.demoOffset;
     if (state.simNow >= 1440) { state.simNow -= 1440; }
     updateSimClock();
+    if (state.features.dayJar) updateJarFill();
 
     // A swipe gesture mid-drag owns its row's markup right now — skip
     // anything below that could rebuild or react to list content until it
@@ -1830,10 +2454,20 @@
     lastCurrentBlockId = nowCurrentId;
     lastOverrun = nowOverrun;
 
+    const hu = state.ui.headsUp;
+    if (nowCurrent && hu && nowCurrent.duration > hu){
+      const left = timeInfo(nowCurrent).remaining;
+      const key = nowCurrent.id + ":" + nowCurrent.start + ":" + nowCurrent.duration;
+      if (left > 0 && left <= hu && !headsUpGiven.has(key)){
+        headsUpGiven.add(key);
+        playHeadsUpChime();
+        showNotice(headsUpText(nowCurrent, Math.ceil(left)));
+      }
+    }
+
     const today = todayStr();
     if (today !== state.savedForDate){
-      state.blocks.forEach(b => { b.status = "pending"; });
-      state.savedForDate = today;
+      rollOverDay();
       webNotifiedKeys.clear();
       commit();
       ticksSinceStructuralRender = 0;
@@ -1858,6 +2492,34 @@
     if (action === "edit"){
       const b = state.blocks.find(x => x.id === t.dataset.id);
       if (b) openBlockForm(b);
+      return;
+    }
+    if (action === "toggle-steps"){
+      const id = t.dataset.id;
+      if (openStepBlocks.has(id)) openStepBlocks.delete(id); else openStepBlocks.add(id);
+      renderTimeline();
+      return;
+    }
+    if (action === "focus-with-me"){
+      openFocus(t.dataset.kind || "", t.dataset.id || "");
+      return;
+    }
+    if (action === "energy-set"){
+      state.energy = { date: todayStr(), level: t.dataset.level };
+      commit();
+      return;
+    }
+    if (action === "energy-change"){
+      state.energy = null;
+      commit();
+      return;
+    }
+    if (action === "todo-energy"){
+      const td = state.todos.find(x => x.id === t.dataset.id);
+      if (td){
+        td.energy = ENERGY_CYCLE[(ENERGY_CYCLE.indexOf(td.energy || null) + 1) % ENERGY_CYCLE.length];
+        commit();
+      }
       return;
     }
     if (action === "insert-buffer"){
@@ -1888,7 +2550,7 @@
         const newStart = Math.round(state.simNow);
         const delta = newStart - oldStart;
         if (delta !== 0){
-          state.blocks.forEach(other => { if (other.id !== b.id && other.start > oldStart) other.start += delta; });
+          sortedBlocks().forEach(other => { if (other.id !== b.id && other.start > oldStart) other.start += delta; });
           b.start = newStart;
         }
         commit();
@@ -1929,8 +2591,7 @@
     (id) => state.todos.find(t => t.id === id),
     completeTodo,
     (item, row, content, reset) => {
-      content.style.transform = "translateX(-140%)";
-      setTimeout(() => deleteTodo(item), 120);
+      animateRemoval(row, () => deleteTodo(item));
     }
   );
 
@@ -1954,6 +2615,267 @@
     commit();
   });
 
+  /* ---------------------------------------------------------------------
+     Brain dump → tidy list. Plain rules that run on the phone: no network,
+     nothing typed here ever leaves the device. It splits on lines, bullets,
+     sentences, commas, "then", and "and" when a new action verb follows
+     ("buy milk and eggs" stays one item); strips filler like "I need to";
+     and spots times ("at 3pm", "14:30", "noon") and lengths ("for 2 hours").
+  --------------------------------------------------------------------- */
+  const DUMP_VERBS = "call|phone|ring|text|email|message|reply|ask|tell|remind|book|cancel|schedule|buy|order|get|pick|collect|drop|return|post|send|pay|renew|submit|apply|clean|tidy|wash|hoover|vacuum|empty|cook|make|fix|sort|do|finish|start|write|read|study|revise|check|update|plan|pack|prepare|walk|feed|water|take|bring|go|visit|see|meet|watch|charge|change|put|grab|find|print|file|organise|organize|shower|eat|drink|stretch|exercise|practise|practice|learn|look|research|move|try";
+  const DUMP_AND_VERB = new RegExp("\\s+(?:and|also|plus)\\s+(?=(?:" + DUMP_VERBS + ")\\b)", "gi");
+  const DUMP_CONTINUATION = /^(?:because|cos|cuz|coz|since|but|so that|which|who|as|she|he|it|they|we|that's|it's|its|she's|he's|they're|i'm|for her|for him|for them)\b/i;
+  const DUMP_FILLER = /^(?:(?:oh|ok|okay|so|and|also|then|plus|maybe|um+|uh+|right|erm|hmm+)\b[,\s]*|(?:i\s+)?(?:really\s+)?(?:need|have|want|got|ought)\s+to\s+|i'?ve\s+got\s+to\s+|i\s+gotta\s+|gotta\s+|i\s+(?:must|should)\s+|must\s+|should\s+|(?:please\s+)?(?:remember|don'?t\s+forget)\s+to\s+|i'?d\s+like\s+to\s+|try\s+(?:to|and)\s+|i'?m\s+(?:going\s+to|gonna)\s+|going\s+to\s+|gonna\s+|to\s+)/i;
+  const DUMP_TIME_PREFIX = "(?:\\b(?:at|by|around|from|before|after|until|til)\\s+|@\\s*)?";
+
+  function dumpSplit(text){
+    const parts = [];
+    text.split(/\r?\n/).forEach(line => {
+      line = line.replace(/^\s*(?:[-*•·–—]|\d+[.)]|\[\s?x?\])\s*/i, "")
+        .replace(/([!?]|\.(?!\d))\s+/g, "$1\n")
+        .replace(/[;•]/g, "\n")
+        .replace(/,(?!\d)/g, "\n")
+        .replace(/\s+(?:and\s+then|then)\s+/gi, "\n")
+        .replace(DUMP_AND_VERB, "\n");
+      line.split("\n").forEach(p => {
+        p = p.trim();
+        if (!p) return;
+        if (parts.length && DUMP_CONTINUATION.test(p)) parts[parts.length - 1] += ", " + p;
+        else parts.push(p);
+      });
+    });
+    return parts;
+  }
+
+  function dumpExtractTime(s){
+    const pre = DUMP_TIME_PREFIX;
+    const ampm = "(a\\.?m\\.?|p\\.?m\\.?)";
+    const tries = [
+      { re: new RegExp(pre + "\\b(\\d{1,2})[:.](\\d{2})\\s*" + ampm + "?(?![\\w])", "i"), h: 1, m: 2, ap: 3 },
+      { re: new RegExp(pre + "\\b(\\d{1,2})\\s*" + ampm + "(?![\\w])", "i"), h: 1, ap: 2 },
+      { re: /\b(?:at|around|by)\s+(\d{1,2})\b(?!\s*(?:[:.%]|(?:min|mins|minutes|m|h|hr|hrs|hour|hours|x|kg|k|st|nd|rd|th|people|pm|am)\b))/i, h: 1, guess: true },
+      { re: /\b(?:at\s+|by\s+|around\s+)?(noon|midday)\b/i, noon: true }
+    ];
+    for (const t of tries){
+      const m = s.match(t.re);
+      if (!m) continue;
+      const before = s.slice(0, m.index + m[0].search(/\d|noon|midday/i));
+      if (/[£$€]\s*$/.test(before)) continue;
+      let mins;
+      if (t.noon) mins = 720;
+      else {
+        let h = parseInt(m[t.h], 10);
+        const mm = t.m ? parseInt(m[t.m], 10) : 0;
+        const ap = t.ap && m[t.ap] ? m[t.ap].replace(/\./g, "").toLowerCase() : null;
+        if (mm > 59) continue;
+        if (ap){
+          if (h < 1 || h > 12) continue;
+          if (ap === "pm" && h < 12) h += 12;
+          if (ap === "am" && h === 12) h = 0;
+        } else if (t.guess){
+          if (h < 1 || h > 12) continue;
+          if (h <= 6) h += 12;
+        } else if (h > 23) continue;
+        mins = h * 60 + mm;
+      }
+      return { time: mins, rest: (s.slice(0, m.index) + " " + s.slice(m.index + m[0].length)).trim() };
+    }
+    return { time: null, rest: s };
+  }
+
+  function dumpExtractDuration(s){
+    const tries = [
+      [/\b(?:for\s+)?(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\s*(?:and\s+)?(\d+)\s*(?:minutes?|mins?|m)\b/i, m => Math.round(parseFloat(m[1]) * 60) + parseInt(m[2], 10)],
+      [/\b(?:for\s+)?(?:an?|one)\s+hour\s+and\s+a\s+half\b/i, () => 90],
+      [/\b(?:for\s+)?(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\b/i, m => Math.round(parseFloat(m[1]) * 60)],
+      [/\b(?:for\s+)?(\d+)\s*(?:minutes?|mins?|m)\b/i, m => parseInt(m[1], 10)],
+      [/\b(?:for\s+)?half\s+(?:an\s+)?hour\b/i, () => 30],
+      [/\b(?:for\s+)?(?:a\s+)?quarter\s+(?:of\s+)?(?:an\s+)?hour\b/i, () => 15],
+      [/\bfor\s+(?:an?|one)\s+hour\b/i, () => 60]
+    ];
+    for (const [re, fn] of tries){
+      const m = s.match(re);
+      if (!m) continue;
+      const d = fn(m);
+      if (!(d >= 1)) continue;
+      return { duration: clamp(d, 5, 720), rest: (s.slice(0, m.index) + " " + s.slice(m.index + m[0].length)).trim() };
+    }
+    return { duration: null, rest: s };
+  }
+
+  function dumpCleanTitle(s){
+    let prev;
+    s = s.trim();
+    do { prev = s; s = s.replace(DUMP_FILLER, "").trim(); } while (s !== prev);
+    s = s.replace(/^[\s,.;:!?&-]+|[\s,.;:&-]+$/g, "").replace(/\s{2,}/g, " ").replace(/\s+([,!?])/g, "$1");
+    return s ? (s.charAt(0).toUpperCase() + s.slice(1)).slice(0, 120) : "";
+  }
+
+  function dumpDefaultDest(item){
+    const f = state.features;
+    if (item.time != null && !item.tomorrow && f.timeline) return "timeline";
+    if (f.todoList) return "todo";
+    return f.timeline ? "timeline" : null;
+  }
+
+  function sortBrainDump(text){
+    const seen = new Set();
+    const items = [];
+    dumpSplit(text).forEach(raw => {
+      const t = dumpExtractTime(raw);
+      const d = dumpExtractDuration(t.rest);
+      const title = dumpCleanTitle(d.rest);
+      if (title.length < 2) return;
+      const key = title.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      const item = { id: uid("dump"), title, time: t.time, duration: d.duration, tomorrow: /\b(?:tomorrow|tmrw|tmr)\b/i.test(raw), include: true };
+      item.dest = dumpDefaultDest(item);
+      items.push(item);
+    });
+    return items;
+  }
+
+  let dumpItems = [];
+  let dumpSortedEmpty = false;
+
+  function renderDumpResults(){
+    const el = document.getElementById("dumpResults");
+    if (!dumpItems.length){
+      el.innerHTML = dumpSortedEmpty ? '<p class="dump-empty">Nothing to sort yet &mdash; type a few things above first.</p>' : "";
+      return;
+    }
+    const f = state.features;
+    const canSwitch = f.timeline && f.todoList;
+    const anyDest = f.timeline || f.todoList;
+    const destLabel = (d) => d === "timeline" ? "🗓️ " + escapeHtml(nameOf("timeline")) : "✅ " + escapeHtml(nameOf("todo"));
+    el.innerHTML =
+      '<h3 class="dump-results-head">Here\'s your list</h3>' +
+      '<p class="dialog-sub" style="margin:0;">Untick anything you don\'t want and tap any item to edit it' + (canSwitch ? ', or tap where it\'s going to switch it' : '') + '.</p>' +
+      '<ul class="dump-list">' + dumpItems.map(it =>
+        '<li class="dump-item' + (it.include ? '' : ' is-off') + '" data-id="' + it.id + '">' +
+          '<input type="checkbox" data-dump="include" aria-label="Include ' + escapeAttr(it.title) + '"' + (it.include ? ' checked' : '') + '>' +
+          '<div class="dump-item-body">' +
+            '<input type="text" class="dump-item-title" data-dump="title" value="' + escapeAttr(it.title) + '" aria-label="Item">' +
+            '<div class="dump-item-meta">' +
+              (it.dest ? (canSwitch
+                ? '<button type="button" class="dump-chip dump-dest" data-dump="dest" aria-label="Goes to ' + escapeAttr(it.dest === "timeline" ? nameOf("timeline") : nameOf("todo")) + ', tap to switch">' + destLabel(it.dest) + '</button>'
+                : '<span class="dump-chip">' + destLabel(it.dest) + '</span>') : '') +
+              (it.time != null ? '<span class="dump-chip">' + fmtClock(it.time) + '</span>' : '') +
+              (it.duration ? '<span class="dump-chip">' + fmtDuration(it.duration) + '</span>' : '') +
+              (it.tomorrow ? '<span class="dump-chip">Tomorrow</span>' : '') +
+            '</div>' +
+          '</div>' +
+        '</li>'
+      ).join('') + '</ul>' +
+      (anyDest
+        ? '<button type="button" class="primary-btn" id="dumpAddBtn"></button>'
+        : '<p class="dump-empty">Switch on the timeline or the to-do list in Settings to add these.</p>');
+    updateDumpAddBtn();
+  }
+
+  function dumpChosen(){ return dumpItems.filter(it => it.include && it.title.trim() && it.dest); }
+  function updateDumpAddBtn(){
+    const btn = document.getElementById("dumpAddBtn");
+    if (!btn) return;
+    const n = dumpChosen().length;
+    btn.textContent = n ? "Add " + n + (n === 1 ? " item" : " items") : "Nothing selected";
+    btn.disabled = !n;
+  }
+
+  function addDumpItems(){
+    const chosen = dumpChosen();
+    if (!chosen.length) return;
+    const catId = state.lastCategoryId || (state.categories[0] ? state.categories[0].id : null);
+    const cat = state.categories.find(c => c.id === catId);
+    const blockIds = [], todoIds = [];
+    chosen.forEach(it => {
+      const title = it.title.trim().slice(0, 120);
+      if (it.dest === "timeline"){
+        const start = it.time != null ? it.time : suggestedNewStart();
+        const b = mkBlock(title, catId, start, it.duration || (cat && cat.defaultMinutes) || 30, false, [], false);
+        state.blocks.push(b);
+        blockIds.push(b.id);
+      } else {
+        const extra = [it.time != null ? fmtClock(it.time) : "", it.duration ? fmtDuration(it.duration) : ""].filter(Boolean).join(", ");
+        const t = { id: uid("todo"), title: extra ? title + " (" + extra + ")" : title, done: false };
+        state.todos.push(t);
+        todoIds.push(t.id);
+      }
+    });
+    const prevText = state.brainDump, prevItems = dumpItems;
+    state.brainDump = "";
+    document.getElementById("dumpInput").value = "";
+    dumpItems = [];
+    dumpSortedEmpty = false;
+    commit();
+    renderDumpResults();
+    const bits = [];
+    if (blockIds.length) bits.push(blockIds.length + " to " + nameOf("timeline"));
+    if (todoIds.length) bits.push(todoIds.length + " to " + nameOf("todo"));
+    showNotice("Added " + bits.join(" and ") + ".", () => {
+      state.blocks = state.blocks.filter(b => !blockIds.includes(b.id));
+      state.todos = state.todos.filter(t => !todoIds.includes(t.id));
+      state.brainDump = prevText;
+      document.getElementById("dumpInput").value = prevText;
+      dumpItems = prevItems;
+      commit();
+      renderDumpResults();
+    });
+    window.scrollTo(0, 0);
+  }
+
+  document.getElementById("dumpInput").addEventListener("input", (e) => {
+    state.brainDump = e.target.value;
+    persist();
+  });
+  document.getElementById("dumpSortBtn").addEventListener("click", (e) => {
+    dumpItems = sortBrainDump(document.getElementById("dumpInput").value);
+    dumpSortedEmpty = !dumpItems.length;
+    renderDumpResults();
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (dumpItems.length && state.features.celebrations && !reduceMotion){
+      const [x, y] = rowCenter(e.currentTarget);
+      celebrateSparkles(x, y);
+    }
+  });
+  document.getElementById("dumpClearBtn").addEventListener("click", () => {
+    const clear = () => {
+      state.brainDump = "";
+      document.getElementById("dumpInput").value = "";
+      dumpItems = [];
+      dumpSortedEmpty = false;
+      persist();
+      renderDumpResults();
+    };
+    if (document.getElementById("dumpInput").value.trim()) showConfirm("Clear your brain dump?", clear, "Clear");
+    else clear();
+  });
+  const dumpResultsEl = document.getElementById("dumpResults");
+  dumpResultsEl.addEventListener("change", (e) => {
+    if (e.target.dataset.dump !== "include") return;
+    const li = e.target.closest(".dump-item");
+    const it = dumpItems.find(x => x.id === li.dataset.id);
+    if (!it) return;
+    it.include = e.target.checked;
+    li.classList.toggle("is-off", !it.include);
+    updateDumpAddBtn();
+  });
+  dumpResultsEl.addEventListener("input", (e) => {
+    if (e.target.dataset.dump !== "title") return;
+    const it = dumpItems.find(x => x.id === e.target.closest(".dump-item").dataset.id);
+    if (it){ it.title = e.target.value; updateDumpAddBtn(); }
+  });
+  dumpResultsEl.addEventListener("click", (e) => {
+    if (e.target.closest("#dumpAddBtn")){ addDumpItems(); return; }
+    const destBtn = e.target.closest('[data-dump="dest"]');
+    if (!destBtn) return;
+    const it = dumpItems.find(x => x.id === destBtn.closest(".dump-item").dataset.id);
+    if (!it) return;
+    it.dest = it.dest === "timeline" ? "todo" : "timeline";
+    renderDumpResults();
+  });
+
   document.addEventListener("change", function(e){
     const todoChk = e.target.closest("[data-action='toggle-todo']");
     if (todoChk){
@@ -1964,6 +2886,7 @@
           completeTodo(t, r.left + r.width / 2, r.top + r.height / 2);
         } else {
           t.done = false;
+          unrecordDone(t.id);
           commit();
         }
       }
@@ -1992,7 +2915,7 @@
     const after = state.blocks.find(b => b.id === afterId);
     if (!after) return;
     const point = after.start + after.duration;
-    const buf = mkBuffer(point, 5);
+    const buf = copyRepeat(after, mkBuffer(point, 5));
     state.blocks.push(buf);
     shiftBlocksFrom(point, 5, new Set([buf.id]));
     commit();
@@ -2023,7 +2946,34 @@
 
   let formCategoryId = null;
 
+  let formRepeat = "once";
+  let formDays = [];
+  const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+  const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const DAY_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  function repeatLabel(b){
+    if (b.repeat === "daily") return "Every day";
+    if (b.repeat === "weekly"){
+      const d = WEEK_ORDER.filter(i => b.days.includes(i));
+      if (d.length === 5 && !d.includes(0) && !d.includes(6)) return "Weekdays";
+      if (d.length === 2 && d.includes(0) && d.includes(6)) return "Weekends";
+      return d.map(i => DAY_SHORT[i]).join(", ");
+    }
+    return "";
+  }
+  function repeatFieldHtml(){
+    return '<div class="field"><label>Happens</label>' +
+      segHtml("bd_repeat", [["once", "Just today"], ["daily", "Every day"], ["weekly", "Some days"]], formRepeat, "repeat") +
+      '<div class="day-picks" id="bd_days"' + (formRepeat === "weekly" ? "" : " hidden") + '>' +
+        WEEK_ORDER.map(i => '<button type="button" class="day-pick' + (formDays.includes(i) ? ' on' : '') + '" data-day="' + i + '" aria-pressed="' + formDays.includes(i) + '" aria-label="' + DAY_LONG[i] + '">' + DAY_SHORT[i].charAt(0) + '</button>').join('') +
+      '</div>' +
+      '<p id="bd_daysError" style="margin:5px 0 0;font-size:11.5px;color:var(--danger-quiet);display:none;">Pick at least one day.</p>' +
+    '</div>';
+  }
+
   function openBlockForm(block){
+    formRepeat = block ? block.repeat : "once";
+    formDays = block && block.days.length ? block.days.slice() : [new Date().getDay()];
     formEditingId = block ? block.id : null;
     formIsBuffer = block ? block.isBuffer : false;
     formSubtasks = block && block.subtasks ? block.subtasks.map(s => ({...s})) : [];
@@ -2108,6 +3058,7 @@
       '<p class="dialog-sub">' + (formIsBuffer ? "Buffers are short transition blocks between tasks." : "Pick a template, name it, and set when it starts &mdash; everything else is optional.") + '</p>' +
       '<div class="field"><label for="bd_title">Title</label>' +
         '<input type="text" id="bd_title" value="' + escapeAttr(title) + '" placeholder="' + (formIsBuffer ? "Buffer" : "e.g. Write report") + '"></div>' +
+      repeatFieldHtml() +
       bodyFields +
       '<div class="dialog-actions">' +
         '<div>' + (isEdit ? '<button type="button" class="quiet-btn" id="bd_delete">Delete</button>' : '') + '</div>' +
@@ -2119,12 +3070,27 @@
 
     document.getElementById("bd_cancel").addEventListener("click", () => blockDialog.close());
     document.getElementById("bd_save").addEventListener("click", () => saveBlockForm());
+    document.getElementById("bd_repeat").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-repeat]");
+      if (!b) return;
+      formRepeat = b.dataset.repeat;
+      markActive(e.currentTarget, b);
+      document.getElementById("bd_days").hidden = formRepeat !== "weekly";
+    });
+    document.getElementById("bd_days").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-day]");
+      if (!b) return;
+      const d = parseInt(b.dataset.day, 10);
+      formDays = formDays.includes(d) ? formDays.filter(x => x !== d) : formDays.concat(d);
+      b.classList.toggle("on", formDays.includes(d));
+      b.setAttribute("aria-pressed", String(formDays.includes(d)));
+    });
     const delBtn = document.getElementById("bd_delete");
     if (delBtn) delBtn.addEventListener("click", () => {
+      const id = formEditingId;
       showConfirm("Delete this block? This can't be undone.", () => {
-        state.blocks = state.blocks.filter(b => b.id !== formEditingId);
         blockDialog.close();
-        commit();
+        removeBlockAnimated(id);
       });
     });
 
@@ -2226,6 +3192,11 @@
     }
     document.getElementById("bd_durationError").style.display = "none";
 
+    if (formRepeat === "weekly" && !formDays.length){
+      document.getElementById("bd_daysError").style.display = "";
+      return;
+    }
+
     const titleVal = document.getElementById("bd_title").value.trim() || (formIsBuffer ? "Buffer" : "Untitled block");
 
     let block;
@@ -2238,6 +3209,11 @@
       block = mkBlock(titleVal, null, startVal, durationVal, formIsBuffer, [], false);
       state.blocks.push(block);
     }
+    const wasOnce = block.repeat === "once";
+    block.repeat = formRepeat;
+    block.days = formRepeat === "weekly" ? formDays.slice() : [];
+    block.date = formRepeat === "once" ? (wasOnce && block.date ? block.date : todayStr()) : null;
+    if (!blockIsToday(block)) showNotice('Saved — "' + block.title + '" will show up on ' + repeatLabel(block) + '.');
 
     if (!formIsBuffer){
       block.categoryId = document.getElementById("bd_category").value || (state.categories[0] ? state.categories[0].id : null);
@@ -2249,7 +3225,7 @@
       if (addBufferChk && addBufferChk.checked){
         const bufMin = parseDurationFlexible(document.getElementById("bd_bufferMin").value) || 5;
         const point = block.start + block.duration;
-        const buf = mkBuffer(point, bufMin);
+        const buf = copyRepeat(block, mkBuffer(point, bufMin));
         state.blocks.push(buf);
         shiftBlocksFrom(point, bufMin, new Set([buf.id, block.id]));
       }
@@ -2273,18 +3249,121 @@
     settingsDialog.showModal();
   });
 
+  /* ---------------------------------------------------------------------
+     Backup: the whole saved state as one JSON file. Restoring writes it
+     back to storage and reloads, so it goes through the same checks and
+     upgrades as a normal start.
+  --------------------------------------------------------------------- */
+  async function exportBackup(){
+    const json = JSON.stringify({ app: "TimeAnchor", version: 1, savedAt: new Date().toISOString(), data: snapshot() }, null, 2);
+    const name = "timeanchor-backup-" + todayStr() + ".json";
+    try {
+      const file = new File([json], name, { type: "application/json" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], title: "TimeAnchor backup" });
+        return;
+      }
+    } catch (e) {
+      if (e && e.name === "AbortError") return;
+    }
+    const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  function importBackup(file){
+    if (file.size > 5 * 1024 * 1024){ showNotice("That file is too big to be a TimeAnchor backup."); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      let data;
+      try {
+        const parsed = JSON.parse(reader.result);
+        data = parsed && parsed.app === "TimeAnchor" ? parsed.data : parsed;
+      } catch (e) { data = null; }
+      if (!data || !Array.isArray(data.blocks) || !Array.isArray(data.categories)){
+        settingsDialog.close();
+        showNotice("That doesn't look like a TimeAnchor backup, so nothing was changed.");
+        return;
+      }
+      showConfirm("Replace everything on this phone with this backup? What's here now will be overwritten.", () => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        location.reload();
+      }, "Load backup");
+    };
+    reader.readAsText(file);
+  }
+
   // `requires` greys a row out while the feature it lives inside is off.
   const FEATURE_TOGGLES = [
-    { key: "focus", name: "Right now card", desc: "What you're on now, with its buttons" },
-    { key: "timer", name: "Countdown timer", desc: "Time left on the current block" },
-    { key: "timerShape", name: "Show as a shrinking circle", desc: "Off shows just the minutes", sub: true, requires: "timer" },
-    { key: "timeline", name: "Day timeline", desc: "Today's blocks, in order" },
-    { key: "quickAdd", name: "Quick add", desc: "One-line box to add a block fast", sub: true, requires: "timeline" },
-    { key: "buffers", name: "Buffers", desc: "“+ buffer” buttons for breathing room", sub: true, requires: "timeline" },
-    { key: "todoList", name: "To-do list", desc: "Untimed things to get to today" },
-    { key: "celebrations", name: "Celebrations", desc: "Burst of color when you finish something" },
-    { key: "sounds", name: "Sounds", desc: "Soft chime when a block starts or you finish" }
+    { group: "today", key: "dayJar", name: () => "Day jar", desc: "Fills gently as the day goes, plus a marble for everything you finish" },
+    { group: "today", key: "focus", name: () => nameOf("focus") + " card", desc: "What you're on now, with its buttons" },
+    { group: "today", key: "timer", name: () => "Countdown timer", desc: "Time left on the current block" },
+    { group: "today", key: "timerShape", name: () => "Show as a shrinking circle", desc: "Off shows just the minutes", sub: true, requires: "timer" },
+    { group: "today", key: "timeline", name: () => nameOf("timeline"), desc: "Today's blocks, in order" },
+    { group: "today", key: "quickAdd", name: () => "Quick add", desc: "One-line box to add a block fast", sub: true, requires: "timeline" },
+    { group: "today", key: "buffers", name: () => "Buffers", desc: "“+ buffer” buttons for breathing room", sub: true, requires: "timeline" },
+    { group: "dump", key: "brainDump", name: () => nameOf("dump"), desc: "Empty your head, then sort it into a list" },
+    { group: "todo", key: "todoList", name: () => nameOf("todo"), desc: "Untimed things to get to today" },
+    { group: "todo", key: "energy", name: () => "Energy check-in", desc: "Tag to-dos 🪫 🔋 ⚡ and see the right ones first", sub: true, requires: "todoList" },
+    { group: "done", key: "history", name: () => nameOf("done"), desc: "Everything you've finished, by day" },
+    { group: "all", key: "focusMode", name: () => "Focus with me", desc: "A calm companion that keeps you company while you work" },
+    { group: "all", key: "celebrations", name: () => "Celebrations", desc: "A little party when you finish something" },
+    { group: "all", key: "sounds", name: () => "Sounds", desc: "Soft chime when a block starts or you finish" }
   ];
+  const TEXT_SIZES = [["s", "Small"], ["m", "Medium"], ["l", "Large"], ["xl", "Extra large"]];
+  const CELEBRATE_STYLES = [["burst", "Big burst"], ["sparkles", "Sparkles"], ["message", "Just words"]];
+
+  function featureListHtml(){
+    const groups = [["today", nameOf("today") + " tab"], ["dump", nameOf("dump") + " tab"], ["todo", nameOf("todo") + " tab"], ["done", nameOf("done") + " tab"], ["all", "Everywhere"]];
+    return groups.map(([g, label]) =>
+      '<p class="feature-group-label">' + escapeHtml(label) + '</p>' +
+      '<div class="feature-list">' +
+        FEATURE_TOGGLES.filter(t => t.group === g).map(t =>
+          '<label class="feature-row' + (t.sub ? ' sub' : '') + '" data-feature="' + t.key + '">' +
+            '<span class="feature-text">' +
+              '<span class="feature-name">' + escapeHtml(t.name()) + '</span>' +
+              '<span class="feature-desc" style="display:block;">' + t.desc + '</span>' +
+            '</span>' +
+            '<input type="checkbox" class="switch" role="switch" data-feature="' + t.key + '" aria-label="' + escapeAttr(t.name()) + '"' + (featureValue(t.key) ? ' checked' : '') + '>' +
+          '</label>'
+        ).join('') +
+      '</div>'
+    ).join('');
+  }
+
+  function tabsSectionHtml(){
+    const order = state.ui.tabOrder;
+    return order.map((id, i) =>
+      '<div class="tab-order-row">' +
+        '<span aria-hidden="true">' + TAB_ICONS[id] + '</span>' +
+        '<span class="name">' + escapeHtml(nameOf(id)) + (tabVisible(id) ? '' : '<span class="off-tag">(switched off)</span>') + '</span>' +
+        '<button type="button" class="icon-mini" data-move="' + id + '" data-dir="-1" aria-label="Move ' + escapeAttr(nameOf(id)) + ' up"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+        '<button type="button" class="icon-mini" data-move="' + id + '" data-dir="1" aria-label="Move ' + escapeAttr(nameOf(id)) + ' down"' + (i === order.length - 1 ? ' disabled' : '') + '>↓</button>' +
+      '</div>'
+    ).join('') +
+    '<p class="dialog-sub" style="margin:12px 0 6px;">Opens on</p>' +
+    '<div class="seg choice" id="st_startTab">' +
+      order.map(id => '<button type="button" data-start="' + id + '" class="' + (state.ui.startTab === id ? 'active' : '') + '">' + escapeHtml(nameOf(id)) + '</button>').join('') +
+    '</div>';
+  }
+
+  const SIZE_PREVIEW_PX = { s: 12, m: 14.5, l: 17, xl: 20 };
+  function segHtml(id, options, current, attr){
+    const isSize = attr === "size";
+    return '<div class="seg choice" id="' + id + '">' +
+      options.map(([val, label]) =>
+        '<button type="button" data-' + attr + '="' + val + '" class="' + (current === val ? 'active' : '') + '"' +
+          (isSize ? ' aria-label="' + label + ' text" style="font-size:' + SIZE_PREVIEW_PX[val] + 'px;"' : '') + '>' +
+          (isSize ? 'A' : label) +
+        '</button>'
+      ).join('') +
+    '</div>';
+  }
+  function markActive(seg, btn){
+    seg.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
+  }
   function featureValue(key){
     if (key === "sounds") return state.soundEnabled;
     if (key === "timerShape") return state.showTimer;
@@ -2298,7 +3377,7 @@
   function syncFeatureRows(){
     FEATURE_TOGGLES.forEach(t => {
       if (!t.requires) return;
-      const row = document.querySelector('#st_featureList .feature-row[data-feature="' + t.key + '"]');
+      const row = document.querySelector('#st_features .feature-row[data-feature="' + t.key + '"]');
       if (!row) return;
       const enabled = featureValue(t.requires);
       row.classList.toggle("is-disabled", !enabled);
@@ -2310,21 +3389,54 @@
     const inner = document.getElementById("settingsDialogInner");
     inner.innerHTML =
       '<h2 id="settingsDialogTitle">Settings</h2>' +
-      '<p class="dialog-sub">Saved on this device' + (cloudEnabled && currentUser && !offlineMode ? ' and synced to your account.' : '.') + '</p>' +
+      '<p class="dialog-sub">Saved on this device only &mdash; nothing you type is ever sent anywhere.</p>' +
 
       '<h3 style="font-size:13.5px;margin:0 0 4px;">Features</h3>' +
-      '<p class="dialog-sub" style="margin-bottom:10px;">Switch off anything you don\'t need. Nothing is deleted &mdash; switch it back on any time.</p>' +
-      '<div class="feature-list" id="st_featureList">' +
-        FEATURE_TOGGLES.map(t =>
-          '<label class="feature-row' + (t.sub ? ' sub' : '') + '" data-feature="' + t.key + '">' +
-            '<span class="feature-text">' +
-              '<span class="feature-name">' + t.name + '</span>' +
-              '<span class="feature-desc" style="display:block;">' + t.desc + '</span>' +
-            '</span>' +
-            '<input type="checkbox" class="switch" role="switch" data-feature="' + t.key + '" aria-label="' + escapeAttr(t.name) + '"' + (featureValue(t.key) ? ' checked' : '') + '>' +
-          '</label>'
-        ).join('') +
+      '<p class="dialog-sub" style="margin-bottom:10px;">Switch off anything you don\'t need. Nothing is deleted &mdash; switch it back on any time. A tab disappears when everything in it is off.</p>' +
+      '<div id="st_features">' + featureListHtml() + '</div>' +
+
+      '<h3 style="font-size:13.5px;margin:6px 0 4px;">Heads-up before a block ends</h3>' +
+      '<p class="dialog-sub" style="margin:0 0 8px;">A soft chime and a note so switching tasks never feels sudden.</p>' +
+      segHtml("st_headsUp", [["0", "Off"], ["2", "2 min"], ["5", "5 min"], ["10", "10 min"]], String(state.ui.headsUp), "headsup") +
+
+      '<h3 style="font-size:13.5px;margin:6px 0 4px;">Your day</h3>' +
+      '<p class="dialog-sub" style="margin:0 0 8px;">Roughly when your day starts and ends &mdash; the Day jar fills between these.</p>' +
+      '<div class="field-row">' +
+        '<div class="field"><label for="st_dayStart">Starts</label><input type="text" id="st_dayStart" value="' + fmtClock(state.ui.dayStart) + '" inputmode="text"></div>' +
+        '<div class="field"><label for="st_dayEnd">Ends</label><input type="text" id="st_dayEnd" value="' + fmtClock(state.ui.dayEnd) + '" inputmode="text"></div>' +
       '</div>' +
+
+      '<h3 style="font-size:13.5px;margin:6px 0 8px;">Look &amp; feel</h3>' +
+      '<div class="feature-list">' +
+        '<label class="feature-row">' +
+          '<span class="feature-text">' +
+            '<span class="feature-name">Gentle wording</span>' +
+            '<span class="feature-desc" style="display:block;">Invitations instead of instructions &mdash; &ldquo;Want to start now?&rdquo; instead of &ldquo;Start it now&rdquo;</span>' +
+          '</span>' +
+          '<input type="checkbox" class="switch" role="switch" id="st_gentle" aria-label="Gentle wording"' + (state.ui.gentle ? ' checked' : '') + '>' +
+        '</label>' +
+      '</div>' +
+      '<p class="dialog-sub" style="margin:0 0 6px;">Text size</p>' +
+      segHtml("st_textSize", TEXT_SIZES, state.ui.textSize, "size") +
+      '<p class="dialog-sub" style="margin:0 0 6px;">Celebration style</p>' +
+      segHtml("st_celebrate", CELEBRATE_STYLES, state.ui.celebrateStyle, "celebrate") +
+      '<div class="field"><button type="button" class="quiet-btn" id="st_previewCelebrate">Preview celebration</button></div>' +
+
+      '<details class="more-options" id="st_tabsDetails">' +
+        '<summary>Tabs <span>&mdash; order and which opens first</span></summary>' +
+        '<div class="more-options-body" id="st_tabsBody">' + tabsSectionHtml() + '</div>' +
+      '</details>' +
+
+      '<details class="more-options" id="st_namesDetails" style="margin-bottom:16px;">' +
+        '<summary>Rename things</summary>' +
+        '<div class="more-options-body">' +
+          '<p class="dialog-sub" style="margin-bottom:8px;">Call things whatever makes sense to you. Leave a box empty to use the original name.</p>' +
+          ["today", "dump", "todo", "done", "focus", "timeline"].map(k =>
+            '<div class="field"><label for="st_name_' + k + '">' + escapeHtml(DEFAULT_NAMES[k]) + '</label>' +
+            '<input type="text" id="st_name_' + k + '" data-name="' + k + '" maxlength="24" value="' + escapeAttr(state.ui.names[k] || "") + '" placeholder="' + escapeAttr(DEFAULT_NAMES[k]) + '"></div>'
+          ).join('') +
+        '</div>' +
+      '</details>' +
 
       '<div class="field"><label for="st_firstName">Your name</label>' +
         '<input type="text" id="st_firstName" value="' + escapeAttr(state.firstName) + '" placeholder="e.g. Sam"></div>' +
@@ -2353,10 +3465,16 @@
             '<label for="st_soundVolume">Volume</label>' +
             '<input type="range" id="st_soundVolume" min="0" max="1" step="0.1" value="' + state.soundVolume + '" style="width:100%;">' +
           '</div>' +
-          '<div class="field" style="display:flex;gap:8px;">' +
+          '<div class="field" style="display:flex;gap:8px;flex-wrap:wrap;">' +
             '<button type="button" class="quiet-btn" id="st_testSound">Test start chime</button>' +
             '<button type="button" class="quiet-btn" id="st_testDoneChime">Test done chime</button>' +
+            '<button type="button" class="quiet-btn" id="st_testHeadsUp">Test heads-up</button>' +
           '</div>' +
+          '<div class="checkbox-field">' +
+            '<input type="checkbox" id="st_soundOnSilent" ' + (state.ui.soundOnSilent ? "checked" : "") + '>' +
+            '<label for="st_soundOnSilent">Play even when my iPhone is on silent (may pause music that\'s playing)</label>' +
+          '</div>' +
+          '<p class="dialog-sub" style="margin:-4px 0 12px;">No sound? Check your phone\'s volume and the silent switch on the side of an iPhone &mdash; or turn on the option above.</p>' +
           (speechSupported ?
             '<div class="checkbox-field">' +
               '<input type="checkbox" id="st_speakEnabled" ' + (state.speakEnabled ? "checked" : "") + '>' +
@@ -2375,6 +3493,18 @@
         '</div>' +
       '</details>' +
 
+      '<details class="more-options" id="st_backupDetails">' +
+        '<summary>Backup <span>&mdash; keep your data safe</span></summary>' +
+        '<div class="more-options-body">' +
+          '<p class="dialog-sub" style="margin-bottom:10px;">Everything lives only on this phone. Save a backup file now and then (to Files, email, or anywhere you like) so a new phone or a cleared browser doesn\'t lose it.</p>' +
+          '<div class="field" style="display:flex;gap:8px;flex-wrap:wrap;">' +
+            '<button type="button" class="ghost-btn" id="st_exportBtn">💾 Save a backup</button>' +
+            '<button type="button" class="ghost-btn" id="st_importBtn">📂 Load a backup</button>' +
+            '<input type="file" id="st_importFile" accept=".json,application/json" hidden>' +
+          '</div>' +
+        '</div>' +
+      '</details>' +
+
       '<details class="more-options" id="st_testingDetails">' +
         '<summary>Testing tools</summary>' +
         '<div class="more-options-body">' +
@@ -2389,16 +3519,94 @@
 
       '<div class="dialog-actions"><div></div><div class="right-group"><button type="button" class="primary-btn" id="st_done">Save &amp; close</button></div></div>';
 
-    document.getElementById("st_featureList").querySelectorAll("input.switch").forEach(sw => {
-      sw.addEventListener("change", () => {
-        setFeatureValue(sw.dataset.feature, sw.checked);
-        syncFeatureRows();
-        commit();
-      });
+    document.getElementById("st_features").addEventListener("change", (e) => {
+      const sw = e.target.closest("input.switch");
+      if (!sw) return;
+      setFeatureValue(sw.dataset.feature, sw.checked);
+      syncFeatureRows();
+      commit();
+      document.getElementById("st_tabsBody").innerHTML = tabsSectionHtml();
     });
     syncFeatureRows();
+    ["st_dayStart", "st_dayEnd"].forEach(id => document.getElementById(id).addEventListener("change", (e) => {
+      const key = id === "st_dayStart" ? "dayStart" : "dayEnd";
+      const v = parseTimeFlexible(e.target.value);
+      if (v === null){ e.target.value = fmtClock(state.ui[key]); return; }
+      state.ui[key] = v;
+      e.target.value = fmtClock(v);
+      commit();
+    }));
+    document.getElementById("st_gentle").addEventListener("change", (e) => {
+      state.ui.gentle = e.target.checked;
+      commit();
+    });
+    document.getElementById("st_headsUp").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-headsup]");
+      if (!b) return;
+      state.ui.headsUp = parseInt(b.dataset.headsup, 10);
+      markActive(e.currentTarget, b);
+      commit();
+    });
+    document.getElementById("st_testHeadsUp").addEventListener("click", () => {
+      const was = state.soundEnabled;
+      state.soundEnabled = true;
+      playHeadsUpChime();
+      state.soundEnabled = was;
+    });
+    document.getElementById("st_textSize").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-size]");
+      if (!b) return;
+      state.ui.textSize = b.dataset.size;
+      markActive(e.currentTarget, b);
+      commit();
+    });
+    document.getElementById("st_celebrate").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-celebrate]");
+      if (!b) return;
+      state.ui.celebrateStyle = b.dataset.celebrate;
+      markActive(e.currentTarget, b);
+      persist();
+    });
+    document.getElementById("st_previewCelebrate").addEventListener("click", (e) => {
+      const [x, y] = rowCenter(e.currentTarget);
+      celebrateBurst(x, y);
+      playCompletionChime();
+    });
+    document.getElementById("st_tabsBody").addEventListener("click", (e) => {
+      const mv = e.target.closest("button[data-move]");
+      const st = e.target.closest("button[data-start]");
+      if (mv){
+        const order = state.ui.tabOrder;
+        const i = order.indexOf(mv.dataset.move), j = i + parseInt(mv.dataset.dir, 10);
+        if (j < 0 || j >= order.length) return;
+        [order[i], order[j]] = [order[j], order[i]];
+      } else if (st){
+        state.ui.startTab = st.dataset.start;
+      } else return;
+      commit();
+      document.getElementById("st_tabsBody").innerHTML = tabsSectionHtml();
+    });
+    document.getElementById("st_namesDetails").addEventListener("input", (e) => {
+      const k = e.target.dataset.name;
+      if (!k) return;
+      const v = e.target.value.trim();
+      if (v) state.ui.names[k] = v; else delete state.ui.names[k];
+      applyTabs();
+      renderDumpResults();
+      persist();
+    });
+    document.getElementById("st_namesDetails").addEventListener("change", () => {
+      document.getElementById("st_features").innerHTML = featureListHtml();
+      syncFeatureRows();
+      document.getElementById("st_tabsBody").innerHTML = tabsSectionHtml();
+    });
     document.getElementById("st_soundVolume").addEventListener("input", (e) => {
       state.soundVolume = parseFloat(e.target.value);
+    });
+    document.getElementById("st_soundOnSilent").addEventListener("change", (e) => {
+      state.ui.soundOnSilent = e.target.checked;
+      applyAudioSession();
+      persist();
     });
     document.getElementById("st_testSound").addEventListener("click", () => {
       const was = state.soundEnabled;
@@ -2434,6 +3642,13 @@
     document.getElementById("st_firstName").addEventListener("input", (e) => {
       state.firstName = e.target.value.trim();
       updateGreeting();
+    });
+    document.getElementById("st_exportBtn").addEventListener("click", exportBackup);
+    document.getElementById("st_importBtn").addEventListener("click", () => document.getElementById("st_importFile").click());
+    document.getElementById("st_importFile").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (file) importBackup(file);
     });
     document.getElementById("st_done").addEventListener("click", () => {
       settingsDialog.close();
@@ -2473,33 +3688,269 @@
   }
 
   /* ---------------------------------------------------------------------
-     Cloud auth screen + boot sequence
+     Focus with me: a calm, body-double style session. A breathing shape
+     keeps you company, time left is shown in minutes (no ticking
+     seconds), there's a gentle halfway check-in, and the end celebrates.
+     Optional background noise is generated on the phone, nothing streamed.
   --------------------------------------------------------------------- */
-  function setCloudStatus(mode, text){
-    const el = document.getElementById("cloudStatus");
-    if (!cloudEnabled || offlineMode || !currentUser){ el.style.display = "none"; return; }
-    el.style.display = "";
-    el.className = "cloud-status " + mode;
-    document.getElementById("cloudStatusText").textContent = text;
+  const focusDialog = document.getElementById("focusDialog");
+  const FM_MESSAGES = [
+    "I'm right here with you. Breathe with the shape if it helps.",
+    "One small step at a time.",
+    "It's okay to go slowly.",
+    "You started — that's the hardest part.",
+    "Wiggle, stretch, sip of water — all allowed.",
+    "Still here, still with you."
+  ];
+  let fm = null;       // the running session
+  let fmSetup = null;  // choices on the setup screen
+  let fmWakeLock = null;
+  let fmNoise = null;
+
+  function fmSubjects(){
+    const list = [];
+    const cur = getCurrentBlock();
+    if (cur) list.push({ kind: "block", id: cur.id, title: cur.title, icon: catFor(cur).icon, mins: Math.max(5, Math.min(120, Math.ceil(timeInfo(cur).remaining))) });
+    state.todos.filter(t => !t.done).slice(0, 8).forEach(t => list.push({ kind: "todo", id: t.id, title: t.title, icon: "✅" }));
+    list.push({ kind: "none", id: "", title: "Just focus", icon: "🫧" });
+    return list;
   }
 
-  function showAuthScreen(){
-    document.getElementById("authScreen").style.display = "";
-    document.getElementById("mainApp").style.display = "none";
-    document.getElementById("mainFooter").style.display = "none";
-    document.getElementById("signOutBtn").style.display = "none";
-    document.getElementById("authEmail").focus();
+  function openFocus(kind, id){
+    if (fm){ focusDialog.showModal(); return; }
+    const subjects = fmSubjects();
+    const pick = subjects.find(s => s.kind === kind && s.id === id) || subjects[0];
+    fmSetup = { subject: pick, minutes: pick.mins || 25, sound: state.ui.focusSound };
+    renderFocusSetup();
+    focusDialog.showModal();
   }
 
+  function renderFocusSetup(){
+    const subjects = fmSubjects();
+    const lengths = [[10, "10 min"], [25, "25 min"], [45, "45 min"]];
+    if (fmSetup.subject.mins && !lengths.some(l => l[0] === fmSetup.subject.mins)) lengths.push([fmSetup.subject.mins, "Rest of it (" + fmSetup.subject.mins + "m)"]);
+    document.getElementById("fmInner").innerHTML =
+      '<div class="fm-setup">' +
+        '<button type="button" class="icon-btn fm-close" data-fm="close" aria-label="Close">✕</button>' +
+        '<h2 id="fmTitle">🫧 Focus with me</h2>' +
+        '<p class="dialog-sub" style="margin:0;">I\'ll keep you company while you work. No pressure &mdash; stop whenever you like.</p>' +
+        '<p class="fm-label">What are you working on?</p>' +
+        '<div class="fm-choices">' + subjects.map((s, i) =>
+          '<button type="button" class="fm-choice' + (s.kind === fmSetup.subject.kind && s.id === fmSetup.subject.id ? ' on' : '') + '" data-fm="subject" data-i="' + i + '">' + s.icon + ' ' + escapeHtml(s.title) + '</button>'
+        ).join('') + '</div>' +
+        '<p class="fm-label">For how long?</p>' +
+        segHtml("fmLength", lengths.map(([m, l]) => [String(m), l]), String(fmSetup.minutes), "fmlen") +
+        '<p class="fm-label">Background sound</p>' +
+        segHtml("fmSound", [["off", "Quiet"], ["brown", "Soft hum"], ["rain", "Rain"]], fmSetup.sound, "fmsound") +
+        '<button type="button" class="primary-btn fm-start" data-fm="start">Start focusing</button>' +
+      '</div>';
+  }
+
+  function fmElapsedMs(){
+    if (!fm) return 0;
+    const now = Date.now();
+    return now - fm.startedAt - fm.pausedTotal - (fm.pausedAt ? now - fm.pausedAt : 0);
+  }
+
+  function startFocus(){
+    fm = { subject: fmSetup.subject, minutes: fmSetup.minutes, sound: fmSetup.sound, startedAt: Date.now(), pausedTotal: 0, pausedAt: null, checkedIn: false, msgIdx: 0, lastMsgAt: Date.now() };
+    state.ui.focusSound = fmSetup.sound;
+    persist();
+    renderFocusSession();
+    startNoise(fm.sound);
+    requestWakeLock();
+    fm.timer = setInterval(fmTick, 1000);
+  }
+
+  function renderFocusSession(){
+    const s = fm.subject;
+    document.getElementById("fmInner").innerHTML =
+      '<button type="button" class="icon-btn fm-close" data-fm="stop" aria-label="Stop focusing">✕</button>' +
+      '<p class="fm-with" id="fmTitle">' + (s.kind === "none" ? "Focusing" : "Focusing on") + '</p>' +
+      '<h2 class="fm-task">' + (s.kind === "none" ? "Just being here 🫧" : escapeHtml(s.title)) + '</h2>' +
+      '<div class="fm-breath-wrap"><div class="fm-breath"></div><div class="fm-time" id="fmTime" aria-live="polite"></div></div>' +
+      '<p class="fm-msg" id="fmMsg">' + FM_MESSAGES[0] + '</p>' +
+      '<div id="fmCheck"></div>' +
+      '<div class="fm-actions">' +
+        '<button type="button" class="ghost-btn" data-fm="pause" id="fmPauseBtn">Take a breather</button>' +
+        '<button type="button" class="primary-btn" data-fm="finish">I\'m done ✨</button>' +
+      '</div>';
+    fmTick();
+  }
+
+  function fmTick(){
+    if (!fm) return;
+    const leftMs = fm.minutes * 60000 - fmElapsedMs();
+    const timeEl = document.getElementById("fmTime");
+    if (!timeEl) return;
+    if (leftMs <= 0 && !fm.pausedAt){ endFocus(true); return; }
+    const mins = Math.ceil(leftMs / 60000);
+    timeEl.textContent = fm.pausedAt ? "Paused" : (leftMs < 60000 ? "Almost there" : mins + " min");
+    document.getElementById("fmInner").classList.toggle("fm-paused", !!fm.pausedAt);
+    if (!fm.pausedAt && Date.now() - fm.lastMsgAt > 4 * 60000){
+      fm.lastMsgAt = Date.now();
+      fm.msgIdx = (fm.msgIdx + 1) % FM_MESSAGES.length;
+      document.getElementById("fmMsg").textContent = FM_MESSAGES[fm.msgIdx];
+    }
+    if (!fm.checkedIn && !fm.pausedAt && fm.minutes >= 10 && fmElapsedMs() >= fm.minutes * 30000){
+      fm.checkedIn = true;
+      document.getElementById("fmCheck").innerHTML =
+        '<div class="fm-check"><p>Still with me? 💛</p><div class="fm-actions">' +
+          '<button type="button" class="primary-btn" data-fm="checkin-yes">Yes, keep going</button>' +
+          '<button type="button" class="ghost-btn" data-fm="pause">I need a breather</button>' +
+        '</div></div>';
+      setTimeout(() => { const c = document.getElementById("fmCheck"); if (c) c.innerHTML = ""; }, 30000);
+    }
+  }
+
+  function togglePause(){
+    if (!fm) return;
+    const btn = document.getElementById("fmPauseBtn");
+    if (fm.pausedAt){
+      fm.pausedTotal += Date.now() - fm.pausedAt;
+      fm.pausedAt = null;
+      startNoise(fm.sound);
+      document.getElementById("fmMsg").textContent = "Welcome back. Let's carry on, gently.";
+      if (btn) btn.textContent = "Take a breather";
+    } else {
+      fm.pausedAt = Date.now();
+      stopNoise();
+      document.getElementById("fmMsg").textContent = "Take your time. Tap Resume whenever you're ready.";
+      if (btn) btn.textContent = "Resume";
+    }
+    document.getElementById("fmCheck").innerHTML = "";
+    fmTick();
+  }
+
+  function endFocus(finished){
+    if (!fm) return;
+    const session = fm;
+    clearInterval(session.timer);
+    stopNoise();
+    releaseWakeLock();
+    const minsDone = Math.min(session.minutes, Math.round(fmElapsedMs() / 60000));
+    fm = null;
+    if (minsDone >= 1){
+      const day = todayStr();
+      (state.history[day] = state.history[day] || []).push({
+        id: uid("focus"), kind: "focus", icon: "🫧", color: null, at: Math.round(actualNowMinutes()),
+        title: "Focused " + fmtDuration(minsDone) + (session.subject.kind === "none" ? "" : " on " + session.subject.title)
+      });
+      commit();
+    }
+    if (!finished && minsDone < 1){ focusDialog.close(); return; }
+    playCompletionChime();
+    const s = session.subject;
+    const item = s.kind === "block" ? state.blocks.find(b => b.id === s.id) : s.kind === "todo" ? state.todos.find(t => t.id === s.id) : null;
+    const canMark = item && !(s.kind === "block" ? item.status === "done" : item.done);
+    document.getElementById("fmInner").innerHTML =
+      '<div class="fm-end">' +
+        '<h2 id="fmTitle">You did it! 🎉</h2>' +
+        '<p>' + (minsDone >= 1 ? 'You stayed with it for ' + fmtDuration(minsDone) + '. That counts.' : 'Every bit counts.') + '</p>' +
+        '<div class="fm-actions" style="flex-direction:column;align-items:stretch;">' +
+          (canMark ? '<button type="button" class="primary-btn" data-fm="mark" style="justify-content:center;">' + escapeHtml(w("markDone")) + ': ' + escapeHtml(s.title) + '</button>' : '') +
+          '<button type="button" class="ghost-btn" data-fm="again">Keep going (+10 min)</button>' +
+          '<button type="button" class="ghost-btn" data-fm="close">Close</button>' +
+        '</div>' +
+      '</div>';
+    fmSetup = { subject: s, minutes: 10, sound: session.sound };
+    if (state.features.celebrations) celebrateBurst(window.innerWidth / 2, window.innerHeight / 2.4);
+  }
+
+  document.getElementById("fmInner").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-fm], [data-fmlen], [data-fmsound]");
+    if (!b) return;
+    if (b.dataset.fmlen){ fmSetup.minutes = parseInt(b.dataset.fmlen, 10); markActive(b.parentElement, b); return; }
+    if (b.dataset.fmsound){ fmSetup.sound = b.dataset.fmsound; markActive(b.parentElement, b); return; }
+    const act = b.dataset.fm;
+    if (act === "subject"){
+      fmSetup.subject = fmSubjects()[parseInt(b.dataset.i, 10)];
+      if (fmSetup.subject.mins) fmSetup.minutes = fmSetup.subject.mins;
+      renderFocusSetup();
+    }
+    else if (act === "start") startFocus();
+    else if (act === "pause") togglePause();
+    else if (act === "checkin-yes"){ document.getElementById("fmCheck").innerHTML = ""; document.getElementById("fmMsg").textContent = "Lovely. I'm still right here."; }
+    else if (act === "finish") endFocus(true);
+    else if (act === "stop") endFocus(false);
+    else if (act === "again") startFocus();
+    else if (act === "close") focusDialog.close();
+    else if (act === "mark"){
+      const s = fmSetup.subject;
+      focusDialog.close();
+      const [x, y] = [window.innerWidth / 2, window.innerHeight / 2];
+      if (s.kind === "block") completeBlock(state.blocks.find(bb => bb.id === s.id), x, y);
+      else completeTodo(state.todos.find(t => t.id === s.id), x, y);
+    }
+  });
+  // Escape / back gesture: treat as stopping, never lose the time already done.
+  focusDialog.addEventListener("cancel", (e) => {
+    if (fm){ e.preventDefault(); endFocus(false); }
+  });
+
+  async function requestWakeLock(){
+    try { if (navigator.wakeLock) fmWakeLock = await navigator.wakeLock.request("screen"); } catch (e) { fmWakeLock = null; }
+  }
+  function releaseWakeLock(){
+    try { if (fmWakeLock) fmWakeLock.release(); } catch (e) {}
+    fmWakeLock = null;
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && fm){ requestWakeLock(); fmTick(); }
+  });
+
+  function startNoise(kind){
+    stopNoise();
+    if (kind !== "brown" && kind !== "rain") return;
+    withAudio((ctx, now) => {
+      if (!fm || fm.pausedAt || fmNoise) return;
+      const len = ctx.sampleRate * 6;
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < len; i++){
+        const white = Math.random() * 2 - 1;
+        if (kind === "brown"){ last = (last + 0.02 * white) / 1.02; d[i] = last * 3.5; }
+        else d[i] = white;
+      }
+      const fade = Math.floor(ctx.sampleRate * 0.05);
+      for (let i = 0; i < fade; i++){ const k = i / fade; d[i] *= k; d[len - 1 - i] *= k; }
+      const src = ctx.createBufferSource();
+      src.buffer = buf; src.loop = true;
+      const gain = ctx.createGain();
+      const target = clamp(state.soundVolume, 0, 1) * (kind === "brown" ? 0.55 : 0.16);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(target, now + 2.5);
+      let out = src;
+      if (kind === "rain"){
+        const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 500;
+        const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2600;
+        src.connect(hp); hp.connect(lp); out = lp;
+      }
+      out.connect(gain).connect(ctx.destination);
+      src.start(now);
+      fmNoise = { src, gain, ctx };
+    });
+  }
+  function stopNoise(){
+    if (!fmNoise) return;
+    const { src, gain, ctx } = fmNoise;
+    fmNoise = null;
+    try {
+      const t = ctx.currentTime;
+      gain.gain.cancelScheduledValues(t);
+      gain.gain.setValueAtTime(gain.gain.value, t);
+      gain.gain.linearRampToValueAtTime(0, t + 0.8);
+      src.stop(t + 0.9);
+    } catch (e) {}
+  }
+
+  /* ---------------------------------------------------------------------
+     Start-up. No accounts: everything lives on this device.
+  --------------------------------------------------------------------- */
   function showMainApp(){
-    const signedIn = cloudEnabled && currentUser && !offlineMode;
-    document.getElementById("authScreen").style.display = "none";
     document.getElementById("mainApp").style.display = "";
     document.getElementById("mainFooter").style.display = "";
-    document.getElementById("signOutBtn").style.display = signedIn ? "" : "none";
-    document.getElementById("footerStorageNote").textContent = signedIn
-      ? "Your schedule is synced to your account."
-      : "Your schedule is saved on this device only (no account, no cloud sync).";
   }
 
   function updateGreeting(){
@@ -2516,135 +3967,11 @@
     lastCurrentBlockId = already ? already.id : null; // don't chime for a block already in progress at launch
     updateSimClock();
     updateGreeting();
+    document.getElementById("dumpInput").value = state.brainDump;
+    activeTab = null;
     render();
     initNotifications();
   }
-
-  async function loadCloudState(userId){
-    try {
-      const { data, error } = await sb.from("timeanchor_state").select("data").eq("user_id", userId).maybeSingle();
-      if (error) throw error;
-      return data ? data.data : null;
-    } catch (e) { return null; }
-  }
-
-  async function saveCloudState(){
-    if (!cloudEnabled || !currentUser || offlineMode) return;
-    try {
-      const payload = {
-        nudgeThreshold: state.nudgeThreshold, categories: state.categories,
-        blocks: state.blocks, savedForDate: state.savedForDate,
-        soundEnabled: state.soundEnabled, soundVolume: state.soundVolume, speakEnabled: state.speakEnabled,
-        firstName: state.firstName, showTimer: state.showTimer,
-        colorTheme: state.colorTheme, todos: state.todos, features: state.features, lastCategoryId: state.lastCategoryId
-      };
-      const { error } = await sb.from("timeanchor_state").upsert({
-        user_id: currentUser.id, data: payload, updated_at: new Date().toISOString()
-      });
-      if (error) throw error;
-      setCloudStatus("synced", "Synced");
-    } catch (e) {
-      setCloudStatus("error", "Sync failed — saved on this device");
-    }
-  }
-
-  async function onAuthed(user){
-    currentUser = user;
-    setCloudStatus("syncing", "Loading…");
-    const cloud = await loadCloudState(user.id);
-    if (cloud){
-      Object.assign(state, cloud);
-    } else {
-      // First login for this account — seed from any existing on-device
-      // schedule if there is one, otherwise the default day template.
-      const local = loadPersisted();
-      Object.assign(state, local || {
-        nudgeThreshold: 45, categories: defaultCategories(), blocks: defaultBlocks(), savedForDate: todayStr(),
-        soundEnabled: true, soundVolume: 0.6, speakEnabled: false, firstName: "", showTimer: true,
-        colorTheme: "mixed", todos: [], features: normalizeFeatures(null), lastCategoryId: null
-      });
-      // The name typed at signup only fills in if nothing's already set
-      // (e.g. no leftover local-only data on this device/browser already
-      // has one) — never silently overwrites a name someone chose.
-      if (!state.firstName) state.firstName = (user.user_metadata && user.user_metadata.full_name) || "";
-      await saveCloudState();
-    }
-    state.features = normalizeFeatures(state.features);
-    restoreThemeVars();
-    finishBoot();
-    setCloudStatus("synced", "Synced");
-  }
-
-  let authMode = "login";
-  function setAuthMode(mode){
-    authMode = mode;
-    document.getElementById("authTabLogin").classList.toggle("active", mode === "login");
-    document.getElementById("authTabLogin").setAttribute("aria-selected", String(mode === "login"));
-    document.getElementById("authTabSignup").classList.toggle("active", mode === "signup");
-    document.getElementById("authTabSignup").setAttribute("aria-selected", String(mode === "signup"));
-    document.getElementById("authSubmit").textContent = mode === "login" ? "Log in" : "Sign up";
-    document.getElementById("authPassword").autocomplete = mode === "login" ? "current-password" : "new-password";
-    document.getElementById("authNameField").style.display = mode === "signup" ? "" : "none";
-    document.getElementById("authName").required = mode === "signup";
-    document.getElementById("authConfirmField").style.display = mode === "signup" ? "" : "none";
-    document.getElementById("authConfirm").required = mode === "signup";
-    document.getElementById("authError").textContent = "";
-  }
-  document.getElementById("authTabLogin").addEventListener("click", () => setAuthMode("login"));
-  document.getElementById("authTabSignup").addEventListener("click", () => setAuthMode("signup"));
-
-  document.getElementById("authForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const email = document.getElementById("authEmail").value.trim();
-    const password = document.getElementById("authPassword").value;
-    const name = document.getElementById("authName").value.trim();
-    const confirm = document.getElementById("authConfirm").value;
-    const errEl = document.getElementById("authError");
-    const submitBtn = document.getElementById("authSubmit");
-    errEl.textContent = "";
-
-    if (authMode === "signup"){
-      if (!name){
-        errEl.textContent = "Enter your name.";
-        document.getElementById("authName").focus();
-        return;
-      }
-      if (password !== confirm){
-        errEl.textContent = "Passwords don't match.";
-        document.getElementById("authConfirm").focus();
-        return;
-      }
-    }
-
-    submitBtn.disabled = true;
-    try {
-      const { data, error } = authMode === "login"
-        ? await sb.auth.signInWithPassword({ email, password })
-        : await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
-      if (error) { errEl.textContent = error.message; return; }
-      if (authMode === "signup" && !data.session){
-        errEl.textContent = "Check your email to confirm your account, then log in.";
-        setAuthMode("login");
-        return;
-      }
-      await onAuthed(data.user);
-    } catch (err) {
-      errEl.textContent = "Something went wrong — please try again.";
-    } finally {
-      submitBtn.disabled = false;
-    }
-  });
-
-  document.getElementById("authOfflineLink").addEventListener("click", (e) => {
-    e.preventDefault();
-    offlineMode = true;
-    finishBoot();
-  });
-
-  document.getElementById("signOutBtn").addEventListener("click", async () => {
-    if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
-    location.reload();
-  });
 
   if (speechSupported){
     const speakBtn = document.getElementById("speakNowBtn");
@@ -2652,23 +3979,7 @@
     speakBtn.addEventListener("click", () => speakNow());
   }
 
-  async function boot(){
-    if (!cloudEnabled){
-      finishBoot();
-      return;
-    }
-    try {
-      const { data } = await sb.auth.getSession();
-      if (data && data.session && data.session.user){
-        await onAuthed(data.session.user);
-      } else {
-        showAuthScreen();
-      }
-    } catch (e) {
-      finishBoot(); // cloud unreachable — fall back to local-only rather than block the app
-    }
-  }
-  boot();
+  finishBoot();
 
   // Installable-app support: register the service worker so "Add to Home
   // Screen" behaves like a real app (own icon, opens full-screen, keeps
