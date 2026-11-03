@@ -9,6 +9,8 @@
 <meta name="apple-mobile-web-app-title" content="TimeAnchor" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="theme-color" content="#f6f4ef" />
+<!-- Every theme is light; stops Samsung Internet / Chrome from force-darkening it. -->
+<meta name="color-scheme" content="only light" />
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <link rel="icon" href="icons/icon-512.png" />
@@ -507,7 +509,7 @@
   .dialog-actions .right-group{ display:flex; gap:8px; }
   .color-swatch-input{ width:44px; height:32px; padding:2px; border:1px solid var(--border); border-radius:6px; background:var(--bg); }
   .cat-manage-row{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
-  .cat-manage-row input[type=text].cname{ flex:1; }
+  .cat-manage-row input[type=text].cname{ flex:1; min-width:0; }
   .cat-manage-row input[type=text].cicon{ width:44px; text-align:center; }
 
   /* ---------- Auth screen ---------- */
@@ -591,7 +593,7 @@
       <h2 id="timelineHeading" style="margin:0;">Today's timeline</h2>
     </div>
     <form id="quickBlockForm" style="display:flex;gap:8px;margin-bottom:14px;">
-      <input type="text" id="quickBlockInput" placeholder="Add a task…" style="flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
+      <input type="text" id="quickBlockInput" placeholder="Add a task…" style="flex:1;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
       <button type="submit" class="primary-btn">Add</button>
     </form>
     <div class="timeline-list" id="timelineList"></div>
@@ -601,7 +603,7 @@
     <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
     <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
     <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
-      <input type="text" id="todoInput" placeholder="Add something…" style="flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
+      <input type="text" id="todoInput" placeholder="Add something…" style="flex:1;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
       <button type="submit" class="primary-btn">Add</button>
     </form>
     <ul class="subtask-list" id="todoList" style="margin:0;"></ul>
@@ -1570,7 +1572,7 @@
           '<div class="swipe-content' + (block.isBuffer ? " is-buffer" : "") + '" style="border-left-color:' + cat.color + ';">' +
             (miniTimer ? miniTimer : "") +
             '<div class="block-main">' +
-              '<p class="block-time"><span style="white-space:nowrap;">' + fmtClock(block.start) + ' &ndash; ' + fmtClock(block.start + block.duration) + '</span> <span class="block-dur">' + fmtDuration(block.duration) + '</span></p>' +
+              '<p class="block-time"><span style="white-space:nowrap;">' + fmtClock(block.start) + ' &ndash;</span> <span style="white-space:nowrap;">' + fmtClock(block.start + block.duration) + '</span> <span class="block-dur">' + fmtDuration(block.duration) + '</span></p>' +
               '<div class="block-top-line">' +
                 '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
                 '<p class="block-title">' + escapeHtml(block.title) + '</p>' +
