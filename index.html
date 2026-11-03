@@ -338,6 +338,18 @@
   button.dump-dest::after{ content:" ⇄"; font-weight:400; }
   .dump-empty{ color:var(--muted); font-size:13px; margin:14px 0 0; }
 
+  /* ---------- Steps dropdown (timeline rows) ---------- */
+  .steps-toggle{
+    border:1px solid var(--border); background:var(--bg); color:var(--muted); border-radius:999px;
+    font-size:12px; font-weight:700; padding:3px 10px;
+  }
+  .steps-toggle[aria-expanded="true"]{ color:var(--accent); border-color:var(--accent); }
+  .row-steps{ list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:5px; }
+  .row-steps li{ display:flex; align-items:center; gap:9px; font-size:14px; padding:7px 9px; border-radius:9px; background:var(--bg); border:1px solid var(--border); }
+  .row-steps li .t{ flex:1; min-width:0; }
+  .row-steps li.done .t{ text-decoration:line-through; color:var(--muted); }
+  .row-steps input{ width:19px; height:19px; flex:none; accent-color:var(--accent); }
+
   /* ---------- Focus with me ---------- */
   body.feat-focusmode-off .fm-launch{ display:none; }
   .fm-launch-row{ margin:-4px 0 10px; }
@@ -1866,6 +1878,7 @@
     return { label: w("behind"), cls: "wait" };
   }
 
+  const openStepBlocks = new Set();
   function renderTimeline(){
     const list = sortedBlocks();
     const cur = getCurrentBlock();
@@ -1882,10 +1895,18 @@
         const { fraction, overrun } = timeInfo(block);
         miniTimer = pieMarkup(fraction, cat.color, 40, 0.5, "", overrun, "timelineMiniPie");
       }
-      let subtaskBadge = "";
+      let subtaskBadge = "", stepsList = "";
       if (!block.isBuffer && block.subtasks && block.subtasks.length){
         const done = block.subtasks.filter(s => s.done).length;
-        subtaskBadge = '<span class="subtask-badge">' + done + '/' + block.subtasks.length + ' steps</span>';
+        const open = openStepBlocks.has(block.id);
+        subtaskBadge = '<button type="button" class="steps-toggle" data-action="toggle-steps" data-id="' + block.id + '" aria-expanded="' + open + '">' + (open ? '▾ ' : '▸ ') + done + '/' + block.subtasks.length + ' steps</button>';
+        if (open) stepsList = '<ul class="row-steps">' + block.subtasks.map(st =>
+          '<li class="' + (st.done ? 'done' : '') + '">' +
+            '<input type="checkbox" id="tsub_' + st.id + '" data-action="toggle-subtask" data-block="' + block.id + '" data-sub="' + st.id + '"' + (st.done ? ' checked' : '') + '>' +
+            '<label class="t" for="tsub_' + st.id + '">' + escapeHtml(st.title) + '</label>' +
+            '<span class="subtask-est">' + st.est + 'm</span>' +
+          '</li>'
+        ).join('') + '</ul>';
       }
 
       const swipeable = block.status !== "done" && block.status !== "skipped";
@@ -1906,6 +1927,7 @@
                 subtaskBadge +
                 (block.repeat !== "once" ? '<span class="subtask-badge">🔁 ' + escapeHtml(repeatLabel(block)) + '</span>' : "") +
               '</div>' : '') +
+              stepsList +
             '</div>' +
             '<div class="block-actions">' +
               '<button type="button" class="icon-mini" data-action="edit" data-id="' + block.id + '" aria-label="Edit ' + escapeAttr(block.title) + '">✏️</button>' +
@@ -2466,6 +2488,12 @@
     if (action === "edit"){
       const b = state.blocks.find(x => x.id === t.dataset.id);
       if (b) openBlockForm(b);
+      return;
+    }
+    if (action === "toggle-steps"){
+      const id = t.dataset.id;
+      if (openStepBlocks.has(id)) openStepBlocks.delete(id); else openStepBlocks.add(id);
+      renderTimeline();
       return;
     }
     if (action === "focus-with-me"){
