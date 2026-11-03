@@ -381,9 +381,6 @@
   #headerLine{ font-size:18px; line-height:1.3; vertical-align:middle; }
   .brand h1{ display:flex; align-items:center; }
   .brand-cloud{ flex:none; width:34px; height:24px; margin-right:9px; vertical-align:-3px; filter:drop-shadow(0 2px 4px rgba(70,100,135,.22)); }
-  .empty-cloud{ display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; padding:6px 0 2px; }
-  .empty-cloud svg{ filter:drop-shadow(0 4px 8px rgba(70,100,135,.18)); }
-  .empty-cloud p{ margin:0; color:var(--muted); font-size:13.5px; }
   .splash-name{ margin:18px 0 2px; font-size:26px; font-weight:800; letter-spacing:.01em; animation: splashFade .8s ease .45s both; }
   .splash-tag{ margin:0; font-size:15px; opacity:.75; animation: splashFade .8s ease .75s both; }
   @media not (prefers-reduced-motion: reduce){
@@ -2202,7 +2199,7 @@
     doneSig = sig;
     const todayCount = (state.history[todayStr()] || []).length;
     if (!days.length){
-      el.innerHTML = emptyCloud("sleepy", "Nothing here yet. Finished things will land here &mdash; even the tiny ones count.");
+      el.innerHTML = '<p class="dump-empty" style="margin:0;">Nothing here yet. Finished things will land here &mdash; even the tiny ones count.</p>';
       return;
     }
     el.innerHTML =
@@ -2359,7 +2356,7 @@
             : '') +
         '</div>' +
       '</li>'
-    ).join("") || emptyCloud("sleepy", "Nothing on the list yet.");
+    ).join("") || '<p style="color:var(--muted);font-size:13px;margin:0;">Nothing on the list yet.</p>';
   }
 
   // Structural changes (add/edit/delete/reflow/etc) need to be saved and
@@ -4179,16 +4176,6 @@
     setTimeout(done, 4000);
   })();
 
-  const CLOUD_PARTS = {
-    body: '<g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g>',
-    blush: '<ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/>',
-    sleepy: '<g class="face-sleepy"><path class="cloud-line" d="M49 52 q4 4 8 0"/><path class="cloud-line" d="M66 52 q4 4 8 0"/><path class="cloud-line" d="M58 60 q3 2.5 6 0"/></g>',
-    happy: '<g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="51" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="49.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="51" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="49.7" r="1.2"/></g><path class="cloud-line" d="M55.5 58.5 q6 6 12 0"/></g>'
-  };
-  function cloudSvg(mood, width){
-    return '<svg class="cloud-svg" viewBox="20 10 86 62" width="' + width + '" height="' + Math.round(width * 62 / 86) + '" aria-hidden="true">' +
-      CLOUD_PARTS.body + CLOUD_PARTS.blush + (mood === "sleepy" ? CLOUD_PARTS.sleepy : CLOUD_PARTS.happy) + '</svg>';
-  }
   // One gentle line for the whole day (same no-demands style as focus mode),
   // so the top of the screen is kind without changing every few seconds.
   const DAY_LINES = [
@@ -4207,9 +4194,6 @@
       ? DAY_LINES[((dayNum % DAY_LINES.length) + DAY_LINES.length) % DAY_LINES.length]
       : d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" });
     if (el.textContent !== text) el.textContent = text;
-  }
-  function emptyCloud(mood, html){
-    return '<div class="empty-cloud">' + cloudSvg(mood, 72) + '<p>' + html + '</p></div>';
   }
 
   /* ---------------------------------------------------------------------
