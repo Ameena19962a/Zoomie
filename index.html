@@ -338,6 +338,15 @@
   .cloud-pupil{ fill:#3b4656; }
   .cloud-shine{ fill:#ffffff; }
   .cloud-blush{ fill:#f4a9b8; opacity:.55; }
+  .sun-body{ fill:#ffd66b; }
+  .sun-rays path{ stroke:#f5b53f; stroke-width:4.5; stroke-linecap:round; }
+  .moon-body{ fill:#f8f0d2; stroke:#e3cf8f; stroke-width:1.6; }
+  .moon-crater{ fill:#e7d9a8; }
+  .moon-star{ fill:#ffd66b; }
+  /* Only the buddy picked in Settings shows (cloud, sun or moon). */
+  .buddy:not(.b-cloud){ display:none; }
+  html.buddy-sun .buddy.b-cloud, html.buddy-moon .buddy.b-cloud{ display:none; }
+  html.buddy-sun .buddy.b-sun, html.buddy-moon .buddy.b-moon{ display:inline; }
   .cloud-eye{ transform-box:fill-box; transform-origin:center; }
   /* Splash: sleepy at first, then it wakes, looks at you and smiles. */
   #splash .face-awake{ opacity:0; animation: cloudFaceIn .3s ease 1s both; }
@@ -371,6 +380,8 @@
   }
   @keyframes cloudGlow{ 50%{ filter:drop-shadow(0 0 8px rgba(255,214,102,.95)); } }
   .brand-cloud{ flex:none; width:34px; height:24px; margin-right:9px; vertical-align:-3px; filter:drop-shadow(0 2px 4px rgba(70,100,135,.22)); }
+  .brand-cloud.b-sun{ width:30px; height:30px; margin-right:10px; }
+  .brand-cloud.b-moon{ width:28px; height:28px; margin-right:14px; }
   .splash-name{ margin:18px 0 2px; font-size:26px; font-weight:800; letter-spacing:.01em; animation: splashFade .8s ease .45s both; }
   .splash-tag{ margin:0; font-size:15px; opacity:.75; animation: splashFade .8s ease .75s both; }
   @media not (prefers-reduced-motion: reduce){
@@ -393,6 +404,10 @@
     font-size:12px; font-weight:700; padding:3px 10px;
   }
   .steps-toggle[aria-expanded="true"]{ color:var(--accent); border-color:var(--accent); }
+  .row-chip{
+    border:1px solid var(--accent); background:var(--card); color:var(--text); border-radius:999px;
+    font-size:12px; font-weight:700; padding:3px 10px; margin-left:auto;
+  }
   .row-steps{ list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:5px; }
   .row-steps li{ display:flex; align-items:center; gap:9px; font-size:14px; padding:7px 9px; border-radius:9px; background:var(--bg); border:1px solid var(--border); }
   .row-steps li .t{ flex:1; min-width:0; }
@@ -486,6 +501,8 @@
     border:1px dashed var(--border); background:transparent; color:var(--muted); font-size:14px; font-weight:700;
   }
   .energy-chip.set{ border-style:solid; background:var(--card); }
+  .batt{ width:22px; height:12px; vertical-align:-1px; color:var(--text); }
+  .energy-chip .batt{ display:block; }
   .energy-check{ border:1px solid var(--border); border-radius:12px; padding:12px; margin:0 0 12px; background:var(--bg); }
   .energy-check p{ margin:0 0 8px; font-size:14px; font-weight:700; }
   .energy-check .seg.choice{ margin-bottom:0; background:var(--card); }
@@ -644,15 +661,6 @@
     touch-action:pan-y;
   }
 
-  .soundtrack-stub{
-    width:100%; margin-top:4px; display:flex; align-items:center; gap:10px;
-    border:1px dashed var(--border); border-radius:var(--radius-md); padding:9px 12px; font-size:12.5px; color:var(--muted);
-  }
-  .soundtrack-stub .play-toggle{
-    width:30px;height:30px;border-radius:50%; border:1px solid var(--border); background:var(--card); color:var(--text); flex:none;
-  }
-  .soundtrack-bar{ flex:1; height:5px; border-radius:999px; background:var(--track); overflow:hidden; }
-  .soundtrack-bar > span{ display:block; height:100%; background:var(--accent); }
 
   /* ---------- Timeline ---------- */
   .timeline-toolbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:10px; flex-wrap:wrap; }
@@ -750,19 +758,23 @@
 <script>
   // Decide on the opening animation before anything paints.
   (function(){
-    var show = true, night = false;
+    var show = true, night = false, buddy = null;
     try {
       var saved = JSON.parse(localStorage.getItem("timeanchor_state_v1") || "{}");
       show = !(saved.features && saved.features.splash === false);
       night = saved.colorTheme === "night";
+      buddy = saved.ui && saved.ui.buddy;
     } catch (e) {}
+    if (buddy === "sun" || buddy === "moon") document.documentElement.classList.add("buddy-" + buddy);
     if (show) document.documentElement.classList.add("show-splash");
     if (night) document.documentElement.classList.add("splash-night");
   })();
 </script>
 <div id="splash" aria-hidden="true">
   <div class="splash-cloud-wrap">
-  <svg class="splash-cloud cloud-svg" viewBox="0 0 120 84" width="168" height="118"><g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g><ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/><g class="face-sleepy"><path class="cloud-line" d="M49 52 q4 4 8 0"/><path class="cloud-line" d="M66 52 q4 4 8 0"/><path class="cloud-line" d="M58 60 q3 2.5 6 0"/></g><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="51" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="49.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="51" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="49.7" r="1.2"/></g><path class="cloud-line" d="M55.5 58.5 q6 6 12 0"/></g></svg>
+  <svg class="splash-cloud cloud-svg buddy b-cloud" viewBox="0 0 120 84" width="168" height="118"><g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g><ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/><g class="face-sleepy"><path class="cloud-line" d="M49 52 q4 4 8 0"/><path class="cloud-line" d="M66 52 q4 4 8 0"/><path class="cloud-line" d="M58 60 q3 2.5 6 0"/></g><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="51" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="49.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="51" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="49.7" r="1.2"/></g><path class="cloud-line" d="M55.5 58.5 q6 6 12 0"/></g></svg>
+  <svg class="splash-cloud cloud-svg buddy b-sun" viewBox="0 0 120 84" width="168" height="118"><g class="sun-rays"><path d="M85.5 45.0 L91.5 45.0"/><path d="M78.5 62.0 L82.7 66.2"/><path d="M61.5 69.0 L61.5 75.0"/><path d="M44.5 62.0 L40.3 66.2"/><path d="M37.5 45.0 L31.5 45.0"/><path d="M44.5 28.0 L40.3 23.8"/><path d="M61.5 21.0 L61.5 15.0"/><path d="M78.5 28.0 L82.7 23.8"/></g><circle class="sun-body" cx="61.5" cy="45" r="20"/><ellipse class="cloud-blush" cx="48.5" cy="50.5" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="74.5" cy="50.5" rx="4" ry="2.4"/><g class="face-sleepy"><path class="cloud-line" d="M49 44 q4 4 8 0"/><path class="cloud-line" d="M66 44 q4 4 8 0"/><path class="cloud-line" d="M58 52 q3 2.5 6 0"/></g><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="43" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="41.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="43" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="41.7" r="1.2"/></g><path class="cloud-line" d="M55.5 50.5 q6 6 12 0"/></g></svg>
+  <svg class="splash-cloud cloud-svg buddy b-moon" viewBox="0 0 120 84" width="168" height="118"><circle class="moon-body" cx="61.5" cy="45" r="24"/><circle class="moon-crater" cx="77" cy="32" r="4"/><circle class="moon-crater" cx="45.5" cy="31" r="2.6"/><circle class="moon-crater" cx="80" cy="53" r="2.3"/><path class="moon-star" d="M95 17 q1.2 5 6 6 q-4.8 1 -6 6 q-1.2 -5 -6 -6 q4.8 -1 6 -6z"/><ellipse class="cloud-blush" cx="47.5" cy="52.5" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="75.5" cy="52.5" rx="4" ry="2.4"/><g class="face-sleepy"><path class="cloud-line" d="M49 45 q4 4 8 0"/><path class="cloud-line" d="M66 45 q4 4 8 0"/><path class="cloud-line" d="M58 53.5 q3 2.5 6 0"/></g><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="44" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="42.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="44" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="42.7" r="1.2"/></g><path class="cloud-line" d="M55.5 52 q6 6 12 0"/></g></svg>
     <span class="splash-spark s1">✨</span><span class="splash-spark s2">✨</span>
   </div>
   <p class="splash-name">Kindday</p>
@@ -771,7 +783,7 @@
 
 <header class="app-header">
   <div class="brand">
-    <h1 id="brandTagline"><svg class="brand-cloud cloud-svg" viewBox="20 10 86 62" aria-hidden="true"><g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g><ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="51" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="49.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="51" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="49.7" r="1.2"/></g><path class="cloud-line" d="M55.5 58.5 q6 6 12 0"/></g></svg><span id="headerLine">Kindday</span></h1>
+    <h1 id="brandTagline"><svg class="brand-cloud cloud-svg buddy b-cloud" viewBox="20 10 86 62" aria-hidden="true"><g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g><ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="51" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="49.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="51" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="49.7" r="1.2"/></g><path class="cloud-line" d="M55.5 58.5 q6 6 12 0"/></g></svg><svg class="brand-cloud cloud-svg buddy b-sun" viewBox="31 14 61 62" aria-hidden="true"><g class="sun-rays"><path d="M85.5 45.0 L91.5 45.0"/><path d="M78.5 62.0 L82.7 66.2"/><path d="M61.5 69.0 L61.5 75.0"/><path d="M44.5 62.0 L40.3 66.2"/><path d="M37.5 45.0 L31.5 45.0"/><path d="M44.5 28.0 L40.3 23.8"/><path d="M61.5 21.0 L61.5 15.0"/><path d="M78.5 28.0 L82.7 23.8"/></g><circle class="sun-body" cx="61.5" cy="45" r="20"/><ellipse class="cloud-blush" cx="48.5" cy="50.5" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="74.5" cy="50.5" rx="4" ry="2.4"/><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="43" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="41.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="43" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="41.7" r="1.2"/></g><path class="cloud-line" d="M55.5 50.5 q6 6 12 0"/></g></svg><svg class="brand-cloud cloud-svg buddy b-moon" viewBox="36 19 52 52" aria-hidden="true"><circle class="moon-body" cx="61.5" cy="45" r="24"/><circle class="moon-crater" cx="77" cy="32" r="4"/><circle class="moon-crater" cx="45.5" cy="31" r="2.6"/><circle class="moon-crater" cx="80" cy="53" r="2.3"/><path class="moon-star" d="M95 17 q1.2 5 6 6 q-4.8 1 -6 6 q-1.2 -5 -6 -6 q4.8 -1 6 -6z"/><ellipse class="cloud-blush" cx="47.5" cy="52.5" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="75.5" cy="52.5" rx="4" ry="2.4"/><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="44" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="42.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="44" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="42.7" r="1.2"/></g><path class="cloud-line" d="M55.5 52 q6 6 12 0"/></g></svg><span id="headerLine">Kindday</span></h1>
   </div>
   <div class="header-controls">
     <div class="sim-clock" id="simClockWrap" title="Speed and other testing tools are in Settings"><strong id="simClockText">--:--</strong></div>
@@ -838,7 +850,7 @@
   <section class="panel" id="todoPanelSection" aria-labelledby="todoHeading">
     <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
     <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
-    <div class="fm-launch-row"><button type="button" class="text-btn fm-launch" data-action="focus-with-me">☁️ Focus with me</button></div>
+    <div class="fm-launch-row"><button type="button" class="text-btn fm-launch" data-action="focus-with-me"><span class="buddy-emoji">☁️</span> Focus with me</button></div>
     <div id="energyCheck"></div>
     <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
       <input type="text" id="todoInput" placeholder="Add something…" style="flex:1;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
@@ -1057,11 +1069,11 @@
 
   // repeat: "once" (only on `date`), "daily", or "weekly" (on `days`, 0=Sun).
   // New blocks default to just today; routines are opted into in the form.
-  function mkBlock(title, categoryId, start, duration, isBuffer, subtasks, soundtrackEnabled){
+  function mkBlock(title, categoryId, start, duration, isBuffer, subtasks){
     return {
       id: uid("blk"), title, categoryId, start, duration,
       isBuffer: !!isBuffer, subtasks: subtasks || [],
-      soundtrackEnabled: !!soundtrackEnabled, status: "pending",
+      status: "pending",
       repeat: "once", date: todayStr(), days: []
     };
   }
@@ -1083,7 +1095,7 @@
     return true;
   }
   function mkBuffer(start, duration){
-    return mkBlock("Buffer", null, start, duration, true, [], false);
+    return mkBlock("Buffer", null, start, duration, true, []);
   }
 
   /* ---------------------------------------------------------------------
@@ -1147,7 +1159,8 @@
       gentle: u.gentle === true,
       dayStart: Number.isFinite(u.dayStart) ? u.dayStart : 7 * 60,
       dayEnd: Number.isFinite(u.dayEnd) ? u.dayEnd : 22 * 60,
-      focusSound: ["off", "brown", "rain"].includes(u.focusSound) ? u.focusSound : "off"
+      focusSound: ["off", "brown", "rain"].includes(u.focusSound) ? u.focusSound : "off",
+      buddy: ["cloud", "sun", "moon"].includes(u.buddy) ? u.buddy : "cloud"
     };
   }
 
@@ -1408,7 +1421,7 @@
   }
 
   function cloudCheer(reduceMotion){
-    const cloud = document.querySelector("#brandTagline .brand-cloud");
+    const cloud = document.querySelector("#brandTagline .brand-cloud.b-" + state.ui.buddy);
     if (!cloud) return;
     cloud.classList.remove("cheer");
     void cloud.getBoundingClientRect();
@@ -1507,21 +1520,54 @@
     if (state.features.celebrations) celebrateBurst(x, y);
     playCompletionChime();
   }
-  function deleteBlockWithConfirm(b){
-    if (!b) return;
-    showConfirm('Delete "' + b.title + '"? This can\'t be undone.', () => removeBlockAnimated(b.id));
-  }
+  // Deleting never needs a scary "are you sure": the note that pops up has Undo.
   function removeBlockAnimated(id){
+    const b = state.blocks.find(x => x.id === id);
+    if (!b) return;
     const row = document.querySelector('#timelineList .block-row[data-id="' + id + '"]');
     animateRemoval(row, () => {
+      const idx = state.blocks.indexOf(b);
       state.blocks = state.blocks.filter(x => x.id !== id);
       commit();
+      showNotice('Deleted "' + b.title + '".', () => {
+        if (!state.blocks.includes(b)) state.blocks.splice(Math.min(idx, state.blocks.length), 0, b);
+        commit();
+      });
     });
   }
   function deleteTodo(t){
     if (!t) return;
+    const idx = state.todos.indexOf(t);
     state.todos = state.todos.filter(x => x.id !== t.id);
     commit();
+    showNotice('Deleted "' + t.title + '".', () => {
+      if (!state.todos.includes(t)) state.todos.splice(Math.min(idx, state.todos.length), 0, t);
+      commit();
+    });
+  }
+
+  // Start any task right now. Anything already due but not done moves to
+  // just after it; later tasks only shift if they would overlap.
+  function startBlockNow(b){
+    if (!b || b.status !== "pending") return;
+    const before = state.blocks.map(x => [x, x.start]);
+    const now = Math.round(state.simNow);
+    const others = sortedBlocks().filter(x => x.status === "pending" && x.id !== b.id);
+    const waiting = others.filter(x => x.start <= now);
+    b.start = now;
+    let end = now + b.duration;
+    waiting.forEach(x => { x.start = end; end += x.duration; });
+    others.filter(x => !waiting.includes(x)).forEach(x => {
+      if (x.start < end) x.start = end;
+      end = Math.max(end, x.start + x.duration);
+    });
+    commit();
+    const moved = waiting.length === 1 ? '"' + waiting[0].title + '" moved to after it.'
+      : waiting.length > 1 ? waiting.length + ' tasks moved to after it.' : '';
+    showNotice('Started "' + b.title + '". ' + moved, () => {
+      before.forEach(([x, s]) => { x.start = s; });
+      commit();
+    });
   }
 
   // Delete: the card slides off over the red layer with a little puff, then
@@ -1565,7 +1611,7 @@
   }
 
   function deletePoof(x, y){
-    ["☁️", "✨"].forEach((emoji, i) => {
+    [buddyEmoji(), "✨"].forEach((emoji, i) => {
       const el = document.createElement("span");
       el.className = "delete-poof";
       el.textContent = emoji;
@@ -1731,7 +1777,7 @@
   /* ---------------------------------------------------------------------
      Rendering: Focus panel
   --------------------------------------------------------------------- */
-  const FOCUS_LAUNCH_HTML = '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me">☁️ Focus with me</button></div>';
+  const focusLaunchHtml = () => '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me">' + buddyEmoji() + ' Focus with me</button></div>';
   function renderFocusPanel(){
     const el = document.getElementById("focusPanelBody");
     const cur = getCurrentBlock();
@@ -1745,12 +1791,12 @@
             '<p>Nothing scheduled right now &mdash; this is open time.</p>' +
             '<p class="next-line">' + w("nextUp") + ': <strong>' + escapeHtml(next.title) + '</strong>' + (cat.name && state.features.categories ? ' (' + cat.icon + ' ' + escapeHtml(cat.name) + ')' : '') + ' at ' + fmtClock(next.start) + '.</p>' +
             '<div class="focus-actions"><button type="button" class="ghost-btn" data-action="start-now" data-id="' + next.id + '">' + w("startNow") + '</button></div>' +
-            FOCUS_LAUNCH_HTML +
+            focusLaunchHtml() +
           '</div>' + lowCapacityLinkHtml();
       } else if (sortedBlocks().length === 0){
-        el.innerHTML = '<div class="focus-empty"><p>Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.</p>' + FOCUS_LAUNCH_HTML + '</div>';
+        el.innerHTML = '<div class="focus-empty"><p>Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.</p>' + focusLaunchHtml() + '</div>';
       } else {
-        el.innerHTML = '<div class="focus-empty"><p>Nothing else is scheduled for today.</p>' + FOCUS_LAUNCH_HTML + '</div>' + lowCapacityLinkHtml();
+        el.innerHTML = '<div class="focus-empty"><p>Nothing else is scheduled for today.</p>' + focusLaunchHtml() + '</div>' + lowCapacityLinkHtml();
       }
       updateAriaLive("Nothing is currently active.");
       return;
@@ -1776,18 +1822,6 @@
       ).join("") + '</ul>';
     }
 
-    let soundtrackHtml = "";
-    if (!cur.isBuffer && cur.soundtrackEnabled){
-      const played = clamp(1 - fraction, 0, 1) * 100;
-      soundtrackHtml =
-        '<div class="soundtrack-stub">' +
-          '<button type="button" class="play-toggle" data-action="toggle-play" aria-label="' + (cur._playing ? "Pause" : "Play") + ' placeholder soundtrack">' + (cur._playing ? "⏸" : "▶") + '</button>' +
-          '<div>' +
-            '<div>' + escapeHtml(cat.name) + ' mix &middot; ' + fmtDuration(cur.duration) + ' (prototype stub, no audio)</div>' +
-            '<div class="soundtrack-bar"><span style="width:' + played.toFixed(1) + '%;"></span></div>' +
-          '</div>' +
-        '</div>';
-    }
 
     let overrunHtml = "";
     if (overrun){
@@ -1813,14 +1847,13 @@
         '<p class="focus-time-range">' + fmtClock(cur.start) + ' &ndash; ' + fmtClock(cur.start + cur.duration) + ' <span class="block-dur">&middot; ' + fmtDuration(cur.duration) + (overrun ? " (running over)" : "") + '</span></p>' +
         (timerOn ? '<p class="focus-remaining-text" id="focusRemainingText">' + remainingSentence(cur, remaining, overrun) + '</p>' : '') +
         subtasksHtml +
-        soundtrackHtml +
         overrunHtml +
         '<div class="focus-actions">' +
           '<button type="button" class="ghost-btn" data-action="extend" data-id="' + cur.id + '" data-min="5">+5m</button>' +
           '<button type="button" class="ghost-btn" data-action="extend" data-id="' + cur.id + '" data-min="10">+10m</button>' +
           '<button type="button" class="primary-btn" data-action="done" data-id="' + cur.id + '">' + w("markDone") + '</button>' +
         '</div>' +
-        '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me" data-kind="block" data-id="' + cur.id + '">☁️ Focus with me</button></div>' +
+        '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me" data-kind="block" data-id="' + cur.id + '">' + buddyEmoji() + ' Focus with me</button></div>' +
       '</div>' + lowCapacityLinkHtml();
   }
 
@@ -1894,6 +1927,11 @@
       }
 
       const swipeable = block.status !== "done" && block.status !== "skipped";
+      const rowBtn = !swipeable
+        ? '<button type="button" class="row-chip" data-action="bring-back" data-id="' + block.id + '">↩ Bring back</button>'
+        : !isCurrent && !block.isBuffer
+        ? '<button type="button" class="row-chip" data-action="start-now" data-id="' + block.id + '">▶ Start now</button>'
+        : "";
       html +=
         '<div class="block-row' + (isCurrent ? " is-current" : "") + (swipeable ? "" : " is-done") + '" data-id="' + block.id + '">' +
           (swipeable ? '<div class="swipe-bg-right">✓ Done</div>' : "") +
@@ -1906,10 +1944,11 @@
                 catChip(cat) +
                 '<p class="block-title">' + escapeHtml(block.title) + '</p>' +
               '</div>' +
-              (st || subtaskBadge || block.repeat !== "once" ? '<div class="block-meta">' +
+              (st || subtaskBadge || rowBtn || block.repeat !== "once" ? '<div class="block-meta">' +
                 (st ? '<span class="status-tag ' + st.cls + '">' + st.label + '</span>' : "") +
                 subtaskBadge +
                 (block.repeat !== "once" ? '<span class="subtask-badge">🔁 ' + escapeHtml(repeatLabel(block)) + '</span>' : "") +
+                rowBtn +
               '</div>' : '') +
               stepsList +
             '</div>' +
@@ -1950,6 +1989,7 @@
     cl.toggle("feat-focusmode-off", !f.focusMode);
     cl.toggle("feat-categories-off", !f.categories);
     updateHeaderLine();
+    applyBuddy();
     cl.toggle("feat-timeline-off", !f.timeline);
     cl.toggle("feat-blocks-off", !f.focus && !f.timeline);
     cl.toggle("feat-quickadd-off", !f.quickAdd);
@@ -1963,6 +2003,14 @@
      Tabs. A tab disappears when every feature inside it is switched off;
      the bar itself only shows when there's more than one tab to pick.
   --------------------------------------------------------------------- */
+  const BUDDY_EMOJI = { cloud: "☁️", sun: "☀️", moon: "🌙" };
+  function buddyEmoji(){ return BUDDY_EMOJI[state.ui.buddy] || "☁️"; }
+  function applyBuddy(){
+    const cl = document.documentElement.classList;
+    cl.toggle("buddy-sun", state.ui.buddy === "sun");
+    cl.toggle("buddy-moon", state.ui.buddy === "moon");
+    document.querySelectorAll(".buddy-emoji").forEach(el => { el.textContent = buddyEmoji(); });
+  }
   const TAB_ICONS = { today: "☀️", dump: "💭", todo: "🌱", done: "🌈" };
   let activeTab = null;
   function nameOf(key){
@@ -2038,11 +2086,6 @@
 
     const remainText = document.getElementById("focusRemainingText");
     if (remainText) remainText.textContent = remainingSentence(cur, remaining, overrun);
-
-    if (!cur.isBuffer && cur.soundtrackEnabled){
-      const bar = document.querySelector(".soundtrack-bar > span");
-      if (bar) bar.style.width = (clamp(1 - fraction, 0, 1) * 100).toFixed(1) + "%";
-    }
   }
 
   function dayLabel(d){
@@ -2089,10 +2132,16 @@
     if (e.target.open) doneOpenDays.add(d); else doneOpenDays.delete(d);
   }, true);
 
+  // A battery reads as energy for everyone: 1 bar low, 2 okay, 3 good.
+  function battery(bars){
+    let s = '<svg class="batt" viewBox="0 0 27 14" aria-hidden="true"><rect x="1" y="1" width="22" height="12" rx="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="24" y="4.5" width="2.4" height="5" rx="1.1" fill="currentColor"/>';
+    for (let i = 0; i < bars; i++) s += '<rect x="' + (3.6 + i * 6.3) + '" y="3.6" width="4.9" height="6.8" rx="1.3" fill="currentColor"/>';
+    return s + '</svg>';
+  }
   const ENERGY = {
-    low: { icon: "🌙", name: "Low", note: "Low-energy day. The 🌙 gentle ones are at the top \u2014 everything else can wait." },
-    med: { icon: "⛅", name: "Okay", note: "The ⛅ middle-energy ones are at the top." },
-    high: { icon: "☀️", name: "Good", note: "Good energy! The ☀️ bigger ones are at the top." }
+    low: { icon: battery(1), name: "Low", note: "Low-energy day. The easy ones are at the top \u2014 everything else can wait." },
+    med: { icon: battery(2), name: "Okay", note: "The middle-energy ones are at the top." },
+    high: { icon: battery(3), name: "Good", note: "Good energy! The bigger ones are at the top." }
   };
   const ENERGY_CYCLE = [null, "low", "med", "high"];
   function todaysEnergy(){
@@ -2504,22 +2553,16 @@
       return;
     }
     if (action === "start-now"){
-      const b = state.blocks.find(x => x.id === t.dataset.id);
-      if (b){
-        const oldStart = b.start;
-        const newStart = Math.round(state.simNow);
-        const delta = newStart - oldStart;
-        if (delta !== 0){
-          sortedBlocks().forEach(other => { if (other.id !== b.id && other.start > oldStart) other.start += delta; });
-          b.start = newStart;
-        }
-        commit();
-      }
+      startBlockNow(state.blocks.find(x => x.id === t.dataset.id));
       return;
     }
-    if (action === "toggle-play"){
-      const cur = getCurrentBlock();
-      if (cur) { cur._playing = !cur._playing; render(); }
+    if (action === "bring-back"){
+      const b = state.blocks.find(x => x.id === t.dataset.id);
+      if (b){
+        b.status = "pending";
+        unrecordDone(b.id);
+        commit();
+      }
       return;
     }
     if (action === "low-capacity-day"){
@@ -2544,7 +2587,7 @@
     "timelineList", ".block-row",
     (id) => state.blocks.find(b => b.id === id),
     completeBlock,
-    (item, row, content, reset) => { reset(); deleteBlockWithConfirm(item); }
+    (item) => removeBlockAnimated(item.id)
   );
   setupSwipeGestures(
     "todoList", "li",
@@ -2566,7 +2609,7 @@
     const cat = state.categories.find(c => c.id === catId);
     const start = suggestedNewStart();
     const duration = (cat && cat.defaultMinutes) || 30;
-    state.blocks.push(mkBlock(title, catId, start, duration, false, [], false));
+    state.blocks.push(mkBlock(title, catId, start, duration, false, []));
     input.value = "";
     commit();
   });
@@ -2743,7 +2786,7 @@
       const title = it.title.trim().slice(0, 120);
       if (it.dest === "timeline"){
         const start = it.time != null ? it.time : suggestedNewStart();
-        const b = mkBlock(title, catId, start, it.duration || (cat && cat.defaultMinutes) || 30, false, [], false);
+        const b = mkBlock(title, catId, start, it.duration || (cat && cat.defaultMinutes) || 30, false, []);
         state.blocks.push(b);
         blockIds.push(b.id);
       } else {
@@ -2937,7 +2980,6 @@
     const startStr = fmtClock(block ? block.start : suggestedNewStart());
     const activeCat = state.categories.find(c => c.id === formCategoryId);
     const duration = block ? block.duration : (activeCat ? (activeCat.defaultMinutes || 30) : 30);
-    const soundtrackEnabled = block ? !!block.soundtrackEnabled : false;
 
     let bodyFields = "";
     if (!formIsBuffer){
@@ -2947,7 +2989,7 @@
         '</option>'
       ).join("");
 
-      const hasExtrasAlready = formSubtasks.length > 0 || soundtrackEnabled;
+      const hasExtrasAlready = formSubtasks.length > 0;
       bodyFields =
         '<div class="field bd-cat-field"><label for="bd_category">Category <span style="font-weight:400;color:var(--muted);">(also sets a default length)</span></label>' +
           '<select id="bd_category">' + catOptions + '</select>' +
@@ -2964,16 +3006,12 @@
             '<p id="bd_durationError" style="margin:5px 0 0;font-size:11.5px;color:var(--danger-quiet);display:none;">Type a length like 45m, 1h, or 1h 30m.</p></div>' +
         '</div>' +
         '<details class="more-options" id="bd_moreOptions"' + (hasExtrasAlready ? " open" : "") + '>' +
-          '<summary>More options <span>(steps, soundtrack, buffer)</span></summary>' +
+          '<summary>More options <span>(steps, buffer)</span></summary>' +
           '<div class="more-options-body">' +
             '<h3 style="font-size:13px;margin:14px 0 8px;color:var(--muted);">Steps (optional)</h3>' +
             '<div class="field"><button type="button" class="text-btn" id="bd_addStepLink">+ Add a step</button></div>' +
             '<div id="bd_subtasks"></div>' +
             '<h3 style="font-size:13px;margin:16px 0 8px;color:var(--muted);">Extras (optional)</h3>' +
-            '<div class="checkbox-field">' +
-              '<input type="checkbox" id="bd_soundtrack" ' + (soundtrackEnabled ? "checked" : "") + '>' +
-              '<label for="bd_soundtrack">Play a timer-length soundtrack for this block (prototype stub)</label>' +
-            '</div>' +
             '<div class="checkbox-field bd-buffer-option">' +
               '<input type="checkbox" id="bd_addBuffer">' +
               '<label for="bd_addBuffer">Add a short buffer right after this block</label>' +
@@ -3035,10 +3073,8 @@
     const delBtn = document.getElementById("bd_delete");
     if (delBtn) delBtn.addEventListener("click", () => {
       const id = formEditingId;
-      showConfirm("Delete this block? This can't be undone.", () => {
-        blockDialog.close();
-        removeBlockAnimated(id);
-      });
+      blockDialog.close();
+      removeBlockAnimated(id);
     });
 
     if (!formIsBuffer){
@@ -3153,7 +3189,7 @@
       block.start = startVal;
       block.duration = durationVal;
     } else {
-      block = mkBlock(titleVal, null, startVal, durationVal, formIsBuffer, [], false);
+      block = mkBlock(titleVal, null, startVal, durationVal, formIsBuffer, []);
       state.blocks.push(block);
     }
     const wasOnce = block.repeat === "once";
@@ -3165,7 +3201,6 @@
     if (!formIsBuffer){
       block.categoryId = document.getElementById("bd_category").value || (state.categories[0] ? state.categories[0].id : null);
       state.lastCategoryId = block.categoryId;
-      block.soundtrackEnabled = document.getElementById("bd_soundtrack").checked;
       block.subtasks = formSubtasks.filter(s => s.title.trim().length > 0).map(s => ({ id: s.id, title: s.title.trim(), est: s.est, done: !!s.done }));
 
       const addBufferChk = document.getElementById("bd_addBuffer");
@@ -3251,11 +3286,11 @@
     { group: "today", key: "buffers", name: () => "Buffers", desc: "“+ buffer” buttons for breathing room", sub: true, requires: "timeline" },
     { group: "dump", key: "brainDump", name: () => nameOf("dump"), desc: "Empty your head, then sort it into a list" },
     { group: "todo", key: "todoList", name: () => nameOf("todo"), desc: "Untimed things to get to today" },
-    { group: "todo", key: "energy", name: () => "Energy check-in", desc: "Tag to-dos 🌙 ⛅ ☀️ and see the right ones first", sub: true, requires: "todoList" },
+    { group: "todo", key: "energy", name: () => "Energy check-in", desc: "Tag to-dos low, okay or good energy and see the right ones first", sub: true, requires: "todoList" },
     { group: "done", key: "history", name: () => nameOf("done"), desc: "Everything you've finished, by day" },
     { group: "all", key: "focusMode", name: () => "Focus with me", desc: "A calm companion that keeps you company while you work" },
     { group: "all", key: "dailyWords", name: () => "Kind words at the top", desc: "One gentle line for the day. Off shows today's date instead" },
-    { group: "all", key: "splash", name: () => "Opening animation", desc: "A sleepy cloud says hello when the app opens" },
+    { group: "all", key: "splash", name: () => "Opening animation", desc: "Your little friend wakes up and says hello when the app opens" },
     { group: "all", key: "celebrations", name: () => "Celebrations", desc: "A little party when you finish something" },
     { group: "all", key: "sounds", name: () => "Sounds", desc: "Soft chime when a block starts or you finish" }
   ];
@@ -3363,6 +3398,8 @@
           '<input type="checkbox" class="switch" role="switch" id="st_gentle" aria-label="Gentle wording"' + (state.ui.gentle ? ' checked' : '') + '>' +
         '</label>' +
       '</div>' +
+      '<p class="dialog-sub" style="margin:0 0 6px;">Your little friend</p>' +
+      segHtml("st_buddy", [["cloud", "☁️ Cloud"], ["sun", "☀️ Sun"], ["moon", "🌙 Moon"]], state.ui.buddy, "buddy") +
       '<p class="dialog-sub" style="margin:0 0 6px;">Text size</p>' +
       segHtml("st_textSize", TEXT_SIZES, state.ui.textSize, "size") +
       '<p class="dialog-sub" style="margin:0 0 6px;">Celebration style</p>' +
@@ -3506,6 +3543,15 @@
       state.ui.textSize = b.dataset.size;
       markActive(e.currentTarget, b);
       commit();
+    });
+    document.getElementById("st_buddy").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-buddy]");
+      if (!b) return;
+      state.ui.buddy = b.dataset.buddy;
+      markActive(e.currentTarget, b);
+      commit();
+      const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      cloudCheer(reduceMotion);
     });
     document.getElementById("st_celebrate").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-celebrate]");
@@ -3690,7 +3736,7 @@
     const cur = getCurrentBlock();
     if (cur) list.push({ kind: "block", id: cur.id, title: cur.title, icon: catFor(cur).icon || "☀️", mins: Math.max(5, Math.min(120, Math.ceil(timeInfo(cur).remaining))) });
     state.todos.filter(t => !t.done).slice(0, 8).forEach(t => list.push({ kind: "todo", id: t.id, title: t.title, icon: "🌱" }));
-    list.push({ kind: "none", id: "", title: "Just focus", icon: "☁️" });
+    list.push({ kind: "none", id: "", title: "Just focus", icon: buddyEmoji() });
     return list;
   }
 
@@ -3711,7 +3757,7 @@
     document.getElementById("fmInner").innerHTML =
       '<div class="fm-setup">' +
         '<button type="button" class="icon-btn fm-close" data-fm="close" aria-label="Close">✕</button>' +
-        '<h2 id="fmTitle">☁️ Focus with me</h2>' +
+        '<h2 id="fmTitle">' + buddyEmoji() + ' Focus with me</h2>' +
         '<p class="dialog-sub" style="margin:0;">I\'ll keep you company while you work. No pressure &mdash; stop whenever you like.</p>' +
         '<p class="fm-label">What are you working on?</p>' +
         '<div class="fm-choices">' + subjects.map((s, i) =>
@@ -3749,7 +3795,7 @@
     inner.innerHTML =
       '<button type="button" class="icon-btn fm-close" data-fm="stop" aria-label="Stop focusing">✕</button>' +
       '<p class="fm-with" id="fmTitle">' + (s.kind === "none" ? "Focusing" : "Focusing on") + '</p>' +
-      '<h2 class="fm-task">' + (s.kind === "none" ? "Just being here ☁️" : escapeHtml(s.title)) + '</h2>' +
+      '<h2 class="fm-task">' + (s.kind === "none" ? "Just being here " + buddyEmoji() : escapeHtml(s.title)) + '</h2>' +
       '<p class="fm-calm-title">You\'re safe. Nothing needs doing right now. 💛</p>' +
       '<div class="fm-breath-wrap"><div class="fm-breath"></div><div class="fm-time" id="fmTime" aria-live="polite"></div></div>' +
       '<p class="fm-cue" id="fmCue" aria-hidden="true"></p>' +
@@ -3759,7 +3805,7 @@
         '<button type="button" class="ghost-btn" data-fm="pause" id="fmPauseBtn">Pause</button>' +
         '<button type="button" class="primary-btn" data-fm="finish">I\'m done ✨</button>' +
       '</div>' +
-      '<div class="fm-normal-actions fm-calm-link"><button type="button" class="text-btn" data-fm="calm">☁️ It\'s all too much</button></div>' +
+      '<div class="fm-normal-actions fm-calm-link"><button type="button" class="text-btn" data-fm="calm">' + buddyEmoji() + ' It\'s all too much</button></div>' +
       '<div class="fm-actions fm-calm-actions" style="flex-direction:column;align-items:stretch;">' +
         '<button type="button" class="primary-btn" data-fm="calm-resume" style="justify-content:center;">I\'m ready to carry on</button>' +
         '<button type="button" class="ghost-btn" data-fm="calm-stop">Stop for today \u2014 that\'s okay</button>' +
@@ -3868,7 +3914,7 @@
     if (minsDone >= 1){
       const day = todayStr();
       (state.history[day] = state.history[day] || []).push({
-        id: uid("focus"), kind: "focus", icon: "☁️", color: null, at: Math.round(actualNowMinutes()),
+        id: uid("focus"), kind: "focus", icon: buddyEmoji(), color: null, at: Math.round(actualNowMinutes()),
         title: "Focused " + fmtDuration(minsDone) + (session.subject.kind === "none" ? "" : " on " + session.subject.title)
       });
       commit();
