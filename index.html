@@ -338,6 +338,14 @@
   .cloud-pupil{ fill:#3b4656; }
   .cloud-shine{ fill:#ffffff; }
   .cloud-blush{ fill:#f4a9b8; opacity:.55; }
+  .cloud-line{ stroke-linejoin:round; }
+  .cloud-mouth{ fill:#3b4656; stroke:#3b4656; stroke-width:1.4; stroke-linejoin:round; }
+  .cloud-tongue{ fill:#f28b9b; }
+  .moon-z{ fill:#7b8aa3; font-size:10px; font-weight:800; font-family:inherit; }
+  /* A big happy face for a moment while the buddy cheers. */
+  .brand-cloud .face-happy{ display:none; }
+  .brand-cloud.cheer .face-happy{ display:inline; }
+  .brand-cloud.cheer .face-awake{ display:none; }
   .sun-body{ fill:#ffd66b; }
   .sun-rays path{ stroke:#f5b53f; stroke-width:4.5; stroke-linecap:round; }
   .moon-body{ fill:#f8f0d2; stroke:#e3cf8f; stroke-width:1.6; }
@@ -452,7 +460,8 @@
     25%, 50%{ transform:scale(1) rotate(3deg); border-radius:54% 46% 48% 52% / 46% 54% 50% 50%; }
     75%, 100%{ transform:scale(.72) rotate(0deg); border-radius:46% 54% 52% 48% / 50% 46% 54% 50%; }
   }
-  .fm-cue{ margin:-8px 0 12px; min-height:1.4em; font-size:15px; color:var(--muted); letter-spacing:.02em; }
+  .fm-in-shape{ position:relative; display:flex; flex-direction:column; align-items:center; }
+  .fm-cue{ margin:4px 0 0; min-height:1.4em; font-size:15px; font-weight:600; letter-spacing:.02em; color:var(--on-accent, #fff); text-shadow:0 1px 6px rgba(0,0,0,.25); }
   .fm-msg{ transition:opacity .7s ease; }
   .fm-msg.fading{ opacity:0; }
   .fm-calm-link{ margin-top:14px; }
@@ -772,9 +781,9 @@
 </script>
 <div id="splash" aria-hidden="true">
   <div class="splash-cloud-wrap">
-  <svg class="splash-cloud cloud-svg buddy b-cloud" viewBox="0 0 120 84" width="168" height="118"><g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g><ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/><g class="face-sleepy"><path class="cloud-line" d="M49 52 q4 4 8 0"/><path class="cloud-line" d="M66 52 q4 4 8 0"/><path class="cloud-line" d="M58 60 q3 2.5 6 0"/></g><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="51" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="49.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="51" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="49.7" r="1.2"/></g><path class="cloud-line" d="M55.5 58.5 q6 6 12 0"/></g></svg>
-  <svg class="splash-cloud cloud-svg buddy b-sun" viewBox="0 0 120 84" width="168" height="118"><g class="sun-rays"><path d="M85.5 45.0 L91.5 45.0"/><path d="M78.5 62.0 L82.7 66.2"/><path d="M61.5 69.0 L61.5 75.0"/><path d="M44.5 62.0 L40.3 66.2"/><path d="M37.5 45.0 L31.5 45.0"/><path d="M44.5 28.0 L40.3 23.8"/><path d="M61.5 21.0 L61.5 15.0"/><path d="M78.5 28.0 L82.7 23.8"/></g><circle class="sun-body" cx="61.5" cy="45" r="20"/><ellipse class="cloud-blush" cx="48.5" cy="50.5" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="74.5" cy="50.5" rx="4" ry="2.4"/><g class="face-sleepy"><path class="cloud-line" d="M49 44 q4 4 8 0"/><path class="cloud-line" d="M66 44 q4 4 8 0"/><path class="cloud-line" d="M58 52 q3 2.5 6 0"/></g><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="43" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="41.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="43" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="41.7" r="1.2"/></g><path class="cloud-line" d="M55.5 50.5 q6 6 12 0"/></g></svg>
-  <svg class="splash-cloud cloud-svg buddy b-moon" viewBox="0 0 120 84" width="168" height="118"><circle class="moon-body" cx="61.5" cy="45" r="24"/><circle class="moon-crater" cx="77" cy="32" r="4"/><circle class="moon-crater" cx="45.5" cy="31" r="2.6"/><circle class="moon-crater" cx="80" cy="53" r="2.3"/><path class="moon-star" d="M95 17 q1.2 5 6 6 q-4.8 1 -6 6 q-1.2 -5 -6 -6 q4.8 -1 6 -6z"/><ellipse class="cloud-blush" cx="47.5" cy="52.5" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="75.5" cy="52.5" rx="4" ry="2.4"/><g class="face-sleepy"><path class="cloud-line" d="M49 45 q4 4 8 0"/><path class="cloud-line" d="M66 45 q4 4 8 0"/><path class="cloud-line" d="M58 53.5 q3 2.5 6 0"/></g><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="44" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="42.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="44" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="42.7" r="1.2"/></g><path class="cloud-line" d="M55.5 52 q6 6 12 0"/></g></svg>
+  <svg class="splash-cloud cloud-svg buddy b-cloud" viewBox="0 0 120 84" width="168" height="118"><g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g><ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/><g class="face-sleepy"><path class="cloud-line" d="M49 52 q4 4 8 0"/><path class="cloud-line" d="M66 52 q4 4 8 0"/><path class="cloud-line" d="M58 60 q3 2.5 6 0"/></g><g class="face-awake"><g class="cloud-eye"><path class="cloud-line" d="M49 52.5 q4 -5.5 8 0"/></g><g class="cloud-eye"><path class="cloud-line" d="M66 52.5 q4 -5.5 8 0"/></g><path class="cloud-line" d="M56.5 57.5 q5 5 10 0"/></g></svg>
+  <svg class="splash-cloud cloud-svg buddy b-sun" viewBox="0 0 120 84" width="168" height="118"><g class="sun-rays"><path d="M85.5 45.0 L91.5 45.0"/><path d="M78.5 62.0 L82.7 66.2"/><path d="M61.5 69.0 L61.5 75.0"/><path d="M44.5 62.0 L40.3 66.2"/><path d="M37.5 45.0 L31.5 45.0"/><path d="M44.5 28.0 L40.3 23.8"/><path d="M61.5 21.0 L61.5 15.0"/><path d="M78.5 28.0 L82.7 23.8"/></g><circle class="sun-body" cx="61.5" cy="45" r="20"/><ellipse class="cloud-blush" cx="48.5" cy="50.5" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="74.5" cy="50.5" rx="4" ry="2.4"/><g class="face-sleepy"><path class="cloud-line" d="M50 44 q4 4 8 0"/><path class="cloud-line" d="M65 44 q4 4 8 0"/><path class="cloud-line" d="M58.5 51 q3 2.5 6 0"/></g><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="54" cy="43" r="3.6"/><circle class="cloud-shine" cx="55.3" cy="41.7" r="1.2"/></g><g class="cloud-eye"><path class="cloud-line" d="M65 43.5 q4 -4.5 8 0"/></g><path class="cloud-line" d="M53 49.5 q9 8 17 -1"/></g></svg>
+  <svg class="splash-cloud cloud-svg buddy b-moon" viewBox="0 0 120 84" width="168" height="118"><circle class="moon-body" cx="61.5" cy="45" r="24"/><circle class="moon-crater" cx="77" cy="32" r="4"/><circle class="moon-crater" cx="45.5" cy="31" r="2.6"/><circle class="moon-crater" cx="80" cy="53" r="2.3"/><path class="moon-star" d="M95 17 q1.2 5 6 6 q-4.8 1 -6 6 q-1.2 -5 -6 -6 q4.8 -1 6 -6z"/><ellipse class="cloud-blush" cx="47.5" cy="52.5" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="75.5" cy="52.5" rx="4" ry="2.4"/><g class="face-sleepy"><path class="cloud-line" d="M50 45 q4 4 8 0"/><path class="cloud-line" d="M65 45 q4 4 8 0"/><path class="cloud-line" d="M58.5 52 q3 2.5 6 0"/></g><g class="face-awake"><g class="cloud-eye"><path class="cloud-pupil" d="M50.4 45 a3.6 3.6 0 0 0 7.2 0 z"/><path class="cloud-line" d="M49.8 45 h8.4"/></g><g class="cloud-eye"><path class="cloud-pupil" d="M65.4 45 a3.6 3.6 0 0 0 7.2 0 z"/><path class="cloud-line" d="M64.8 45 h8.4"/></g><path class="cloud-line" d="M57.5 52 q4 4 8 0"/><text class="moon-z" x="84" y="40">z</text><text class="moon-z" x="90" y="33" style="font-size:7px">z</text></g></svg>
     <span class="splash-spark s1">✨</span><span class="splash-spark s2">✨</span>
   </div>
   <p class="splash-name">Kindday</p>
@@ -783,7 +792,7 @@
 
 <header class="app-header">
   <div class="brand">
-    <h1 id="brandTagline"><svg class="brand-cloud cloud-svg buddy b-cloud" viewBox="20 10 86 62" aria-hidden="true"><g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g><ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="51" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="49.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="51" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="49.7" r="1.2"/></g><path class="cloud-line" d="M55.5 58.5 q6 6 12 0"/></g></svg><svg class="brand-cloud cloud-svg buddy b-sun" viewBox="31 14 61 62" aria-hidden="true"><g class="sun-rays"><path d="M85.5 45.0 L91.5 45.0"/><path d="M78.5 62.0 L82.7 66.2"/><path d="M61.5 69.0 L61.5 75.0"/><path d="M44.5 62.0 L40.3 66.2"/><path d="M37.5 45.0 L31.5 45.0"/><path d="M44.5 28.0 L40.3 23.8"/><path d="M61.5 21.0 L61.5 15.0"/><path d="M78.5 28.0 L82.7 23.8"/></g><circle class="sun-body" cx="61.5" cy="45" r="20"/><ellipse class="cloud-blush" cx="48.5" cy="50.5" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="74.5" cy="50.5" rx="4" ry="2.4"/><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="43" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="41.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="43" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="41.7" r="1.2"/></g><path class="cloud-line" d="M55.5 50.5 q6 6 12 0"/></g></svg><svg class="brand-cloud cloud-svg buddy b-moon" viewBox="36 19 52 52" aria-hidden="true"><circle class="moon-body" cx="61.5" cy="45" r="24"/><circle class="moon-crater" cx="77" cy="32" r="4"/><circle class="moon-crater" cx="45.5" cy="31" r="2.6"/><circle class="moon-crater" cx="80" cy="53" r="2.3"/><path class="moon-star" d="M95 17 q1.2 5 6 6 q-4.8 1 -6 6 q-1.2 -5 -6 -6 q4.8 -1 6 -6z"/><ellipse class="cloud-blush" cx="47.5" cy="52.5" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="75.5" cy="52.5" rx="4" ry="2.4"/><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="53" cy="44" r="3.6"/><circle class="cloud-shine" cx="54.3" cy="42.7" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="70" cy="44" r="3.6"/><circle class="cloud-shine" cx="71.3" cy="42.7" r="1.2"/></g><path class="cloud-line" d="M55.5 52 q6 6 12 0"/></g></svg><span id="headerLine">Kindday</span></h1>
+    <h1 id="brandTagline"><svg class="brand-cloud cloud-svg buddy b-cloud" viewBox="20 10 86 62" aria-hidden="true"><g class="cloud-body"><circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/><rect x="36" y="46" width="52" height="23" rx="11.5"/></g><ellipse class="cloud-blush" cx="45" cy="58" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="78" cy="58" rx="4" ry="2.4"/><g class="face-awake"><g class="cloud-eye"><path class="cloud-line" d="M49 52.5 q4 -5.5 8 0"/></g><g class="cloud-eye"><path class="cloud-line" d="M66 52.5 q4 -5.5 8 0"/></g><path class="cloud-line" d="M56.5 57.5 q5 5 10 0"/></g><g class="face-happy"><g class="cloud-eye"><path class="cloud-line" d="M49 51.5 q4 -5.5 8 0"/></g><g class="cloud-eye"><path class="cloud-line" d="M66 51.5 q4 -5.5 8 0"/></g><path class="cloud-mouth" d="M55 56 q6.5 9.75 13 0 z"/></g></svg><svg class="brand-cloud cloud-svg buddy b-sun" viewBox="31 14 61 62" aria-hidden="true"><g class="sun-rays"><path d="M85.5 45.0 L91.5 45.0"/><path d="M78.5 62.0 L82.7 66.2"/><path d="M61.5 69.0 L61.5 75.0"/><path d="M44.5 62.0 L40.3 66.2"/><path d="M37.5 45.0 L31.5 45.0"/><path d="M44.5 28.0 L40.3 23.8"/><path d="M61.5 21.0 L61.5 15.0"/><path d="M78.5 28.0 L82.7 23.8"/></g><circle class="sun-body" cx="61.5" cy="45" r="20"/><ellipse class="cloud-blush" cx="48.5" cy="50.5" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="74.5" cy="50.5" rx="4" ry="2.4"/><g class="face-awake"><g class="cloud-eye"><circle class="cloud-pupil" cx="54" cy="43" r="3.6"/><circle class="cloud-shine" cx="55.3" cy="41.7" r="1.2"/></g><g class="cloud-eye"><path class="cloud-line" d="M65 43.5 q4 -4.5 8 0"/></g><path class="cloud-line" d="M53 49.5 q9 8 17 -1"/></g><g class="face-happy"><g class="cloud-eye"><path class="cloud-line" d="M50 44 q4 -5.5 8 0"/></g><g class="cloud-eye"><path class="cloud-line" d="M65 44 q4 -5.5 8 0"/></g><path class="cloud-mouth" d="M54 48.5 q7.5 11.25 15 0 z"/><path class="cloud-tongue" d="M58.5 54.5 q3 3.2 6 0 z"/></g></svg><svg class="brand-cloud cloud-svg buddy b-moon" viewBox="36 19 52 52" aria-hidden="true"><circle class="moon-body" cx="61.5" cy="45" r="24"/><circle class="moon-crater" cx="77" cy="32" r="4"/><circle class="moon-crater" cx="45.5" cy="31" r="2.6"/><circle class="moon-crater" cx="80" cy="53" r="2.3"/><path class="moon-star" d="M95 17 q1.2 5 6 6 q-4.8 1 -6 6 q-1.2 -5 -6 -6 q4.8 -1 6 -6z"/><ellipse class="cloud-blush" cx="47.5" cy="52.5" rx="4" ry="2.4"/><ellipse class="cloud-blush" cx="75.5" cy="52.5" rx="4" ry="2.4"/><g class="face-awake"><g class="cloud-eye"><path class="cloud-pupil" d="M50.4 45 a3.6 3.6 0 0 0 7.2 0 z"/><path class="cloud-line" d="M49.8 45 h8.4"/></g><g class="cloud-eye"><path class="cloud-pupil" d="M65.4 45 a3.6 3.6 0 0 0 7.2 0 z"/><path class="cloud-line" d="M64.8 45 h8.4"/></g><path class="cloud-line" d="M57.5 52 q4 4 8 0"/><text class="moon-z" x="84" y="40">z</text><text class="moon-z" x="90" y="33" style="font-size:7px">z</text></g><g class="face-happy"><g class="cloud-eye"><circle class="cloud-pupil" cx="54" cy="44.5" r="3.6"/><circle class="cloud-shine" cx="55.3" cy="43.2" r="1.2"/></g><g class="cloud-eye"><circle class="cloud-pupil" cx="69" cy="44.5" r="3.6"/><circle class="cloud-shine" cx="70.3" cy="43.2" r="1.2"/></g><path class="cloud-mouth" d="M55.5 50.5 q6 9 12 0 z"/></g></svg><span id="headerLine">Kindday</span></h1>
   </div>
   <div class="header-controls">
     <div class="sim-clock" id="simClockWrap" title="Speed and other testing tools are in Settings"><strong id="simClockText">--:--</strong></div>
@@ -1426,7 +1435,7 @@
     cloud.classList.remove("cheer");
     void cloud.getBoundingClientRect();
     cloud.classList.add("cheer");
-    setTimeout(() => cloud.classList.remove("cheer"), 1000);
+    setTimeout(() => cloud.classList.remove("cheer"), 1400);
     if (!reduceMotion){
       const [cx, cy] = rowCenter(cloud);
       celebrateSparkles(cx, cy, 3);
@@ -3710,7 +3719,6 @@
     "Needs are allowed to change."
   ];
   const FM_GROUNDING = [
-    "Nothing needs to happen right now.",
     "There's no rush at all.",
     "Everything else can wait.",
     "This feeling will pass, like weather.",
@@ -3797,8 +3805,7 @@
       '<p class="fm-with" id="fmTitle">' + (s.kind === "none" ? "Focusing" : "Focusing on") + '</p>' +
       '<h2 class="fm-task">' + (s.kind === "none" ? "Just being here " + buddyEmoji() : escapeHtml(s.title)) + '</h2>' +
       '<p class="fm-calm-title">You\'re safe. Nothing needs doing right now. 💛</p>' +
-      '<div class="fm-breath-wrap"><div class="fm-breath"></div><div class="fm-time" id="fmTime" aria-live="polite"></div></div>' +
-      '<p class="fm-cue" id="fmCue" aria-hidden="true"></p>' +
+      '<div class="fm-breath-wrap"><div class="fm-breath"></div><div class="fm-in-shape"><div class="fm-time" id="fmTime" aria-live="polite"></div><p class="fm-cue" id="fmCue" aria-hidden="true"></p></div></div>' +
       '<p class="fm-msg" id="fmMsg">' + FM_AFFIRMATIONS[fm.order[0]] + '</p>' +
       '<div id="fmCheck"></div>' +
       '<div class="fm-actions fm-normal-actions">' +
@@ -3830,17 +3837,20 @@
     };
     step();
   }
+  // Only the newest message is shown; a pending swap is cancelled so two never mix.
+  let fmMsgTimer = null;
   function fadeMsg(text){
     const el = document.getElementById("fmMsg");
     if (!el) return;
+    clearTimeout(fmMsgTimer);
     el.classList.add("fading");
-    setTimeout(() => { el.textContent = text; el.classList.remove("fading"); }, 700);
+    fmMsgTimer = setTimeout(() => { el.textContent = text; el.classList.remove("fading"); }, 700);
   }
 
   function enterCalm(){
     if (!fm || fm.calm) return;
-    if (!fm.pausedAt) togglePause();
     fm.calm = true;
+    if (!fm.pausedAt) togglePause();
     document.getElementById("fmInner").classList.add("fm-calm");
     let g = 0;
     fadeMsg(FM_GROUNDING[0]);
