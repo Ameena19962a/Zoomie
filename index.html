@@ -340,6 +340,26 @@
   button.dump-dest::after{ content:" ⇄"; font-weight:400; }
   .dump-empty{ color:var(--muted); font-size:13px; margin:14px 0 0; }
 
+  /* ---------- Day picker (block form) ---------- */
+  .day-picks{ display:flex; gap:6px; justify-content:space-between; margin:-6px 0 4px; }
+  .day-picks[hidden]{ display:none; }
+  .day-pick{
+    flex:1; min-width:0; aspect-ratio:1; max-width:44px; border-radius:50%;
+    border:1px solid var(--border); background:var(--card); color:var(--text); font-weight:700; font-size:13px;
+  }
+  .day-pick.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  /* ---------- Done history ---------- */
+  .done-hero{ font-size:15px; font-weight:700; margin:4px 0 14px; }
+  .done-day{ border:1px solid var(--border); border-radius:12px; background:var(--bg); margin-bottom:10px; overflow:hidden; }
+  .done-day summary{ list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 14px; font-weight:700; font-size:14px; }
+  .done-day summary::-webkit-details-marker{ display:none; }
+  .done-day summary .done-count{ font-weight:600; font-size:12px; color:var(--muted); white-space:nowrap; }
+  .done-day ul{ list-style:none; margin:0; padding:0 14px 10px; display:flex; flex-direction:column; gap:6px; }
+  .done-day li{ display:flex; align-items:center; gap:10px; font-size:14px; padding:6px 0; border-top:1px solid var(--border); }
+  .done-day li .t{ flex:1; min-width:0; }
+  .done-day li .at{ font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+
   /* ---------- Look & feel ---------- */
   .seg.choice{ border:1px solid var(--border); border-radius:999px; padding:4px; width:100%; margin-bottom:14px; }
   .seg.choice button{ flex:1; }
@@ -680,6 +700,14 @@
   </section>
  </div>
 
+ <div class="tab-panel" data-tab="done">
+  <section class="panel" id="donePanelSection" aria-labelledby="doneHeading">
+    <h2 id="doneHeading" style="margin:0 0 4px;">Done list</h2>
+    <p class="dialog-sub" style="margin:0 0 12px;">Everything you've finished, day by day. No streaks, no pressure &mdash; just proof you did things.</p>
+    <div id="doneList"></div>
+  </section>
+ </div>
+
  <div class="tab-panel" data-tab="todo">
   <section class="panel" id="todoPanelSection" aria-labelledby="todoHeading">
     <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
@@ -920,12 +948,32 @@
     return []; // start empty — add your own; no sample day to clear out first
   }
 
+  // repeat: "once" (only on `date`), "daily", or "weekly" (on `days`, 0=Sun).
+  // New blocks default to just today; routines are opted into in the form.
   function mkBlock(title, categoryId, start, duration, isBuffer, subtasks, soundtrackEnabled){
     return {
       id: uid("blk"), title, categoryId, start, duration,
       isBuffer: !!isBuffer, subtasks: subtasks || [],
-      soundtrackEnabled: !!soundtrackEnabled, status: "pending"
+      soundtrackEnabled: !!soundtrackEnabled, status: "pending",
+      repeat: "once", date: todayStr(), days: []
     };
+  }
+  function copyRepeat(from, to){
+    to.repeat = from.repeat; to.date = from.date; to.days = (from.days || []).slice();
+    return to;
+  }
+  // Blocks saved before per-day schedules existed were all a daily template.
+  function normalizeBlocks(list){
+    (list || []).forEach(b => {
+      if (!["once", "daily", "weekly"].includes(b.repeat)){ b.repeat = "daily"; b.date = null; b.days = []; }
+      if (!Array.isArray(b.days)) b.days = [];
+    });
+    return list || [];
+  }
+  function blockIsToday(b){
+    if (b.repeat === "once") return b.date === todayStr();
+    if (b.repeat === "weekly") return b.days.includes(new Date().getDay());
+    return true;
   }
   function mkBuffer(start, duration){
     return mkBlock("Buffer", null, start, duration, true, [], false);
@@ -961,7 +1009,8 @@
         features: state.features,
         lastCategoryId: state.lastCategoryId,
         ui: state.ui,
-        brainDump: state.brainDump
+        brainDump: state.brainDump,
+        history: state.history
       }));
     } catch (e) { /* storage unavailable — app still works for this session */ }
   }
@@ -969,9 +1018,9 @@
   /* ---------------------------------------------------------------------
      State
   --------------------------------------------------------------------- */
-  const DEFAULT_FEATURES = { focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, celebrations: true };
-  const TAB_IDS = ["today", "dump", "todo"];
-  const DEFAULT_NAMES = { today: "Today", dump: "Brain dump", todo: "To-do list", focus: "Right now", timeline: "Today's timeline" };
+  const DEFAULT_FEATURES = { focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, history: true, celebrations: true };
+  const TAB_IDS = ["today", "dump", "todo", "done"];
+  const DEFAULT_NAMES = { today: "Today", dump: "Brain dump", todo: "To-do list", done: "Done list", focus: "Right now", timeline: "Today's timeline" };
   function normalizeUi(u){
     u = u || {};
     const order = (Array.isArray(u.tabOrder) ? u.tabOrder : []).filter(id => TAB_IDS.includes(id));
@@ -997,7 +1046,7 @@
   const state = persisted ? {
     nudgeThreshold: persisted.nudgeThreshold || 45,
     categories: persisted.categories,
-    blocks: persisted.blocks,
+    blocks: normalizeBlocks(persisted.blocks),
     savedForDate: persisted.savedForDate || todayStr(),
     soundEnabled: persisted.soundEnabled !== false,
     soundVolume: typeof persisted.soundVolume === "number" ? persisted.soundVolume : 0.6,
@@ -1010,6 +1059,7 @@
     lastCategoryId: persisted.lastCategoryId || null,
     ui: normalizeUi(persisted.ui),
     brainDump: typeof persisted.brainDump === "string" ? persisted.brainDump : "",
+    history: (persisted.history && typeof persisted.history === "object") ? persisted.history : {},
     demoOffset: 0,
     speed: 1
   } : {
@@ -1028,6 +1078,7 @@
     lastCategoryId: null,
     ui: normalizeUi(null),
     brainDump: "",
+    history: {},
     demoOffset: 0,
     speed: 1
   };
@@ -1040,19 +1091,40 @@
   }
   restoreThemeVars();
 
-  // New day: the schedule is a repeating daily template — carry the same
-  // blocks forward but clear yesterday's "done" marks.
+  // New day: repeating blocks come back unticked, past one-offs go, and
+  // finished to-dos leave the list (they're already in the Done history).
+  function rollOverDay(){
+    const today = todayStr();
+    state.blocks = state.blocks.filter(b => !(b.repeat === "once" && b.date && b.date < today));
+    state.blocks.forEach(b => { b.status = "pending"; (b.subtasks || []).forEach(s => { s.done = false; }); });
+    state.todos = state.todos.filter(t => !t.done);
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 400);
+    const cutoffStr = cutoff.getFullYear() + "-" + String(cutoff.getMonth() + 1).padStart(2, "0") + "-" + String(cutoff.getDate()).padStart(2, "0");
+    Object.keys(state.history).forEach(d => { if (d < cutoffStr) delete state.history[d]; });
+    state.savedForDate = today;
+  }
   if (state.savedForDate !== todayStr()){
-    state.blocks.forEach(b => { b.status = "pending"; });
-    state.savedForDate = todayStr();
+    rollOverDay();
     persist();
+  }
+
+  function recordDone(kind, item){
+    const day = todayStr();
+    const list = state.history[day] || (state.history[day] = []);
+    if (list.some(e => e.id === item.id)) return;
+    const cat = kind === "block" ? catFor(item) : null;
+    list.push({ id: item.id, kind, title: item.title, icon: cat ? cat.icon : "✅", color: cat ? cat.color : null, at: Math.round(actualNowMinutes()) });
+  }
+  function unrecordDone(id){
+    const list = state.history[todayStr()];
+    if (list) state.history[todayStr()] = list.filter(e => e.id !== id);
   }
 
   function catFor(block){
     if (block.isBuffer || !block.categoryId) return BUFFER_META;
     return state.categories.find(c => c.id === block.categoryId) || BUFFER_META;
   }
-  function sortedBlocks(){ return [...state.blocks].sort((a,b) => a.start - b.start); }
+  function sortedBlocks(){ return state.blocks.filter(blockIsToday).sort((a,b) => a.start - b.start); }
 
   function getCurrentBlock(){
     for (const b of sortedBlocks()){
@@ -1074,7 +1146,7 @@
 
   function shiftBlocksFrom(pointMinutes, deltaMinutes, excludeIds){
     excludeIds = excludeIds || new Set();
-    state.blocks.forEach(b => {
+    sortedBlocks().forEach(b => {
       if (!excludeIds.has(b.id) && b.start >= pointMinutes) b.start += deltaMinutes;
     });
   }
@@ -1286,6 +1358,7 @@
   function completeBlock(b, x, y){
     if (!b || b.status === "done" || b.status === "skipped") return;
     b.status = "done";
+    recordDone("block", b);
     commit();
     if (state.features.celebrations) celebrateBurst(x, y);
     playCompletionChime();
@@ -1293,6 +1366,7 @@
   function completeTodo(t, x, y){
     if (!t || t.done) return;
     t.done = true;
+    recordDone("todo", t);
     commit();
     if (state.features.celebrations) celebrateBurst(x, y);
     playCompletionChime();
@@ -1543,12 +1617,12 @@
      copy, no streak-breaking, no "missed" language, and a one-tap undo.
   --------------------------------------------------------------------- */
   function hasClearableBlocksToday(){
-    return state.blocks.some(b => b.status === "pending");
+    return sortedBlocks().some(b => b.status === "pending");
   }
   function clearLowCapacityDay(){
     showConfirm("Clear the rest of today's plan? Nothing is lost — your schedule comes back fresh tomorrow.", () => {
       const clearedIds = [];
-      state.blocks.forEach(b => { if (b.status === "pending"){ clearedIds.push(b.id); b.status = "skipped"; } });
+      sortedBlocks().forEach(b => { if (b.status === "pending"){ clearedIds.push(b.id); b.status = "skipped"; } });
       commit();
       showNotice("Today's plan is cleared — no pressure. Tomorrow starts fresh.", () => {
         state.blocks.forEach(b => { if (clearedIds.includes(b.id)) b.status = "pending"; });
@@ -1600,7 +1674,7 @@
             '<p class="next-line">Next up: <strong>' + escapeHtml(next.title) + '</strong> (' + cat.icon + ' ' + escapeHtml(cat.name) + ') at ' + fmtClock(next.start) + '.</p>' +
             '<div class="focus-actions"><button type="button" class="ghost-btn" data-action="start-now" data-id="' + next.id + '">Start it now</button></div>' +
           '</div>' + lowCapacityLinkHtml();
-      } else if (state.blocks.length === 0){
+      } else if (sortedBlocks().length === 0){
         el.innerHTML = '<div class="focus-empty"><p>Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.</p></div>';
       } else {
         el.innerHTML = '<div class="focus-empty"><p>Nothing else is scheduled for today.</p></div>' + lowCapacityLinkHtml();
@@ -1743,9 +1817,10 @@
                 '<span class="cat-chip" style="color:' + readableChipText(cat.color) + '; background:color-mix(in srgb, ' + cat.color + ' 16%, transparent); border-color:' + cat.color + ';">' + cat.icon + ' ' + escapeHtml(cat.name) + '</span>' +
                 '<p class="block-title">' + escapeHtml(block.title) + '</p>' +
               '</div>' +
-              (st || subtaskBadge ? '<div class="block-meta">' +
+              (st || subtaskBadge || block.repeat !== "once" ? '<div class="block-meta">' +
                 (st ? '<span class="status-tag ' + st.cls + '">' + st.label + '</span>' : "") +
                 subtaskBadge +
+                (block.repeat !== "once" ? '<span class="subtask-badge">🔁 ' + escapeHtml(repeatLabel(block)) + '</span>' : "") +
               '</div>' : '') +
             '</div>' +
             '<div class="block-actions">' +
@@ -1773,6 +1848,7 @@
     renderFocusPanel();
     renderTimeline();
     renderTodos();
+    renderDone();
   }
 
   function applyFeatureVisibility(){
@@ -1792,7 +1868,7 @@
      Tabs. A tab disappears when every feature inside it is switched off;
      the bar itself only shows when there's more than one tab to pick.
   --------------------------------------------------------------------- */
-  const TAB_ICONS = { today: "🗓️", dump: "🧠", todo: "✅" };
+  const TAB_ICONS = { today: "🗓️", dump: "🧠", todo: "✅", done: "🌟" };
   let activeTab = null;
   function nameOf(key){
     const n = (state.ui.names[key] || "").trim();
@@ -1802,6 +1878,7 @@
     const f = state.features;
     if (id === "today") return f.focus || f.timeline;
     if (id === "dump") return f.brainDump;
+    if (id === "done") return f.history;
     return f.todoList;
   }
   function visibleTabs(){ return state.ui.tabOrder.filter(tabVisible); }
@@ -1828,6 +1905,7 @@
     document.getElementById("timelineHeading").textContent = nameOf("timeline");
     document.getElementById("dumpHeading").textContent = nameOf("dump");
     document.getElementById("todoHeading").textContent = nameOf("todo");
+    document.getElementById("doneHeading").textContent = nameOf("done");
     ["s", "l", "xl"].forEach(s => document.body.classList.toggle("ts-" + s, state.ui.textSize === s));
   }
   document.getElementById("tabBar").addEventListener("click", (e) => {
@@ -1876,6 +1954,50 @@
       if (bar) bar.style.width = (clamp(1 - fraction, 0, 1) * 100).toFixed(1) + "%";
     }
   }
+
+  function dayLabel(d){
+    const dt = new Date(d + "T12:00:00");
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    const yStr = y.getFullYear() + "-" + String(y.getMonth() + 1).padStart(2, "0") + "-" + String(y.getDate()).padStart(2, "0");
+    const nice = dt.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" });
+    if (d === todayStr()) return "Today · " + nice;
+    if (d === yStr) return "Yesterday · " + nice;
+    return nice;
+  }
+
+  // Only days with something in them are listed — empty days never show
+  // up as gaps or "missed" days.
+  const doneOpenDays = new Set([todayStr()]);
+  let doneSig = "";
+  function renderDone(){
+    const el = document.getElementById("doneList");
+    if (!el) return;
+    const days = Object.keys(state.history).filter(d => state.history[d].length).sort().reverse().slice(0, 60);
+    const sig = days.map(d => d + ":" + state.history[d].length).join(",") + "|" + todayStr();
+    if (sig === doneSig) return;
+    doneSig = sig;
+    const todayCount = (state.history[todayStr()] || []).length;
+    if (!days.length){
+      el.innerHTML = '<p class="dump-empty" style="margin:0;">Nothing here yet. Finished things will land here &mdash; even the tiny ones count.</p>';
+      return;
+    }
+    el.innerHTML =
+      (todayCount ? '<p class="done-hero">🌟 You\'ve done ' + todayCount + (todayCount === 1 ? ' thing' : ' things') + ' today.</p>' : '') +
+      days.map(d => {
+        const items = state.history[d].slice().sort((a, b) => a.at - b.at);
+        return '<details class="done-day" data-day="' + d + '"' + (doneOpenDays.has(d) ? ' open' : '') + '>' +
+          '<summary><span>' + escapeHtml(dayLabel(d)) + '</span><span class="done-count">' + items.length + (items.length === 1 ? ' thing' : ' things') + '</span></summary>' +
+          '<ul>' + items.map(e =>
+            '<li><span aria-hidden="true">' + e.icon + '</span><span class="t">' + escapeHtml(e.title) + '</span><span class="at">' + fmtClock(e.at) + '</span></li>'
+          ).join('') + '</ul>' +
+        '</details>';
+      }).join('');
+  }
+  document.getElementById("doneList").addEventListener("toggle", (e) => {
+    const d = e.target.dataset && e.target.dataset.day;
+    if (!d) return;
+    if (e.target.open) doneOpenDays.add(d); else doneOpenDays.delete(d);
+  }, true);
 
   function renderTodos(){
     const list = document.getElementById("todoList");
@@ -2078,8 +2200,7 @@
 
     const today = todayStr();
     if (today !== state.savedForDate){
-      state.blocks.forEach(b => { b.status = "pending"; });
-      state.savedForDate = today;
+      rollOverDay();
       webNotifiedKeys.clear();
       commit();
       ticksSinceStructuralRender = 0;
@@ -2134,7 +2255,7 @@
         const newStart = Math.round(state.simNow);
         const delta = newStart - oldStart;
         if (delta !== 0){
-          state.blocks.forEach(other => { if (other.id !== b.id && other.start > oldStart) other.start += delta; });
+          sortedBlocks().forEach(other => { if (other.id !== b.id && other.start > oldStart) other.start += delta; });
           b.start = newStart;
         }
         commit();
@@ -2470,6 +2591,7 @@
           completeTodo(t, r.left + r.width / 2, r.top + r.height / 2);
         } else {
           t.done = false;
+          unrecordDone(t.id);
           commit();
         }
       }
@@ -2498,7 +2620,7 @@
     const after = state.blocks.find(b => b.id === afterId);
     if (!after) return;
     const point = after.start + after.duration;
-    const buf = mkBuffer(point, 5);
+    const buf = copyRepeat(after, mkBuffer(point, 5));
     state.blocks.push(buf);
     shiftBlocksFrom(point, 5, new Set([buf.id]));
     commit();
@@ -2529,7 +2651,34 @@
 
   let formCategoryId = null;
 
+  let formRepeat = "once";
+  let formDays = [];
+  const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+  const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const DAY_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  function repeatLabel(b){
+    if (b.repeat === "daily") return "Every day";
+    if (b.repeat === "weekly"){
+      const d = WEEK_ORDER.filter(i => b.days.includes(i));
+      if (d.length === 5 && !d.includes(0) && !d.includes(6)) return "Weekdays";
+      if (d.length === 2 && d.includes(0) && d.includes(6)) return "Weekends";
+      return d.map(i => DAY_SHORT[i]).join(", ");
+    }
+    return "";
+  }
+  function repeatFieldHtml(){
+    return '<div class="field"><label>Happens</label>' +
+      segHtml("bd_repeat", [["once", "Just today"], ["daily", "Every day"], ["weekly", "Some days"]], formRepeat, "repeat") +
+      '<div class="day-picks" id="bd_days"' + (formRepeat === "weekly" ? "" : " hidden") + '>' +
+        WEEK_ORDER.map(i => '<button type="button" class="day-pick' + (formDays.includes(i) ? ' on' : '') + '" data-day="' + i + '" aria-pressed="' + formDays.includes(i) + '" aria-label="' + DAY_LONG[i] + '">' + DAY_SHORT[i].charAt(0) + '</button>').join('') +
+      '</div>' +
+      '<p id="bd_daysError" style="margin:5px 0 0;font-size:11.5px;color:var(--danger-quiet);display:none;">Pick at least one day.</p>' +
+    '</div>';
+  }
+
   function openBlockForm(block){
+    formRepeat = block ? block.repeat : "once";
+    formDays = block && block.days.length ? block.days.slice() : [new Date().getDay()];
     formEditingId = block ? block.id : null;
     formIsBuffer = block ? block.isBuffer : false;
     formSubtasks = block && block.subtasks ? block.subtasks.map(s => ({...s})) : [];
@@ -2614,6 +2763,7 @@
       '<p class="dialog-sub">' + (formIsBuffer ? "Buffers are short transition blocks between tasks." : "Pick a template, name it, and set when it starts &mdash; everything else is optional.") + '</p>' +
       '<div class="field"><label for="bd_title">Title</label>' +
         '<input type="text" id="bd_title" value="' + escapeAttr(title) + '" placeholder="' + (formIsBuffer ? "Buffer" : "e.g. Write report") + '"></div>' +
+      repeatFieldHtml() +
       bodyFields +
       '<div class="dialog-actions">' +
         '<div>' + (isEdit ? '<button type="button" class="quiet-btn" id="bd_delete">Delete</button>' : '') + '</div>' +
@@ -2625,6 +2775,21 @@
 
     document.getElementById("bd_cancel").addEventListener("click", () => blockDialog.close());
     document.getElementById("bd_save").addEventListener("click", () => saveBlockForm());
+    document.getElementById("bd_repeat").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-repeat]");
+      if (!b) return;
+      formRepeat = b.dataset.repeat;
+      markActive(e.currentTarget, b);
+      document.getElementById("bd_days").hidden = formRepeat !== "weekly";
+    });
+    document.getElementById("bd_days").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-day]");
+      if (!b) return;
+      const d = parseInt(b.dataset.day, 10);
+      formDays = formDays.includes(d) ? formDays.filter(x => x !== d) : formDays.concat(d);
+      b.classList.toggle("on", formDays.includes(d));
+      b.setAttribute("aria-pressed", String(formDays.includes(d)));
+    });
     const delBtn = document.getElementById("bd_delete");
     if (delBtn) delBtn.addEventListener("click", () => {
       const id = formEditingId;
@@ -2732,6 +2897,11 @@
     }
     document.getElementById("bd_durationError").style.display = "none";
 
+    if (formRepeat === "weekly" && !formDays.length){
+      document.getElementById("bd_daysError").style.display = "";
+      return;
+    }
+
     const titleVal = document.getElementById("bd_title").value.trim() || (formIsBuffer ? "Buffer" : "Untitled block");
 
     let block;
@@ -2744,6 +2914,11 @@
       block = mkBlock(titleVal, null, startVal, durationVal, formIsBuffer, [], false);
       state.blocks.push(block);
     }
+    const wasOnce = block.repeat === "once";
+    block.repeat = formRepeat;
+    block.days = formRepeat === "weekly" ? formDays.slice() : [];
+    block.date = formRepeat === "once" ? (wasOnce && block.date ? block.date : todayStr()) : null;
+    if (!blockIsToday(block)) showNotice('Saved — "' + block.title + '" will show up on ' + repeatLabel(block) + '.');
 
     if (!formIsBuffer){
       block.categoryId = document.getElementById("bd_category").value || (state.categories[0] ? state.categories[0].id : null);
@@ -2755,7 +2930,7 @@
       if (addBufferChk && addBufferChk.checked){
         const bufMin = parseDurationFlexible(document.getElementById("bd_bufferMin").value) || 5;
         const point = block.start + block.duration;
-        const buf = mkBuffer(point, bufMin);
+        const buf = copyRepeat(block, mkBuffer(point, bufMin));
         state.blocks.push(buf);
         shiftBlocksFrom(point, bufMin, new Set([buf.id, block.id]));
       }
@@ -2789,6 +2964,7 @@
     { group: "today", key: "buffers", name: () => "Buffers", desc: "“+ buffer” buttons for breathing room", sub: true, requires: "timeline" },
     { group: "dump", key: "brainDump", name: () => nameOf("dump"), desc: "Empty your head, then sort it into a list" },
     { group: "todo", key: "todoList", name: () => nameOf("todo"), desc: "Untimed things to get to today" },
+    { group: "done", key: "history", name: () => nameOf("done"), desc: "Everything you've finished, by day" },
     { group: "all", key: "celebrations", name: () => "Celebrations", desc: "A little party when you finish something" },
     { group: "all", key: "sounds", name: () => "Sounds", desc: "Soft chime when a block starts or you finish" }
   ];
@@ -2796,7 +2972,7 @@
   const CELEBRATE_STYLES = [["burst", "Big burst"], ["sparkles", "Sparkles"], ["message", "Just words"]];
 
   function featureListHtml(){
-    const groups = [["today", nameOf("today") + " tab"], ["dump", nameOf("dump") + " tab"], ["todo", nameOf("todo") + " tab"], ["all", "Everywhere"]];
+    const groups = [["today", nameOf("today") + " tab"], ["dump", nameOf("dump") + " tab"], ["todo", nameOf("todo") + " tab"], ["done", nameOf("done") + " tab"], ["all", "Everywhere"]];
     return groups.map(([g, label]) =>
       '<p class="feature-group-label">' + escapeHtml(label) + '</p>' +
       '<div class="feature-list">' +
@@ -2891,7 +3067,7 @@
         '<summary>Rename things</summary>' +
         '<div class="more-options-body">' +
           '<p class="dialog-sub" style="margin-bottom:8px;">Call things whatever makes sense to you. Leave a box empty to use the original name.</p>' +
-          ["today", "dump", "todo", "focus", "timeline"].map(k =>
+          ["today", "dump", "todo", "done", "focus", "timeline"].map(k =>
             '<div class="field"><label for="st_name_' + k + '">' + escapeHtml(DEFAULT_NAMES[k]) + '</label>' +
             '<input type="text" id="st_name_' + k + '" data-name="' + k + '" maxlength="24" value="' + escapeAttr(state.ui.names[k] || "") + '" placeholder="' + escapeAttr(DEFAULT_NAMES[k]) + '"></div>'
           ).join('') +
@@ -3171,7 +3347,7 @@
         soundEnabled: state.soundEnabled, soundVolume: state.soundVolume, speakEnabled: state.speakEnabled,
         firstName: state.firstName, showTimer: state.showTimer,
         colorTheme: state.colorTheme, todos: state.todos, features: state.features, lastCategoryId: state.lastCategoryId,
-        ui: state.ui, brainDump: state.brainDump
+        ui: state.ui, brainDump: state.brainDump, history: state.history
       };
       const { error } = await sb.from("timeanchor_state").upsert({
         user_id: currentUser.id, data: payload, updated_at: new Date().toISOString()
@@ -3197,7 +3373,7 @@
         nudgeThreshold: 45, categories: defaultCategories(), blocks: defaultBlocks(), savedForDate: todayStr(),
         soundEnabled: true, soundVolume: 0.6, speakEnabled: false, firstName: "", showTimer: true,
         colorTheme: "mixed", todos: [], features: normalizeFeatures(null), lastCategoryId: null,
-        ui: normalizeUi(null), brainDump: ""
+        ui: normalizeUi(null), brainDump: "", history: {}
       });
       // The name typed at signup only fills in if nothing's already set
       // (e.g. no leftover local-only data on this device/browser already
@@ -3209,6 +3385,8 @@
     state.ui = normalizeUi(state.ui);
     applyAudioSession();
     if (typeof state.brainDump !== "string") state.brainDump = "";
+    if (!state.history || typeof state.history !== "object") state.history = {};
+    normalizeBlocks(state.blocks);
     restoreThemeVars();
     finishBoot();
     setCloudStatus("synced", "Synced");
