@@ -872,7 +872,7 @@
   <section class="panel" id="todoPanelSection" aria-labelledby="todoHeading">
     <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
     <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
-    <div class="fm-launch-row"><button type="button" class="text-btn fm-launch" data-action="focus-with-me">🫧 Focus with me</button></div>
+    <div class="fm-launch-row"><button type="button" class="text-btn fm-launch" data-action="focus-with-me">☁️ Focus with me</button></div>
     <div id="energyCheck"></div>
     <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
       <input type="text" id="todoInput" placeholder="Add something…" style="flex:1;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
@@ -1303,7 +1303,7 @@
     const list = state.history[day] || (state.history[day] = []);
     if (list.some(e => e.id === item.id)) return;
     const cat = kind === "block" ? catFor(item) : null;
-    list.push({ id: item.id, kind, title: item.title, icon: cat ? (cat.icon || "🗓️") : "✅", color: cat ? cat.color : null, at: Math.round(actualNowMinutes()) });
+    list.push({ id: item.id, kind, title: item.title, icon: cat ? (cat.icon || "☀️") : "🌱", color: cat ? cat.color : null, at: Math.round(actualNowMinutes()) });
   }
   function unrecordDone(id){
     const list = state.history[todayStr()];
@@ -1490,7 +1490,7 @@
   }
 
   function celebrateSparkles(x, y){
-    const emojis = ["✨", "🎉", "⭐", "💫"];
+    const emojis = ["✨", "⭐", "💫", "🌟"];
     for (let i = 0; i < 5; i++){
       const el = document.createElement("span");
       el.className = "celebrate-burst";
@@ -1626,7 +1626,7 @@
   }
 
   function deletePoof(x, y){
-    ["💨", "✨"].forEach((emoji, i) => {
+    ["☁️", "✨"].forEach((emoji, i) => {
       const el = document.createElement("span");
       el.className = "delete-poof";
       el.textContent = emoji;
@@ -1857,7 +1857,7 @@
   /* ---------------------------------------------------------------------
      Rendering: Focus panel
   --------------------------------------------------------------------- */
-  const FOCUS_LAUNCH_HTML = '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me">🫧 Focus with me</button></div>';
+  const FOCUS_LAUNCH_HTML = '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me">☁️ Focus with me</button></div>';
   function renderFocusPanel(){
     const el = document.getElementById("focusPanelBody");
     const cur = getCurrentBlock();
@@ -1946,7 +1946,7 @@
           '<button type="button" class="ghost-btn" data-action="extend" data-id="' + cur.id + '" data-min="10">+10m</button>' +
           '<button type="button" class="primary-btn" data-action="done" data-id="' + cur.id + '">' + w("markDone") + '</button>' +
         '</div>' +
-        '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me" data-kind="block" data-id="' + cur.id + '">🫧 Focus with me</button></div>' +
+        '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me" data-kind="block" data-id="' + cur.id + '">☁️ Focus with me</button></div>' +
       '</div>' + lowCapacityLinkHtml();
   }
 
@@ -2089,7 +2089,7 @@
      Tabs. A tab disappears when every feature inside it is switched off;
      the bar itself only shows when there's more than one tab to pick.
   --------------------------------------------------------------------- */
-  const TAB_ICONS = { today: "🗓️", dump: "🧠", todo: "✅", done: "🌟" };
+  const TAB_ICONS = { today: "☀️", dump: "💭", todo: "🌱", done: "🌈" };
   let activeTab = null;
   function nameOf(key){
     const n = (state.ui.names[key] || "").trim();
@@ -2203,7 +2203,7 @@
       return;
     }
     el.innerHTML =
-      (todayCount ? '<p class="done-hero">🌟 You\'ve done ' + todayCount + (todayCount === 1 ? ' thing' : ' things') + ' today.</p>' : '') +
+      (todayCount ? '<p class="done-hero">🌈 You\'ve done ' + todayCount + (todayCount === 1 ? ' thing' : ' things') + ' today.</p>' : '') +
       days.map(d => {
         const items = state.history[d].slice().sort((a, b) => a.at - b.at);
         return '<details class="done-day" data-day="' + d + '"' + (doneOpenDays.has(d) ? ' open' : '') + '>' +
@@ -2221,9 +2221,9 @@
   }, true);
 
   const ENERGY = {
-    low: { icon: "🪫", name: "Low", note: "Low-energy day. The 🪫 gentle ones are at the top — everything else can wait." },
-    med: { icon: "🔋", name: "Okay", note: "The 🔋 middle-energy ones are at the top." },
-    high: { icon: "⚡", name: "Good", note: "Good energy! The ⚡ bigger ones are at the top." }
+    low: { icon: "🌙", name: "Low", note: "Low-energy day. The 🌙 gentle ones are at the top \u2014 everything else can wait." },
+    med: { icon: "⛅", name: "Okay", note: "The ⛅ middle-energy ones are at the top." },
+    high: { icon: "☀️", name: "Good", note: "Good energy! The ☀️ bigger ones are at the top." }
   };
   const ENERGY_CYCLE = [null, "low", "med", "high"];
   function todaysEnergy(){
@@ -2273,8 +2273,8 @@
   function dayPeriodText(){
     const p = dayPosition();
     if (p.phase === "before") return "Your day hasn't started yet";
-    if (p.phase === "after") return "Day's done — rest well 🌙";
-    return p.fraction < 0.34 ? "Morning ☀️" : p.fraction < 0.67 ? "Afternoon 🌤️" : "Evening 🌆";
+    if (p.phase === "after") return "Day's done \u2014 rest well ⭐";
+    return p.fraction < 0.34 ? "Morning 🌤️" : p.fraction < 0.67 ? "Afternoon ☀️" : "Evening 🌙";
   }
   let jarRenderedCount = -1;
   let jarRenderedDay = "";
@@ -2858,7 +2858,7 @@
     const f = state.features;
     const canSwitch = f.timeline && f.todoList;
     const anyDest = f.timeline || f.todoList;
-    const destLabel = (d) => d === "timeline" ? "🗓️ " + escapeHtml(nameOf("timeline")) : "✅ " + escapeHtml(nameOf("todo"));
+    const destLabel = (d) => d === "timeline" ? "☀️ " + escapeHtml(nameOf("timeline")) : "🌱 " + escapeHtml(nameOf("todo"));
     el.innerHTML =
       '<h3 class="dump-results-head">Here\'s your list</h3>' +
       '<p class="dialog-sub" style="margin:0;">Untick anything you don\'t want and tap any item to edit it' + (canSwitch ? ', or tap where it\'s going to switch it' : '') + '.</p>' +
@@ -3418,7 +3418,7 @@
     { group: "today", key: "buffers", name: () => "Buffers", desc: "“+ buffer” buttons for breathing room", sub: true, requires: "timeline" },
     { group: "dump", key: "brainDump", name: () => nameOf("dump"), desc: "Empty your head, then sort it into a list" },
     { group: "todo", key: "todoList", name: () => nameOf("todo"), desc: "Untimed things to get to today" },
-    { group: "todo", key: "energy", name: () => "Energy check-in", desc: "Tag to-dos 🪫 🔋 ⚡ and see the right ones first", sub: true, requires: "todoList" },
+    { group: "todo", key: "energy", name: () => "Energy check-in", desc: "Tag to-dos 🌙 ⛅ ☀️ and see the right ones first", sub: true, requires: "todoList" },
     { group: "done", key: "history", name: () => nameOf("done"), desc: "Everything you've finished, by day" },
     { group: "all", key: "focusMode", name: () => "Focus with me", desc: "A calm companion that keeps you company while you work" },
     { group: "all", key: "dailyWords", name: () => "Kind words at the top", desc: "One gentle line for the day. Off shows today's date instead" },
@@ -3860,9 +3860,9 @@
   function fmSubjects(){
     const list = [];
     const cur = getCurrentBlock();
-    if (cur) list.push({ kind: "block", id: cur.id, title: cur.title, icon: catFor(cur).icon || "🗓️", mins: Math.max(5, Math.min(120, Math.ceil(timeInfo(cur).remaining))) });
-    state.todos.filter(t => !t.done).slice(0, 8).forEach(t => list.push({ kind: "todo", id: t.id, title: t.title, icon: "✅" }));
-    list.push({ kind: "none", id: "", title: "Just focus", icon: "🫧" });
+    if (cur) list.push({ kind: "block", id: cur.id, title: cur.title, icon: catFor(cur).icon || "☀️", mins: Math.max(5, Math.min(120, Math.ceil(timeInfo(cur).remaining))) });
+    state.todos.filter(t => !t.done).slice(0, 8).forEach(t => list.push({ kind: "todo", id: t.id, title: t.title, icon: "🌱" }));
+    list.push({ kind: "none", id: "", title: "Just focus", icon: "☁️" });
     return list;
   }
 
@@ -3883,7 +3883,7 @@
     document.getElementById("fmInner").innerHTML =
       '<div class="fm-setup">' +
         '<button type="button" class="icon-btn fm-close" data-fm="close" aria-label="Close">✕</button>' +
-        '<h2 id="fmTitle">🫧 Focus with me</h2>' +
+        '<h2 id="fmTitle">☁️ Focus with me</h2>' +
         '<p class="dialog-sub" style="margin:0;">I\'ll keep you company while you work. No pressure &mdash; stop whenever you like.</p>' +
         '<p class="fm-label">What are you working on?</p>' +
         '<div class="fm-choices">' + subjects.map((s, i) =>
@@ -3921,7 +3921,7 @@
     inner.innerHTML =
       '<button type="button" class="icon-btn fm-close" data-fm="stop" aria-label="Stop focusing">✕</button>' +
       '<p class="fm-with" id="fmTitle">' + (s.kind === "none" ? "Focusing" : "Focusing on") + '</p>' +
-      '<h2 class="fm-task">' + (s.kind === "none" ? "Just being here 🫧" : escapeHtml(s.title)) + '</h2>' +
+      '<h2 class="fm-task">' + (s.kind === "none" ? "Just being here ☁️" : escapeHtml(s.title)) + '</h2>' +
       '<p class="fm-calm-title">You\'re safe. Nothing needs doing right now. 💛</p>' +
       '<div class="fm-breath-wrap"><div class="fm-breath"></div><div class="fm-time" id="fmTime" aria-live="polite"></div></div>' +
       '<p class="fm-cue" id="fmCue" aria-hidden="true"></p>' +
@@ -3931,7 +3931,7 @@
         '<button type="button" class="ghost-btn" data-fm="pause" id="fmPauseBtn">Pause</button>' +
         '<button type="button" class="primary-btn" data-fm="finish">I\'m done ✨</button>' +
       '</div>' +
-      '<div class="fm-normal-actions fm-calm-link"><button type="button" class="text-btn" data-fm="calm">😮‍💨 It\'s all too much</button></div>' +
+      '<div class="fm-normal-actions fm-calm-link"><button type="button" class="text-btn" data-fm="calm">☁️ It\'s all too much</button></div>' +
       '<div class="fm-actions fm-calm-actions" style="flex-direction:column;align-items:stretch;">' +
         '<button type="button" class="primary-btn" data-fm="calm-resume" style="justify-content:center;">I\'m ready to carry on</button>' +
         '<button type="button" class="ghost-btn" data-fm="calm-stop">Stop for today \u2014 that\'s okay</button>' +
@@ -4040,7 +4040,7 @@
     if (minsDone >= 1){
       const day = todayStr();
       (state.history[day] = state.history[day] || []).push({
-        id: uid("focus"), kind: "focus", icon: "🫧", color: null, at: Math.round(actualNowMinutes()),
+        id: uid("focus"), kind: "focus", icon: "☁️", color: null, at: Math.round(actualNowMinutes()),
         title: "Focused " + fmtDuration(minsDone) + (session.subject.kind === "none" ? "" : " on " + session.subject.title)
       });
       commit();
@@ -4064,7 +4064,7 @@
     const canMark = item && !(s.kind === "block" ? item.status === "done" : item.done);
     document.getElementById("fmInner").innerHTML =
       '<div class="fm-end">' +
-        '<h2 id="fmTitle">You did it! 🎉</h2>' +
+        '<h2 id="fmTitle">You did it! 🌈</h2>' +
         '<p>' + (minsDone >= 1 ? 'You stayed with it for ' + fmtDuration(minsDone) + '. That counts.' : 'Every bit counts.') + '</p>' +
         '<div class="fm-actions" style="flex-direction:column;align-items:stretch;">' +
           (canMark ? '<button type="button" class="primary-btn" data-fm="mark" style="justify-content:center;">' + escapeHtml(w("markDone")) + ': ' + escapeHtml(s.title) + '</button>' : '') +
