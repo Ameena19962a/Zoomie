@@ -352,6 +352,34 @@
   button.dump-dest::after{ content:" ⇄"; font-weight:400; }
   .dump-empty{ color:var(--muted); font-size:13px; margin:14px 0 0; }
 
+  /* ---------- Opening animation: a sleepy cloud ---------- */
+  #splash{
+    position:fixed; inset:0; z-index:200; display:none; flex-direction:column; align-items:center; justify-content:center;
+    background:linear-gradient(180deg, #e6eff7 0%, #f6f2ec 100%); color:#3a4a5c; cursor:pointer;
+    animation: splashOut .7s ease 2s forwards;
+  }
+  html.show-splash #splash{ display:flex; }
+  html.splash-night #splash{ background:linear-gradient(180deg, #14171d 0%, #1d2129 100%); color:#dfe5ee; }
+  #splash.skip{ animation: splashOut .3s ease forwards; }
+  .splash-cloud{ overflow:visible; filter:drop-shadow(0 10px 18px rgba(70,100,135,.18)); animation: cloudIn 1.1s cubic-bezier(.2,.7,.3,1) both; }
+  .splash-cloud-body{ fill:#ffffff; }
+  html.splash-night .splash-cloud-body{ fill:#c9d4e3; }
+  .splash-eye{ fill:none; stroke:#4a5568; stroke-width:2.2; stroke-linecap:round; }
+  .splash-blush{ fill:#f4a9b8; opacity:.55; }
+  .splash-name{ margin:18px 0 2px; font-size:26px; font-weight:800; letter-spacing:.01em; animation: splashFade .8s ease .45s both; }
+  .splash-tag{ margin:0; font-size:15px; opacity:.75; animation: splashFade .8s ease .75s both; }
+  @media not (prefers-reduced-motion: reduce){
+    .splash-cloud{ animation: cloudIn 1.1s cubic-bezier(.2,.7,.3,1) both, cloudFloat 3s ease-in-out 1.1s infinite; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #splash{ animation-duration:.4s; animation-delay:1s; }
+    .splash-cloud, .splash-name, .splash-tag{ animation: splashFade .4s ease both; }
+  }
+  @keyframes cloudIn{ 0%{ opacity:0; transform:translateY(22px) scale(.88); } 100%{ opacity:1; transform:translateY(0) scale(1); } }
+  @keyframes cloudFloat{ 0%, 100%{ transform:translateY(0); } 50%{ transform:translateY(-5px); } }
+  @keyframes splashFade{ from{ opacity:0; } to{ opacity:1; } }
+  @keyframes splashOut{ to{ opacity:0; visibility:hidden; } }
+
   /* ---------- Steps dropdown (timeline rows) ---------- */
   .steps-toggle{
     border:1px solid var(--border); background:var(--bg); color:var(--muted); border-radius:999px;
@@ -739,10 +767,38 @@
 </style>
 </head>
 <body>
+<script>
+  // Decide on the opening animation before anything paints.
+  (function(){
+    var show = true, night = false;
+    try {
+      var saved = JSON.parse(localStorage.getItem("timeanchor_state_v1") || "{}");
+      show = !(saved.features && saved.features.splash === false);
+      night = saved.colorTheme === "night";
+    } catch (e) {}
+    if (show) document.documentElement.classList.add("show-splash");
+    if (night) document.documentElement.classList.add("splash-night");
+  })();
+</script>
+<div id="splash" aria-hidden="true">
+  <svg class="splash-cloud" viewBox="0 0 120 84" width="168" height="118">
+    <g class="splash-cloud-body">
+      <circle cx="38" cy="50" r="19"/><circle cx="61" cy="38" r="25"/><circle cx="85" cy="50" r="18"/>
+      <rect x="36" y="46" width="52" height="23" rx="11.5"/>
+    </g>
+    <path class="splash-eye" d="M49 52 q4 4 8 0"/>
+    <path class="splash-eye" d="M66 52 q4 4 8 0"/>
+    <ellipse class="splash-blush" cx="45" cy="59" rx="4" ry="2.4"/>
+    <ellipse class="splash-blush" cx="78" cy="59" rx="4" ry="2.4"/>
+    <path class="splash-eye" d="M58 60 q3 2.5 6 0"/>
+  </svg>
+  <p class="splash-name">TimeAnchor</p>
+  <p class="splash-tag">your day, gently</p>
+</div>
 
 <header class="app-header">
   <div class="brand">
-    <h1 id="brandTagline">Hi, Ameena</h1>
+    <h1 id="brandTagline">TimeAnchor</h1>
   </div>
   <div class="header-controls">
     <div class="sim-clock" id="simClockWrap" title="Speed and other testing tools are in Settings"><strong id="simClockText">--:--</strong></div>
@@ -1123,7 +1179,7 @@
   /* ---------------------------------------------------------------------
      State
   --------------------------------------------------------------------- */
-  const DEFAULT_FEATURES = { categories: true, dayJar: true, focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, energy: true, history: true, celebrations: true, focusMode: true };
+  const DEFAULT_FEATURES = { categories: true, dayJar: true, focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, energy: true, history: true, celebrations: true, focusMode: true, splash: true };
   const TAB_IDS = ["today", "dump", "todo", "done"];
   const DEFAULT_NAMES = { today: "Today", dump: "Brain dump", todo: "To-do list", done: "Done list", focus: "Right now", timeline: "Today's timeline" };
   function normalizeUi(u){
@@ -3355,6 +3411,7 @@
     { group: "todo", key: "energy", name: () => "Energy check-in", desc: "Tag to-dos 🪫 🔋 ⚡ and see the right ones first", sub: true, requires: "todoList" },
     { group: "done", key: "history", name: () => nameOf("done"), desc: "Everything you've finished, by day" },
     { group: "all", key: "focusMode", name: () => "Focus with me", desc: "A calm companion that keeps you company while you work" },
+    { group: "all", key: "splash", name: () => "Opening animation", desc: "A sleepy cloud says hello when the app opens" },
     { group: "all", key: "celebrations", name: () => "Celebrations", desc: "A little party when you finish something" },
     { group: "all", key: "sounds", name: () => "Sounds", desc: "Soft chime when a block starts or you finish" }
   ];
@@ -3484,8 +3541,6 @@
         '</div>' +
       '</details>' +
 
-      '<div class="field"><label for="st_firstName">Your name</label>' +
-        '<input type="text" id="st_firstName" value="' + escapeAttr(state.firstName) + '" placeholder="e.g. Sam"></div>' +
 
       '<h3 style="font-size:13.5px;margin:16px 0 8px;">Color theme</h3>' +
       '<p class="dialog-sub" style="margin-bottom:8px;">Recolors all categories at once &mdash; you can still fine-tune individual colors below afterward.</p>' +
@@ -3687,10 +3742,6 @@
         renderSettingsDialog();
       });
     });
-    document.getElementById("st_firstName").addEventListener("input", (e) => {
-      state.firstName = e.target.value.trim();
-      updateGreeting();
-    });
     document.getElementById("st_exportBtn").addEventListener("click", exportBackup);
     document.getElementById("st_importBtn").addEventListener("click", () => document.getElementById("st_importFile").click());
     document.getElementById("st_importFile").addEventListener("change", (e) => {
@@ -3789,7 +3840,7 @@
   // couple of minutes (and in calm mode); after that the shape is just quiet company.
   const FM_BREATH = [["Growing\u2026", 4000], ["Still", 4000], ["Getting smaller\u2026", 4000], ["Resting", 4000]];
   const FM_CUE_FOR_MS = 2 * 60000;
-  const FM_MSG_EVERY = 40000;
+  const FM_MSG_EVERY = 30000;
   let fm = null;       // the running session
   let fmSetup = null;  // choices on the setup screen
   let fmWakeLock = null;
@@ -4105,6 +4156,15 @@
     } catch (e) {}
   }
 
+  (function(){
+    const splash = document.getElementById("splash");
+    if (!splash) return;
+    const done = () => splash.remove();
+    splash.addEventListener("animationend", (e) => { if (e.target === splash) done(); });
+    splash.addEventListener("click", () => splash.classList.add("skip"));
+    setTimeout(done, 4000);
+  })();
+
   /* ---------------------------------------------------------------------
      Start-up. No accounts: everything lives on this device.
   --------------------------------------------------------------------- */
@@ -4116,7 +4176,7 @@
   function updateGreeting(){
     const el = document.getElementById("brandTagline");
     if (!el) return;
-    el.textContent = state.firstName ? "Hi, " + state.firstName : "TimeAnchor";
+    el.textContent = "TimeAnchor";
   }
 
   function finishBoot(){
