@@ -999,9 +999,24 @@
       textSize: ["s", "m", "l", "xl"].includes(u.textSize) ? u.textSize : "m",
       celebrateStyle: ["burst", "sparkles", "message"].includes(u.celebrateStyle) ? u.celebrateStyle : "burst",
       soundOnSilent: u.soundOnSilent === true,
-      headsUp: [0, 2, 5, 10].includes(u.headsUp) ? u.headsUp : 5
+      headsUp: [0, 2, 5, 10].includes(u.headsUp) ? u.headsUp : 5,
+      gentle: u.gentle === true
     };
   }
+
+  // Gentle wording: invitations instead of instructions, for anyone who
+  // finds demands hard (including pathological demand avoidance).
+  const WORDS = {
+    startNow: ["Start it now", "Want to start now?"],
+    markDone: ["Mark done", "I did it ✨"],
+    timesUp: ["Time's up", "All set?"],
+    runningOver: ["Running over", "Taking a bit longer"],
+    behind: ["Waiting — running behind", "Whenever you're ready"],
+    nextUp: ["Next up", "Coming up"],
+    notifStart: ["Starting now", "Ready when you are"],
+    notifEnd: ["Time's up — check in on TimeAnchor", "Time for a gentle check-in"]
+  };
+  function w(key){ return WORDS[key][state && state.ui && state.ui.gentle ? 1 : 0]; }
   // Older saves only had { timeline, todoList }, where timeline:false also
   // hid the focus card and timer — keep that meaning for them.
   function normalizeFeatures(f){
@@ -1174,7 +1189,7 @@
         const cat = catFor(b);
         const startDate = minutesToRealDate(b.start);
         if (startDate) toSchedule.push({
-          id: notifIdCounter++, title: "Starting now", body: b.title + " (" + cat.name + ")", schedule: { at: startDate }
+          id: notifIdCounter++, title: w("notifStart"), body: b.title + " (" + cat.name + ")", schedule: { at: startDate }
         });
         const hu = state.ui.headsUp;
         if (hu && b.duration > hu){
@@ -1185,7 +1200,7 @@
         }
         const endDate = minutesToRealDate(b.start + b.duration);
         if (endDate) toSchedule.push({
-          id: notifIdCounter++, title: b.title, body: "Time's up — check in on TimeAnchor", schedule: { at: endDate }
+          id: notifIdCounter++, title: b.title, body: w("notifEnd"), schedule: { at: endDate }
         });
       });
       if (toSchedule.length) await LocalNotifications.schedule({ notifications: toSchedule });
@@ -1204,11 +1219,11 @@
       const endKey = b.id + ":end";
       if (!webNotifiedKeys.has(startKey) && state.simNow >= b.start && state.simNow < b.start + 1){
         webNotifiedKeys.add(startKey);
-        new Notification("Starting now", { body: b.title, tag: startKey });
+        new Notification(w("notifStart"), { body: b.title, tag: startKey });
       }
       if (!webNotifiedKeys.has(endKey) && state.simNow >= b.start + b.duration && state.simNow < b.start + b.duration + 1){
         webNotifiedKeys.add(endKey);
-        new Notification(b.title, { body: "Time's up", tag: endKey });
+        new Notification(b.title, { body: w("notifEnd"), tag: endKey });
       }
     });
   }
@@ -1640,8 +1655,8 @@
         el.innerHTML =
           '<div class="focus-empty">' +
             '<p>Nothing scheduled right now &mdash; this is open time.</p>' +
-            '<p class="next-line">Next up: <strong>' + escapeHtml(next.title) + '</strong> (' + cat.icon + ' ' + escapeHtml(cat.name) + ') at ' + fmtClock(next.start) + '.</p>' +
-            '<div class="focus-actions"><button type="button" class="ghost-btn" data-action="start-now" data-id="' + next.id + '">Start it now</button></div>' +
+            '<p class="next-line">' + w("nextUp") + ': <strong>' + escapeHtml(next.title) + '</strong> (' + cat.icon + ' ' + escapeHtml(cat.name) + ') at ' + fmtClock(next.start) + '.</p>' +
+            '<div class="focus-actions"><button type="button" class="ghost-btn" data-action="start-now" data-id="' + next.id + '">' + w("startNow") + '</button></div>' +
           '</div>' + lowCapacityLinkHtml();
       } else if (sortedBlocks().length === 0){
         el.innerHTML = '<div class="focus-empty"><p>Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.</p></div>';
@@ -1654,7 +1669,7 @@
 
     const cat = catFor(cur);
     const { remaining, fraction, overrun } = timeInfo(cur);
-    const holeLabel = overrun ? "Time's up" : (Math.ceil(remaining) + "m");
+    const holeLabel = overrun ? w("timesUp") : (Math.ceil(remaining) + "m");
     const timerOn = state.features.timer;
     const pie = !timerOn ? ""
       : state.showTimer
@@ -1690,7 +1705,9 @@
       const suggested = Math.max(5, Math.ceil(Math.abs(remaining)/5)*5);
       overrunHtml =
         '<div class="overrun-banner">' +
-          '<p>This block ran over by about ' + Math.ceil(Math.abs(remaining)) + ' minutes. You can extend it, or push the rest of today later so the schedule matches reality.</p>' +
+          '<p>' + (state.ui.gentle
+            ? 'This one is taking a bit longer (about ' + Math.ceil(Math.abs(remaining)) + ' minutes) &mdash; totally fine. If you like, give it more time or move the rest of today along.'
+            : 'This block ran over by about ' + Math.ceil(Math.abs(remaining)) + ' minutes. You can extend it, or push the rest of today later so the schedule matches reality.') + '</p>' +
           '<div class="overrun-row">' +
             '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="5">Reflow +5m</button>' +
             '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="10">Reflow +10m</button>' +
@@ -1712,7 +1729,7 @@
         '<div class="focus-actions">' +
           '<button type="button" class="ghost-btn" data-action="extend" data-id="' + cur.id + '" data-min="5">+5m</button>' +
           '<button type="button" class="ghost-btn" data-action="extend" data-id="' + cur.id + '" data-min="10">+10m</button>' +
-          '<button type="button" class="primary-btn" data-action="done" data-id="' + cur.id + '">Mark done</button>' +
+          '<button type="button" class="primary-btn" data-action="done" data-id="' + cur.id + '">' + w("markDone") + '</button>' +
         '</div>' +
       '</div>' + lowCapacityLinkHtml();
   }
@@ -1723,8 +1740,12 @@
   }
 
   function remainingSentence(block, remaining, overrun){
+    const n = Math.ceil(remaining), mins = n + " minute" + (n === 1 ? "" : "s");
+    if (state.ui.gentle) return overrun
+      ? block.title + " is taking a bit longer — that's okay. More time, or move on whenever you're ready."
+      : "About " + mins + " left on " + block.title + " — no rush.";
     if (overrun) return block.title + ": time is up. Extend it or reflow the rest of today.";
-    return Math.ceil(remaining) + " minute" + (Math.ceil(remaining) === 1 ? "" : "s") + " remaining on " + block.title + ".";
+    return mins + " remaining on " + block.title + ".";
   }
 
   let lastAnnounced = "";
@@ -1742,13 +1763,13 @@
     if (block.status === "skipped") return { label: "Skipped today", cls: "wait" };
     if (block.id === curId){
       const { overrun } = timeInfo(block);
-      return overrun ? { label: "Running over", cls: "over" } : { label: "In progress", cls: "now" };
+      return overrun ? { label: w("runningOver"), cls: "over" } : { label: "In progress", cls: "now" };
     }
     // "Upcoming" is the default, expected state for most rows — a pill on
     // every single one just adds noise, so only call out states that are
     // actually informative (in progress, done, running late/over, skipped).
     if (block.start > state.simNow) return null;
-    return { label: "Waiting — running behind", cls: "wait" };
+    return { label: w("behind"), cls: "wait" };
   }
 
   function renderTimeline(){
@@ -1905,7 +1926,7 @@
     const cur = getCurrentBlock();
     if (!cur) return;
     const { remaining, fraction, overrun } = timeInfo(cur);
-    const holeLabel = overrun ? "Time's up" : (Math.ceil(remaining) + "m");
+    const holeLabel = overrun ? w("timesUp") : (Math.ceil(remaining) + "m");
 
     if (state.showTimer){
       updatePieEl(document.getElementById("focusPie"), fraction, overrun, holeLabel);
@@ -2050,7 +2071,7 @@
   // start/done chimes so "nearly time to switch" is recognisable by ear.
   const headsUpGiven = new Set();
   function headsUpText(b, mins){
-    return "⏳ About " + mins + " minute" + (mins === 1 ? "" : "s") + " left on " + b.title + " — a good moment to start wrapping up.";
+    return "⏳ About " + mins + " minute" + (mins === 1 ? "" : "s") + " left on " + b.title + (state.ui.gentle ? ". Wrap up whenever it feels right." : " — a good moment to start wrapping up.");
   }
   function playHeadsUpChime(){
     if (!state.soundEnabled) return;
@@ -2116,11 +2137,11 @@
     if (cur){
       const { remaining, overrun } = timeInfo(cur);
       return clockPart + " " + (overrun
-        ? cur.title + ", time is up."
+        ? cur.title + (state.ui.gentle ? " is taking a bit longer, and that's okay." : ", time is up.")
         : "You're in " + cur.title + ", " + Math.ceil(remaining) + " minute" + (Math.ceil(remaining) === 1 ? "" : "s") + " left.");
     }
     const next = getNextUpcoming();
-    return clockPart + " " + (next ? "Next up: " + next.title + " at " + fmtClock(next.start) + "." : "Nothing else scheduled today.");
+    return clockPart + " " + (next ? w("nextUp") + ": " + next.title + " at " + fmtClock(next.start) + "." : "Nothing else scheduled today.");
   }
 
   function speakNow(){
@@ -3102,6 +3123,15 @@
       segHtml("st_headsUp", [["0", "Off"], ["2", "2 min"], ["5", "5 min"], ["10", "10 min"]], String(state.ui.headsUp), "headsup") +
 
       '<h3 style="font-size:13.5px;margin:6px 0 8px;">Look &amp; feel</h3>' +
+      '<div class="feature-list">' +
+        '<label class="feature-row">' +
+          '<span class="feature-text">' +
+            '<span class="feature-name">Gentle wording</span>' +
+            '<span class="feature-desc" style="display:block;">Invitations instead of instructions &mdash; &ldquo;Want to start now?&rdquo; instead of &ldquo;Start it now&rdquo;</span>' +
+          '</span>' +
+          '<input type="checkbox" class="switch" role="switch" id="st_gentle" aria-label="Gentle wording"' + (state.ui.gentle ? ' checked' : '') + '>' +
+        '</label>' +
+      '</div>' +
       '<p class="dialog-sub" style="margin:0 0 6px;">Text size</p>' +
       segHtml("st_textSize", TEXT_SIZES, state.ui.textSize, "size") +
       '<p class="dialog-sub" style="margin:0 0 6px;">Celebration style</p>' +
@@ -3214,6 +3244,10 @@
       document.getElementById("st_tabsBody").innerHTML = tabsSectionHtml();
     });
     syncFeatureRows();
+    document.getElementById("st_gentle").addEventListener("change", (e) => {
+      state.ui.gentle = e.target.checked;
+      commit();
+    });
     document.getElementById("st_headsUp").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-headsup]");
       if (!b) return;
