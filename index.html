@@ -141,6 +141,15 @@
     0%{ opacity:1; transform:translate(0,0) scale(.6) rotate(0deg); }
     100%{ opacity:0; transform:translate(var(--dx,0px),-55px) scale(1.15) rotate(20deg); }
   }
+  .delete-poof{
+    position:fixed; pointer-events:none; z-index:50; font-size:24px; line-height:1;
+    opacity:0; animation: deletePoof 750ms ease-out forwards;
+  }
+  @keyframes deletePoof{
+    0%{ opacity:0; transform:translate(-50%,-50%) scale(.5); }
+    25%{ opacity:1; transform:translate(-50%,-50%) scale(1.15); }
+    100%{ opacity:0; transform:translate(calc(-50% - 46px), calc(-50% - 26px)) scale(1.4); }
+  }
   .celebrate-message{
     position:fixed; pointer-events:none; z-index:50; font-weight:700; font-size:14px;
     color:var(--accent); background:var(--card); border:1px solid var(--border);
@@ -1292,8 +1301,12 @@
   }
   function deleteBlockWithConfirm(b){
     if (!b) return;
-    showConfirm('Delete "' + b.title + '"? This can\'t be undone.', () => {
-      state.blocks = state.blocks.filter(x => x.id !== b.id);
+    showConfirm('Delete "' + b.title + '"? This can\'t be undone.', () => removeBlockAnimated(b.id));
+  }
+  function removeBlockAnimated(id){
+    const row = document.querySelector('#timelineList .block-row[data-id="' + id + '"]');
+    animateRemoval(row, () => {
+      state.blocks = state.blocks.filter(x => x.id !== id);
       commit();
     });
   }
@@ -1301,6 +1314,59 @@
     if (!t) return;
     state.todos = state.todos.filter(x => x.id !== t.id);
     commit();
+  }
+
+  // Delete: the card slides off over the red layer with a little puff, then
+  // the gap closes so the list doesn't jump. Reduced motion just fades.
+  // Re-renders pause meanwhile so the row isn't swapped out mid-animation.
+  function animateRemoval(row, done){
+    if (!row || !row.isConnected){ done(); return; }
+    swipeGestureActive = true;
+    const finish = () => { swipeGestureActive = false; done(); };
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion){
+      row.style.transition = "opacity 160ms ease";
+      row.style.opacity = "0";
+      setTimeout(finish, 170);
+      return;
+    }
+    const content = row.querySelector(".swipe-content");
+    const gap = row.nextElementSibling && row.nextElementSibling.classList.contains("tl-gap") ? row.nextElementSibling : null;
+    row.classList.add("swipe-left");
+    row.classList.remove("swipe-right", "swipe-armed-right");
+    const [x, y] = rowCenter(row);
+    deletePoof(x, y);
+    if (content){
+      content.style.transition = "transform 210ms ease-in, opacity 210ms ease-in";
+      content.style.transform = "translateX(-115%) rotate(-3deg)";
+      content.style.opacity = "0";
+    }
+    setTimeout(() => {
+      const parts = [row, gap].filter(Boolean);
+      parts.forEach(el => { el.style.height = el.offsetHeight + "px"; el.style.overflow = "hidden"; });
+      void row.offsetHeight;
+      parts.forEach(el => {
+        el.style.transition = "height 230ms ease, margin 230ms ease, padding 230ms ease, opacity 230ms ease";
+        el.style.height = "0px";
+        el.style.marginTop = el.style.marginBottom = "0px";
+        el.style.paddingTop = el.style.paddingBottom = "0px";
+        el.style.opacity = "0";
+      });
+      setTimeout(finish, 240);
+    }, 200);
+  }
+
+  function deletePoof(x, y){
+    ["💨", "✨"].forEach((emoji, i) => {
+      const el = document.createElement("span");
+      el.className = "delete-poof";
+      el.textContent = emoji;
+      el.style.left = (x - 30 + i * 24) + "px";
+      el.style.top = y + "px";
+      el.style.animationDelay = (i * 70) + "ms";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 900);
+    });
   }
 
   /* ---------------------------------------------------------------------
@@ -2084,8 +2150,7 @@
     (id) => state.todos.find(t => t.id === id),
     completeTodo,
     (item, row, content, reset) => {
-      content.style.transform = "translateX(-140%)";
-      setTimeout(() => deleteTodo(item), 120);
+      animateRemoval(row, () => deleteTodo(item));
     }
   );
 
@@ -2537,10 +2602,10 @@
     document.getElementById("bd_save").addEventListener("click", () => saveBlockForm());
     const delBtn = document.getElementById("bd_delete");
     if (delBtn) delBtn.addEventListener("click", () => {
+      const id = formEditingId;
       showConfirm("Delete this block? This can't be undone.", () => {
-        state.blocks = state.blocks.filter(b => b.id !== formEditingId);
         blockDialog.close();
-        commit();
+        removeBlockAnimated(id);
       });
     });
 
