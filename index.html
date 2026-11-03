@@ -2429,6 +2429,7 @@
   let lastTickMs = performance.now();
   function tick(){
     if (!appBooted) return;
+    updateHeaderLine();
     const now = performance.now();
     const deltaSec = (now - lastTickMs) / 1000;
     lastTickMs = now;
@@ -3298,7 +3299,7 @@
     { group: "todo", key: "energy", name: () => "Energy check-in", desc: "Tag to-dos low, okay or good energy and see the right ones first", sub: true, requires: "todoList" },
     { group: "done", key: "history", name: () => nameOf("done"), desc: "Everything you've finished, by day" },
     { group: "all", key: "focusMode", name: () => "Focus with me", desc: "A calm companion that keeps you company while you work" },
-    { group: "all", key: "dailyWords", name: () => "Kind words at the top", desc: "One gentle line for the day. Off shows today's date instead" },
+    { group: "all", key: "dailyWords", name: () => "Kind words at the top", desc: "A gentle line that changes every hour. Off shows today's date instead" },
     { group: "all", key: "splash", name: () => "Opening animation", desc: "Your little friend wakes up and says hello when the app opens" },
     { group: "all", key: "celebrations", name: () => "Celebrations", desc: "A little party when you finish something" },
     { group: "all", key: "sounds", name: () => "Sounds", desc: "Soft chime when a block starts or you finish" }
@@ -4067,15 +4068,20 @@
     "Nothing has to be perfect.", "Messy progress is still progress.", "Your own way is a fine way.",
     "It's okay if today is a low day.", "Breaks are allowed, any time.", "There's no wrong way to do this.",
     "Needs are allowed to change.", "Being here is already enough.", "Quiet is always an option.",
-    "A soft day still counts."
+    "A soft day still counts.", "Resting is part of the plan.", "You're doing better than you think.",
+    "One thing at a time is plenty.", "Plans can bend, and that's fine.", "It's okay to start again.",
+    "Kindness to yourself counts too.", "Little wins are real wins.", "You don't have to earn rest.",
+    "Today can be gentle.", "Asking for help is allowed."
   ];
   function updateHeaderLine(){
     const el = document.getElementById("headerLine");
     if (!el) return;
     const d = new Date();
+    // A new line every hour (23 lines, so each hour gets a different one from day to day).
     const dayNum = Math.floor(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / 86400000);
+    const hourNum = dayNum * 24 + d.getHours();
     const text = state.features.dailyWords
-      ? DAY_LINES[((dayNum % DAY_LINES.length) + DAY_LINES.length) % DAY_LINES.length]
+      ? DAY_LINES[((hourNum % DAY_LINES.length) + DAY_LINES.length) % DAY_LINES.length]
       : d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" });
     if (el.textContent !== text) el.textContent = text;
   }
