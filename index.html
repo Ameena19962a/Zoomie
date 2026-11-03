@@ -1749,6 +1749,7 @@
   /* ---------------------------------------------------------------------
      Rendering: Focus panel
   --------------------------------------------------------------------- */
+  const FOCUS_LAUNCH_HTML = '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me">🫧 Focus with me</button></div>';
   function renderFocusPanel(){
     const el = document.getElementById("focusPanelBody");
     const cur = getCurrentBlock();
@@ -1762,11 +1763,12 @@
             '<p>Nothing scheduled right now &mdash; this is open time.</p>' +
             '<p class="next-line">' + w("nextUp") + ': <strong>' + escapeHtml(next.title) + '</strong> (' + cat.icon + ' ' + escapeHtml(cat.name) + ') at ' + fmtClock(next.start) + '.</p>' +
             '<div class="focus-actions"><button type="button" class="ghost-btn" data-action="start-now" data-id="' + next.id + '">' + w("startNow") + '</button></div>' +
+            FOCUS_LAUNCH_HTML +
           '</div>' + lowCapacityLinkHtml();
       } else if (sortedBlocks().length === 0){
-        el.innerHTML = '<div class="focus-empty"><p>Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.</p></div>';
+        el.innerHTML = '<div class="focus-empty"><p>Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.</p>' + FOCUS_LAUNCH_HTML + '</div>';
       } else {
-        el.innerHTML = '<div class="focus-empty"><p>Nothing else is scheduled for today.</p></div>' + lowCapacityLinkHtml();
+        el.innerHTML = '<div class="focus-empty"><p>Nothing else is scheduled for today.</p>' + FOCUS_LAUNCH_HTML + '</div>' + lowCapacityLinkHtml();
       }
       updateAriaLive("Nothing is currently active.");
       return;
@@ -1836,7 +1838,7 @@
           '<button type="button" class="ghost-btn" data-action="extend" data-id="' + cur.id + '" data-min="10">+10m</button>' +
           '<button type="button" class="primary-btn" data-action="done" data-id="' + cur.id + '">' + w("markDone") + '</button>' +
         '</div>' +
-        '<div class="focus-actions"><button type="button" class="text-btn fm-launch" data-action="focus-with-me" data-kind="block" data-id="' + cur.id + '">🫧 Focus with me</button></div>' +
+        '<div class="focus-actions"><button type="button" class="ghost-btn fm-launch" data-action="focus-with-me" data-kind="block" data-id="' + cur.id + '">🫧 Focus with me</button></div>' +
       '</div>' + lowCapacityLinkHtml();
   }
 
