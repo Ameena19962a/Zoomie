@@ -998,7 +998,8 @@
       names: (u.names && typeof u.names === "object") ? u.names : {},
       textSize: ["s", "m", "l", "xl"].includes(u.textSize) ? u.textSize : "m",
       celebrateStyle: ["burst", "sparkles", "message"].includes(u.celebrateStyle) ? u.celebrateStyle : "burst",
-      soundOnSilent: u.soundOnSilent === true
+      soundOnSilent: u.soundOnSilent === true,
+      headsUp: [0, 2, 5, 10].includes(u.headsUp) ? u.headsUp : 5
     };
   }
   // Older saves only had { timeline, todoList }, where timeline:false also
@@ -1175,10 +1176,11 @@
         if (startDate) toSchedule.push({
           id: notifIdCounter++, title: "Starting now", body: b.title + " (" + cat.name + ")", schedule: { at: startDate }
         });
-        if (b.duration >= 10){
-          const soonDate = minutesToRealDate(b.start + b.duration - 5);
+        const hu = state.ui.headsUp;
+        if (hu && b.duration > hu){
+          const soonDate = minutesToRealDate(b.start + b.duration - hu);
           if (soonDate) toSchedule.push({
-            id: notifIdCounter++, title: b.title, body: "Ends in 5 minutes", schedule: { at: soonDate }
+            id: notifIdCounter++, title: b.title, body: "About " + hu + " minutes left", schedule: { at: soonDate }
           });
         }
         const endDate = minutesToRealDate(b.start + b.duration);
@@ -2044,6 +2046,32 @@
   }
   ["touchend", "click", "keydown"].forEach(t => document.addEventListener(t, unlockAudio, { passive: true }));
 
+  // Heads-up: two soft, falling notes, deliberately unlike the rising
+  // start/done chimes so "nearly time to switch" is recognisable by ear.
+  const headsUpGiven = new Set();
+  function headsUpText(b, mins){
+    return "⏳ About " + mins + " minute" + (mins === 1 ? "" : "s") + " left on " + b.title + " — a good moment to start wrapping up.";
+  }
+  function playHeadsUpChime(){
+    if (!state.soundEnabled) return;
+    withAudio((audioCtx, now) => {
+      const peak = clamp(state.soundVolume, 0, 1) * 0.22;
+      [{ freq: 783.99, at: 0 }, { freq: 587.33, at: 0.22 }].forEach(note => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = note.freq;
+        const start = now + note.at;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(peak, start + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.5);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(start);
+        osc.stop(start + 0.52);
+      });
+    });
+  }
+
   function playAlarmChime(){
     if (!state.soundEnabled) return;
     withAudio((audioCtx, now) => {
@@ -2158,6 +2186,17 @@
     }
     lastCurrentBlockId = nowCurrentId;
     lastOverrun = nowOverrun;
+
+    const hu = state.ui.headsUp;
+    if (nowCurrent && hu && nowCurrent.duration > hu){
+      const left = timeInfo(nowCurrent).remaining;
+      const key = nowCurrent.id + ":" + nowCurrent.start + ":" + nowCurrent.duration;
+      if (left > 0 && left <= hu && !headsUpGiven.has(key)){
+        headsUpGiven.add(key);
+        playHeadsUpChime();
+        showNotice(headsUpText(nowCurrent, Math.ceil(left)));
+      }
+    }
 
     const today = todayStr();
     if (today !== state.savedForDate){
@@ -3058,6 +3097,10 @@
       '<p class="dialog-sub" style="margin-bottom:10px;">Switch off anything you don\'t need. Nothing is deleted &mdash; switch it back on any time. A tab disappears when everything in it is off.</p>' +
       '<div id="st_features">' + featureListHtml() + '</div>' +
 
+      '<h3 style="font-size:13.5px;margin:6px 0 4px;">Heads-up before a block ends</h3>' +
+      '<p class="dialog-sub" style="margin:0 0 8px;">A soft chime and a note so switching tasks never feels sudden.</p>' +
+      segHtml("st_headsUp", [["0", "Off"], ["2", "2 min"], ["5", "5 min"], ["10", "10 min"]], String(state.ui.headsUp), "headsup") +
+
       '<h3 style="font-size:13.5px;margin:6px 0 8px;">Look &amp; feel</h3>' +
       '<p class="dialog-sub" style="margin:0 0 6px;">Text size</p>' +
       segHtml("st_textSize", TEXT_SIZES, state.ui.textSize, "size") +
@@ -3111,6 +3154,7 @@
           '<div class="field" style="display:flex;gap:8px;flex-wrap:wrap;">' +
             '<button type="button" class="quiet-btn" id="st_testSound">Test start chime</button>' +
             '<button type="button" class="quiet-btn" id="st_testDoneChime">Test done chime</button>' +
+            '<button type="button" class="quiet-btn" id="st_testHeadsUp">Test heads-up</button>' +
           '</div>' +
           '<div class="checkbox-field">' +
             '<input type="checkbox" id="st_soundOnSilent" ' + (state.ui.soundOnSilent ? "checked" : "") + '>' +
@@ -3170,6 +3214,19 @@
       document.getElementById("st_tabsBody").innerHTML = tabsSectionHtml();
     });
     syncFeatureRows();
+    document.getElementById("st_headsUp").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-headsup]");
+      if (!b) return;
+      state.ui.headsUp = parseInt(b.dataset.headsup, 10);
+      markActive(e.currentTarget, b);
+      commit();
+    });
+    document.getElementById("st_testHeadsUp").addEventListener("click", () => {
+      const was = state.soundEnabled;
+      state.soundEnabled = true;
+      playHeadsUpChime();
+      state.soundEnabled = was;
+    });
     document.getElementById("st_textSize").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-size]");
       if (!b) return;
