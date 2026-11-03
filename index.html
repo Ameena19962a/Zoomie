@@ -386,15 +386,25 @@
     background:radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 45%, white), color-mix(in srgb, var(--accent) 75%, transparent));
     opacity:.85; box-shadow:0 0 60px color-mix(in srgb, var(--accent) 40%, transparent);
   }
+  /* One breath every 16s: in ~5s, hold, out ~6s, rest (matches the cue). */
   @media not (prefers-reduced-motion: reduce){
-    .fm-breath{ animation: fmBreathe 10s ease-in-out infinite; }
-    .fm-paused .fm-breath{ animation-play-state:paused; }
+    .fm-breath.breathing{ animation: fmBreathe 16s ease-in-out infinite; }
   }
   @keyframes fmBreathe{
-    0%, 100%{ transform:scale(.78) rotate(0deg); border-radius:46% 54% 52% 48% / 50% 46% 54% 50%; }
-    45%{ transform:scale(1) rotate(8deg); border-radius:54% 46% 48% 52% / 46% 54% 50% 50%; }
-    55%{ transform:scale(1) rotate(8deg); }
+    0%{ transform:scale(.72) rotate(0deg); border-radius:46% 54% 52% 48% / 50% 46% 54% 50%; }
+    30%, 45%{ transform:scale(1) rotate(3deg); border-radius:54% 46% 48% 52% / 46% 54% 50% 50%; }
+    85%, 100%{ transform:scale(.72) rotate(0deg); border-radius:46% 54% 52% 48% / 50% 46% 54% 50%; }
   }
+  .fm-cue{ margin:-8px 0 12px; min-height:1.4em; font-size:14px; color:var(--muted); letter-spacing:.02em; }
+  .fm-msg{ transition:opacity .7s ease; }
+  .fm-msg.fading{ opacity:0; }
+  .fm-calm-link{ margin-top:14px; }
+  .fm-calm-title, .fm-calm-actions{ display:none; }
+  .fm-calm-title{ font-size:20px; font-weight:800; line-height:1.35; margin:0 0 22px; max-width:320px; }
+  #fmInner.fm-calm .fm-calm-title{ display:block; }
+  #fmInner.fm-calm .fm-calm-actions{ display:flex; }
+  #fmInner.fm-calm .fm-with, #fmInner.fm-calm .fm-task, #fmInner.fm-calm .fm-time,
+  #fmInner.fm-calm .fm-normal-actions, #fmInner.fm-calm #fmCheck, #fmInner.fm-calm .fm-close{ display:none; }
   .fm-time{ position:relative; font-size:24px; font-weight:800; color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.25); }
   .fm-msg{ min-height:2.9em; margin:0 0 14px; font-size:15px; color:var(--muted); max-width:320px; }
   .fm-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
@@ -3724,14 +3734,43 @@
      Optional background noise is generated on the phone, nothing streamed.
   --------------------------------------------------------------------- */
   const focusDialog = document.getElementById("focusDialog");
-  const FM_MESSAGES = [
-    "I'm right here with you. Breathe with the shape if it helps.",
-    "One small step at a time.",
-    "It's okay to go slowly.",
-    "You started — that's the hardest part.",
-    "Wiggle, stretch, sip of water — all allowed.",
-    "Still here, still with you."
+  const FM_START = "I'm right here with you. Breathe with the shape if it helps.";
+  // First-person, self-affirming lines for ADHD, autism and building
+  // overwhelm. Calm and validating, never "push harder".
+  const FM_AFFIRMATIONS = [
+    "My brain works differently, not wrongly.",
+    "Starting was the hardest part, and I've already done it.",
+    "Progress counts, even when it's small or messy.",
+    "I don't have to do it perfectly. I just have to do a bit.",
+    "If my focus wanders, I can gently come back. No harm done.",
+    "I'm not lazy. I'm doing my best with the energy I have today.",
+    "Rest isn't something I have to earn.",
+    "My needs are real and valid.",
+    "It's okay to stim. My body knows what it needs.",
+    "I'm allowed to do things my own way.",
+    "Quiet and space are allowed.",
+    "I can take a break before it gets too much.",
+    "Is anything too loud, too bright or itchy? It's okay to change it.",
+    "Unclench my jaw. Drop my shoulders. Breathe out slowly.",
+    "If it all feels like too much, I can stop. Stopping is safe.",
+    "Big feelings pass. I can let this one pass too.",
+    "I can make my world smaller right now: one task, one step.",
+    "Water, a stretch, a loo break \u2014 looking after my body is part of the work.",
+    "I am safe right now.",
+    "I'm proud of myself for being here."
   ];
+  const FM_GROUNDING = [
+    "Breathe with the shape. In\u2026 and out\u2026",
+    "Feel your feet on the floor.",
+    "Unclench your jaw. Let your shoulders drop.",
+    "Notice one thing you can see, and one thing you can hear.",
+    "Turn things down if you can: lights, sound, screens.",
+    "Wrap up warm, hold something soft, or stim \u2014 whatever helps.",
+    "This feeling is big, but it will pass.",
+    "There's nothing you need to do right now.",
+    "You're doing really well just by being here."
+  ];
+  const FM_BREATH = [["Breathe in\u2026", 4800], ["Hold\u2026", 2400], ["Breathe out\u2026", 6400], ["Rest\u2026", 2400]];
   let fm = null;       // the running session
   let fmSetup = null;  // choices on the setup screen
   let fmWakeLock = null;
@@ -3783,7 +3822,8 @@
   }
 
   function startFocus(){
-    fm = { subject: fmSetup.subject, minutes: fmSetup.minutes, sound: fmSetup.sound, startedAt: Date.now(), pausedTotal: 0, pausedAt: null, checkedIn: false, msgIdx: 0, lastMsgAt: Date.now() };
+    fm = { subject: fmSetup.subject, minutes: fmSetup.minutes, sound: fmSetup.sound, startedAt: Date.now(), pausedTotal: 0, pausedAt: null, checkedIn: false, msgIdx: -1, lastMsgAt: Date.now(), calm: false,
+      order: FM_AFFIRMATIONS.map((_, i) => i).sort(() => Math.random() - 0.5) };
     state.ui.focusSound = fmSetup.sound;
     persist();
     renderFocusSession();
@@ -3794,18 +3834,68 @@
 
   function renderFocusSession(){
     const s = fm.subject;
-    document.getElementById("fmInner").innerHTML =
+    const inner = document.getElementById("fmInner");
+    inner.classList.remove("fm-calm");
+    inner.innerHTML =
       '<button type="button" class="icon-btn fm-close" data-fm="stop" aria-label="Stop focusing">✕</button>' +
       '<p class="fm-with" id="fmTitle">' + (s.kind === "none" ? "Focusing" : "Focusing on") + '</p>' +
       '<h2 class="fm-task">' + (s.kind === "none" ? "Just being here 🫧" : escapeHtml(s.title)) + '</h2>' +
+      '<p class="fm-calm-title">You\'re safe. Nothing needs doing right now. 💛</p>' +
       '<div class="fm-breath-wrap"><div class="fm-breath"></div><div class="fm-time" id="fmTime" aria-live="polite"></div></div>' +
-      '<p class="fm-msg" id="fmMsg">' + FM_MESSAGES[0] + '</p>' +
+      '<p class="fm-cue" id="fmCue" aria-hidden="true"></p>' +
+      '<p class="fm-msg" id="fmMsg">' + FM_START + '</p>' +
       '<div id="fmCheck"></div>' +
-      '<div class="fm-actions">' +
+      '<div class="fm-actions fm-normal-actions">' +
         '<button type="button" class="ghost-btn" data-fm="pause" id="fmPauseBtn">Take a breather</button>' +
         '<button type="button" class="primary-btn" data-fm="finish">I\'m done ✨</button>' +
+      '</div>' +
+      '<div class="fm-normal-actions fm-calm-link"><button type="button" class="text-btn" data-fm="calm">😮‍💨 It\'s all too much</button></div>' +
+      '<div class="fm-actions fm-calm-actions" style="flex-direction:column;align-items:stretch;">' +
+        '<button type="button" class="primary-btn" data-fm="calm-resume" style="justify-content:center;">I\'m ready to carry on</button>' +
+        '<button type="button" class="ghost-btn" data-fm="calm-stop">Stop for today \u2014 that\'s okay</button>' +
       '</div>';
+    startBreathing();
     fmTick();
+  }
+
+  // The shape and the "Breathe in / out" cue run from the same start so
+  // they stay in step. They keep going during a breather or calm mode.
+  let fmBreathTimer = null;
+  function startBreathing(){
+    clearTimeout(fmBreathTimer);
+    const shape = document.querySelector("#fmInner .fm-breath");
+    if (shape){ shape.classList.remove("breathing"); void shape.offsetWidth; shape.classList.add("breathing"); }
+    let i = 0;
+    const step = () => {
+      const cue = document.getElementById("fmCue");
+      if (!cue || !focusDialog.open) return;
+      cue.textContent = FM_BREATH[i][0];
+      fmBreathTimer = setTimeout(() => { i = (i + 1) % FM_BREATH.length; step(); }, FM_BREATH[i][1]);
+    };
+    step();
+  }
+  function fadeMsg(text){
+    const el = document.getElementById("fmMsg");
+    if (!el) return;
+    el.classList.add("fading");
+    setTimeout(() => { el.textContent = text; el.classList.remove("fading"); }, 700);
+  }
+
+  function enterCalm(){
+    if (!fm || fm.calm) return;
+    if (!fm.pausedAt) togglePause();
+    fm.calm = true;
+    document.getElementById("fmInner").classList.add("fm-calm");
+    let g = 0;
+    fadeMsg(FM_GROUNDING[0]);
+    fm.calmTimer = setInterval(() => { g = (g + 1) % FM_GROUNDING.length; fadeMsg(FM_GROUNDING[g]); }, 14000);
+  }
+  function leaveCalm(){
+    if (!fm || !fm.calm) return;
+    fm.calm = false;
+    clearInterval(fm.calmTimer);
+    document.getElementById("fmInner").classList.remove("fm-calm");
+    if (fm.pausedAt) togglePause();
   }
 
   function fmTick(){
@@ -3816,11 +3906,12 @@
     if (leftMs <= 0 && !fm.pausedAt){ endFocus(true); return; }
     const mins = Math.ceil(leftMs / 60000);
     timeEl.textContent = fm.pausedAt ? "Paused" : (leftMs < 60000 ? "Almost there" : mins + " min");
+    if (fm.calm) return;
     document.getElementById("fmInner").classList.toggle("fm-paused", !!fm.pausedAt);
-    if (!fm.pausedAt && Date.now() - fm.lastMsgAt > 4 * 60000){
+    if (!fm.pausedAt && Date.now() - fm.lastMsgAt > 3 * 60000){
       fm.lastMsgAt = Date.now();
-      fm.msgIdx = (fm.msgIdx + 1) % FM_MESSAGES.length;
-      document.getElementById("fmMsg").textContent = FM_MESSAGES[fm.msgIdx];
+      fm.msgIdx = (fm.msgIdx + 1) % fm.order.length;
+      fadeMsg(FM_AFFIRMATIONS[fm.order[fm.msgIdx]]);
     }
     if (!fm.checkedIn && !fm.pausedAt && fm.minutes >= 10 && fmElapsedMs() >= fm.minutes * 30000){
       fm.checkedIn = true;
@@ -3840,22 +3931,26 @@
       fm.pausedTotal += Date.now() - fm.pausedAt;
       fm.pausedAt = null;
       startNoise(fm.sound);
-      document.getElementById("fmMsg").textContent = "Welcome back. Let's carry on, gently.";
+      fm.lastMsgAt = Date.now();
+      fadeMsg("Welcome back. Let's carry on, gently.");
       if (btn) btn.textContent = "Take a breather";
     } else {
       fm.pausedAt = Date.now();
       stopNoise();
-      document.getElementById("fmMsg").textContent = "Take your time. Tap Resume whenever you're ready.";
+      if (!fm.calm) fadeMsg("Take your time. Unclench your jaw, drop your shoulders. Tap Resume whenever you're ready.");
       if (btn) btn.textContent = "Resume";
     }
     document.getElementById("fmCheck").innerHTML = "";
     fmTick();
   }
 
-  function endFocus(finished){
+  function endFocus(finished, gentle){
     if (!fm) return;
     const session = fm;
     clearInterval(session.timer);
+    clearInterval(session.calmTimer);
+    clearTimeout(fmBreathTimer);
+    document.getElementById("fmInner").classList.remove("fm-calm");
     stopNoise();
     releaseWakeLock();
     const minsDone = Math.min(session.minutes, Math.round(fmElapsedMs() / 60000));
@@ -3867,6 +3962,18 @@
         title: "Focused " + fmtDuration(minsDone) + (session.subject.kind === "none" ? "" : " on " + session.subject.title)
       });
       commit();
+    }
+    if (gentle){
+      // No chime or colour burst here: nothing extra when overwhelm is high.
+      document.getElementById("fmInner").innerHTML =
+        '<div class="fm-end">' +
+          '<h2 id="fmTitle">You looked after yourself 💛</h2>' +
+          '<p>Stopping when it\'s too much is a real skill, not a failure.' + (minsDone >= 1 ? ' You still focused for ' + fmtDuration(minsDone) + ', and that counts.' : '') + '</p>' +
+          '<div class="fm-actions" style="flex-direction:column;align-items:stretch;">' +
+            '<button type="button" class="ghost-btn" data-fm="close">Close</button>' +
+          '</div>' +
+        '</div>';
+      return;
     }
     if (!finished && minsDone < 1){ focusDialog.close(); return; }
     playCompletionChime();
@@ -3902,6 +4009,9 @@
     else if (act === "pause") togglePause();
     else if (act === "checkin-yes"){ document.getElementById("fmCheck").innerHTML = ""; document.getElementById("fmMsg").textContent = "Lovely. I'm still right here."; }
     else if (act === "finish") endFocus(true);
+    else if (act === "calm") enterCalm();
+    else if (act === "calm-resume") leaveCalm();
+    else if (act === "calm-stop") endFocus(false, true);
     else if (act === "stop") endFocus(false);
     else if (act === "again") startFocus();
     else if (act === "close") focusDialog.close();
@@ -3915,7 +4025,7 @@
   });
   // Escape / back gesture: treat as stopping, never lose the time already done.
   focusDialog.addEventListener("cancel", (e) => {
-    if (fm){ e.preventDefault(); endFocus(false); }
+    if (fm){ e.preventDefault(); endFocus(false, fm.calm); }
   });
 
   async function requestWakeLock(){
