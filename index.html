@@ -338,6 +338,49 @@
   button.dump-dest::after{ content:" ⇄"; font-weight:400; }
   .dump-empty{ color:var(--muted); font-size:13px; margin:14px 0 0; }
 
+  /* ---------- Focus with me ---------- */
+  body.feat-focusmode-off .fm-launch{ display:none; }
+  .fm-launch-row{ margin:-4px 0 10px; }
+  dialog#focusDialog{
+    width:100%; height:100%; max-width:none; max-height:none; margin:0; border-radius:0;
+    background:var(--bg); color:var(--text);
+  }
+  dialog#focusDialog::backdrop{ background:var(--bg); }
+  #fmInner{ min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+    padding:calc(24px + var(--safe-top)) 22px calc(24px + var(--safe-bottom)); max-width:520px; margin:0 auto; }
+  .fm-close{ position:fixed; top:calc(14px + var(--safe-top)); right:16px; }
+  .fm-setup{ width:100%; text-align:left; }
+  .fm-setup h2{ font-size:20px; margin:0 0 4px; }
+  .fm-label{ font-size:13px; font-weight:700; margin:18px 0 8px; color:var(--muted); }
+  .fm-choices{ display:flex; flex-direction:column; gap:8px; }
+  .fm-choice{ text-align:left; border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:12px; padding:12px 14px; font-size:15px; font-weight:600; }
+  .fm-choice.on{ border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
+  .fm-start{ width:100%; justify-content:center; margin-top:22px; padding:14px; font-size:16px; }
+  .fm-with{ margin:0; color:var(--muted); font-size:13px; }
+  .fm-task{ margin:4px 0 26px; font-size:22px; line-height:1.3; }
+  .fm-breath-wrap{ position:relative; width:230px; height:230px; display:flex; align-items:center; justify-content:center; margin-bottom:22px; }
+  .fm-breath{
+    position:absolute; inset:18px; border-radius:46% 54% 52% 48% / 50% 46% 54% 50%;
+    background:radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 45%, white), color-mix(in srgb, var(--accent) 75%, transparent));
+    opacity:.85; box-shadow:0 0 60px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  @media not (prefers-reduced-motion: reduce){
+    .fm-breath{ animation: fmBreathe 10s ease-in-out infinite; }
+    .fm-paused .fm-breath{ animation-play-state:paused; }
+  }
+  @keyframes fmBreathe{
+    0%, 100%{ transform:scale(.78) rotate(0deg); border-radius:46% 54% 52% 48% / 50% 46% 54% 50%; }
+    45%{ transform:scale(1) rotate(8deg); border-radius:54% 46% 48% 52% / 46% 54% 50% 50%; }
+    55%{ transform:scale(1) rotate(8deg); }
+  }
+  .fm-time{ position:relative; font-size:24px; font-weight:800; color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.25); }
+  .fm-msg{ min-height:2.9em; margin:0 0 14px; font-size:15px; color:var(--muted); max-width:320px; }
+  .fm-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .fm-check{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin:0 0 16px; }
+  .fm-check p{ margin:0 0 8px; font-weight:700; }
+  .fm-end h2{ font-size:24px; margin:0 0 8px; }
+  .fm-end p{ color:var(--muted); margin:0 0 20px; }
+
   /* ---------- Day jar ---------- */
   body.feat-dayjar-off #jarPanelSection{ display:none; }
   .jar-panel{ padding:14px 18px; }
@@ -726,6 +769,7 @@
   <section class="panel" id="todoPanelSection" aria-labelledby="todoHeading">
     <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
     <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
+    <div class="fm-launch-row"><button type="button" class="text-btn fm-launch" data-action="focus-with-me">🫧 Focus with me</button></div>
     <div id="energyCheck"></div>
     <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
       <input type="text" id="todoInput" placeholder="Add something…" style="flex:1;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:16px;">
@@ -747,6 +791,10 @@
 </footer>
 
 <nav class="tab-bar" id="tabBar" aria-label="Sections" hidden></nav>
+
+<dialog id="focusDialog" aria-labelledby="fmTitle">
+  <div id="fmInner"></div>
+</dialog>
 
 <div id="ariaLive" class="visually-hidden" aria-live="polite"></div>
 
@@ -1025,7 +1073,7 @@
   /* ---------------------------------------------------------------------
      State
   --------------------------------------------------------------------- */
-  const DEFAULT_FEATURES = { dayJar: true, focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, energy: true, history: true, celebrations: true };
+  const DEFAULT_FEATURES = { dayJar: true, focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, energy: true, history: true, celebrations: true, focusMode: true };
   const TAB_IDS = ["today", "dump", "todo", "done"];
   const DEFAULT_NAMES = { today: "Today", dump: "Brain dump", todo: "To-do list", done: "Done list", focus: "Right now", timeline: "Today's timeline" };
   function normalizeUi(u){
@@ -1042,7 +1090,8 @@
       headsUp: [0, 2, 5, 10].includes(u.headsUp) ? u.headsUp : 5,
       gentle: u.gentle === true,
       dayStart: Number.isFinite(u.dayStart) ? u.dayStart : 7 * 60,
-      dayEnd: Number.isFinite(u.dayEnd) ? u.dayEnd : 22 * 60
+      dayEnd: Number.isFinite(u.dayEnd) ? u.dayEnd : 22 * 60,
+      focusSound: ["off", "brown", "rain"].includes(u.focusSound) ? u.focusSound : "off"
     };
   }
 
@@ -1775,6 +1824,7 @@
           '<button type="button" class="ghost-btn" data-action="extend" data-id="' + cur.id + '" data-min="10">+10m</button>' +
           '<button type="button" class="primary-btn" data-action="done" data-id="' + cur.id + '">' + w("markDone") + '</button>' +
         '</div>' +
+        '<div class="focus-actions"><button type="button" class="text-btn fm-launch" data-action="focus-with-me" data-kind="block" data-id="' + cur.id + '">🫧 Focus with me</button></div>' +
       '</div>' + lowCapacityLinkHtml();
   }
 
@@ -1891,6 +1941,7 @@
     const cl = document.body.classList;
     cl.toggle("feat-focus-off", !f.focus);
     cl.toggle("feat-dayjar-off", !f.dayJar);
+    cl.toggle("feat-focusmode-off", !f.focusMode);
     cl.toggle("feat-timeline-off", !f.timeline);
     cl.toggle("feat-blocks-off", !f.focus && !f.timeline);
     cl.toggle("feat-quickadd-off", !f.quickAdd);
@@ -2415,6 +2466,10 @@
     if (action === "edit"){
       const b = state.blocks.find(x => x.id === t.dataset.id);
       if (b) openBlockForm(b);
+      return;
+    }
+    if (action === "focus-with-me"){
+      openFocus(t.dataset.kind || "", t.dataset.id || "");
       return;
     }
     if (action === "energy-set"){
@@ -3221,6 +3276,7 @@
     { group: "todo", key: "todoList", name: () => nameOf("todo"), desc: "Untimed things to get to today" },
     { group: "todo", key: "energy", name: () => "Energy check-in", desc: "Tag to-dos 🪫 🔋 ⚡ and see the right ones first", sub: true, requires: "todoList" },
     { group: "done", key: "history", name: () => nameOf("done"), desc: "Everything you've finished, by day" },
+    { group: "all", key: "focusMode", name: () => "Focus with me", desc: "A calm companion that keeps you company while you work" },
     { group: "all", key: "celebrations", name: () => "Celebrations", desc: "A little party when you finish something" },
     { group: "all", key: "sounds", name: () => "Sounds", desc: "Soft chime when a block starts or you finish" }
   ];
@@ -3597,6 +3653,264 @@
         renderCatRows();
       });
     });
+  }
+
+  /* ---------------------------------------------------------------------
+     Focus with me: a calm, body-double style session. A breathing shape
+     keeps you company, time left is shown in minutes (no ticking
+     seconds), there's a gentle halfway check-in, and the end celebrates.
+     Optional background noise is generated on the phone, nothing streamed.
+  --------------------------------------------------------------------- */
+  const focusDialog = document.getElementById("focusDialog");
+  const FM_MESSAGES = [
+    "I'm right here with you. Breathe with the shape if it helps.",
+    "One small step at a time.",
+    "It's okay to go slowly.",
+    "You started — that's the hardest part.",
+    "Wiggle, stretch, sip of water — all allowed.",
+    "Still here, still with you."
+  ];
+  let fm = null;       // the running session
+  let fmSetup = null;  // choices on the setup screen
+  let fmWakeLock = null;
+  let fmNoise = null;
+
+  function fmSubjects(){
+    const list = [];
+    const cur = getCurrentBlock();
+    if (cur) list.push({ kind: "block", id: cur.id, title: cur.title, icon: catFor(cur).icon, mins: Math.max(5, Math.min(120, Math.ceil(timeInfo(cur).remaining))) });
+    state.todos.filter(t => !t.done).slice(0, 8).forEach(t => list.push({ kind: "todo", id: t.id, title: t.title, icon: "✅" }));
+    list.push({ kind: "none", id: "", title: "Just focus", icon: "🫧" });
+    return list;
+  }
+
+  function openFocus(kind, id){
+    if (fm){ focusDialog.showModal(); return; }
+    const subjects = fmSubjects();
+    const pick = subjects.find(s => s.kind === kind && s.id === id) || subjects[0];
+    fmSetup = { subject: pick, minutes: pick.mins || 25, sound: state.ui.focusSound };
+    renderFocusSetup();
+    focusDialog.showModal();
+  }
+
+  function renderFocusSetup(){
+    const subjects = fmSubjects();
+    const lengths = [[10, "10 min"], [25, "25 min"], [45, "45 min"]];
+    if (fmSetup.subject.mins && !lengths.some(l => l[0] === fmSetup.subject.mins)) lengths.push([fmSetup.subject.mins, "Rest of it (" + fmSetup.subject.mins + "m)"]);
+    document.getElementById("fmInner").innerHTML =
+      '<div class="fm-setup">' +
+        '<button type="button" class="icon-btn fm-close" data-fm="close" aria-label="Close">✕</button>' +
+        '<h2 id="fmTitle">🫧 Focus with me</h2>' +
+        '<p class="dialog-sub" style="margin:0;">I\'ll keep you company while you work. No pressure &mdash; stop whenever you like.</p>' +
+        '<p class="fm-label">What are you working on?</p>' +
+        '<div class="fm-choices">' + subjects.map((s, i) =>
+          '<button type="button" class="fm-choice' + (s.kind === fmSetup.subject.kind && s.id === fmSetup.subject.id ? ' on' : '') + '" data-fm="subject" data-i="' + i + '">' + s.icon + ' ' + escapeHtml(s.title) + '</button>'
+        ).join('') + '</div>' +
+        '<p class="fm-label">For how long?</p>' +
+        segHtml("fmLength", lengths.map(([m, l]) => [String(m), l]), String(fmSetup.minutes), "fmlen") +
+        '<p class="fm-label">Background sound</p>' +
+        segHtml("fmSound", [["off", "Quiet"], ["brown", "Soft hum"], ["rain", "Rain"]], fmSetup.sound, "fmsound") +
+        '<button type="button" class="primary-btn fm-start" data-fm="start">Start focusing</button>' +
+      '</div>';
+  }
+
+  function fmElapsedMs(){
+    if (!fm) return 0;
+    const now = Date.now();
+    return now - fm.startedAt - fm.pausedTotal - (fm.pausedAt ? now - fm.pausedAt : 0);
+  }
+
+  function startFocus(){
+    fm = { subject: fmSetup.subject, minutes: fmSetup.minutes, sound: fmSetup.sound, startedAt: Date.now(), pausedTotal: 0, pausedAt: null, checkedIn: false, msgIdx: 0, lastMsgAt: Date.now() };
+    state.ui.focusSound = fmSetup.sound;
+    persist();
+    renderFocusSession();
+    startNoise(fm.sound);
+    requestWakeLock();
+    fm.timer = setInterval(fmTick, 1000);
+  }
+
+  function renderFocusSession(){
+    const s = fm.subject;
+    document.getElementById("fmInner").innerHTML =
+      '<button type="button" class="icon-btn fm-close" data-fm="stop" aria-label="Stop focusing">✕</button>' +
+      '<p class="fm-with" id="fmTitle">' + (s.kind === "none" ? "Focusing" : "Focusing on") + '</p>' +
+      '<h2 class="fm-task">' + (s.kind === "none" ? "Just being here 🫧" : escapeHtml(s.title)) + '</h2>' +
+      '<div class="fm-breath-wrap"><div class="fm-breath"></div><div class="fm-time" id="fmTime" aria-live="polite"></div></div>' +
+      '<p class="fm-msg" id="fmMsg">' + FM_MESSAGES[0] + '</p>' +
+      '<div id="fmCheck"></div>' +
+      '<div class="fm-actions">' +
+        '<button type="button" class="ghost-btn" data-fm="pause" id="fmPauseBtn">Take a breather</button>' +
+        '<button type="button" class="primary-btn" data-fm="finish">I\'m done ✨</button>' +
+      '</div>';
+    fmTick();
+  }
+
+  function fmTick(){
+    if (!fm) return;
+    const leftMs = fm.minutes * 60000 - fmElapsedMs();
+    const timeEl = document.getElementById("fmTime");
+    if (!timeEl) return;
+    if (leftMs <= 0 && !fm.pausedAt){ endFocus(true); return; }
+    const mins = Math.ceil(leftMs / 60000);
+    timeEl.textContent = fm.pausedAt ? "Paused" : (leftMs < 60000 ? "Almost there" : mins + " min");
+    document.getElementById("fmInner").classList.toggle("fm-paused", !!fm.pausedAt);
+    if (!fm.pausedAt && Date.now() - fm.lastMsgAt > 4 * 60000){
+      fm.lastMsgAt = Date.now();
+      fm.msgIdx = (fm.msgIdx + 1) % FM_MESSAGES.length;
+      document.getElementById("fmMsg").textContent = FM_MESSAGES[fm.msgIdx];
+    }
+    if (!fm.checkedIn && !fm.pausedAt && fm.minutes >= 10 && fmElapsedMs() >= fm.minutes * 30000){
+      fm.checkedIn = true;
+      document.getElementById("fmCheck").innerHTML =
+        '<div class="fm-check"><p>Still with me? 💛</p><div class="fm-actions">' +
+          '<button type="button" class="primary-btn" data-fm="checkin-yes">Yes, keep going</button>' +
+          '<button type="button" class="ghost-btn" data-fm="pause">I need a breather</button>' +
+        '</div></div>';
+      setTimeout(() => { const c = document.getElementById("fmCheck"); if (c) c.innerHTML = ""; }, 30000);
+    }
+  }
+
+  function togglePause(){
+    if (!fm) return;
+    const btn = document.getElementById("fmPauseBtn");
+    if (fm.pausedAt){
+      fm.pausedTotal += Date.now() - fm.pausedAt;
+      fm.pausedAt = null;
+      startNoise(fm.sound);
+      document.getElementById("fmMsg").textContent = "Welcome back. Let's carry on, gently.";
+      if (btn) btn.textContent = "Take a breather";
+    } else {
+      fm.pausedAt = Date.now();
+      stopNoise();
+      document.getElementById("fmMsg").textContent = "Take your time. Tap Resume whenever you're ready.";
+      if (btn) btn.textContent = "Resume";
+    }
+    document.getElementById("fmCheck").innerHTML = "";
+    fmTick();
+  }
+
+  function endFocus(finished){
+    if (!fm) return;
+    const session = fm;
+    clearInterval(session.timer);
+    stopNoise();
+    releaseWakeLock();
+    const minsDone = Math.min(session.minutes, Math.round(fmElapsedMs() / 60000));
+    fm = null;
+    if (minsDone >= 1){
+      const day = todayStr();
+      (state.history[day] = state.history[day] || []).push({
+        id: uid("focus"), kind: "focus", icon: "🫧", color: null, at: Math.round(actualNowMinutes()),
+        title: "Focused " + fmtDuration(minsDone) + (session.subject.kind === "none" ? "" : " on " + session.subject.title)
+      });
+      commit();
+    }
+    if (!finished && minsDone < 1){ focusDialog.close(); return; }
+    playCompletionChime();
+    const s = session.subject;
+    const item = s.kind === "block" ? state.blocks.find(b => b.id === s.id) : s.kind === "todo" ? state.todos.find(t => t.id === s.id) : null;
+    const canMark = item && !(s.kind === "block" ? item.status === "done" : item.done);
+    document.getElementById("fmInner").innerHTML =
+      '<div class="fm-end">' +
+        '<h2 id="fmTitle">You did it! 🎉</h2>' +
+        '<p>' + (minsDone >= 1 ? 'You stayed with it for ' + fmtDuration(minsDone) + '. That counts.' : 'Every bit counts.') + '</p>' +
+        '<div class="fm-actions" style="flex-direction:column;align-items:stretch;">' +
+          (canMark ? '<button type="button" class="primary-btn" data-fm="mark" style="justify-content:center;">' + escapeHtml(w("markDone")) + ': ' + escapeHtml(s.title) + '</button>' : '') +
+          '<button type="button" class="ghost-btn" data-fm="again">Keep going (+10 min)</button>' +
+          '<button type="button" class="ghost-btn" data-fm="close">Close</button>' +
+        '</div>' +
+      '</div>';
+    fmSetup = { subject: s, minutes: 10, sound: session.sound };
+    if (state.features.celebrations) celebrateBurst(window.innerWidth / 2, window.innerHeight / 2.4);
+  }
+
+  document.getElementById("fmInner").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-fm], [data-fmlen], [data-fmsound]");
+    if (!b) return;
+    if (b.dataset.fmlen){ fmSetup.minutes = parseInt(b.dataset.fmlen, 10); markActive(b.parentElement, b); return; }
+    if (b.dataset.fmsound){ fmSetup.sound = b.dataset.fmsound; markActive(b.parentElement, b); return; }
+    const act = b.dataset.fm;
+    if (act === "subject"){
+      fmSetup.subject = fmSubjects()[parseInt(b.dataset.i, 10)];
+      if (fmSetup.subject.mins) fmSetup.minutes = fmSetup.subject.mins;
+      renderFocusSetup();
+    }
+    else if (act === "start") startFocus();
+    else if (act === "pause") togglePause();
+    else if (act === "checkin-yes"){ document.getElementById("fmCheck").innerHTML = ""; document.getElementById("fmMsg").textContent = "Lovely. I'm still right here."; }
+    else if (act === "finish") endFocus(true);
+    else if (act === "stop") endFocus(false);
+    else if (act === "again") startFocus();
+    else if (act === "close") focusDialog.close();
+    else if (act === "mark"){
+      const s = fmSetup.subject;
+      focusDialog.close();
+      const [x, y] = [window.innerWidth / 2, window.innerHeight / 2];
+      if (s.kind === "block") completeBlock(state.blocks.find(bb => bb.id === s.id), x, y);
+      else completeTodo(state.todos.find(t => t.id === s.id), x, y);
+    }
+  });
+  // Escape / back gesture: treat as stopping, never lose the time already done.
+  focusDialog.addEventListener("cancel", (e) => {
+    if (fm){ e.preventDefault(); endFocus(false); }
+  });
+
+  async function requestWakeLock(){
+    try { if (navigator.wakeLock) fmWakeLock = await navigator.wakeLock.request("screen"); } catch (e) { fmWakeLock = null; }
+  }
+  function releaseWakeLock(){
+    try { if (fmWakeLock) fmWakeLock.release(); } catch (e) {}
+    fmWakeLock = null;
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && fm){ requestWakeLock(); fmTick(); }
+  });
+
+  function startNoise(kind){
+    stopNoise();
+    if (kind !== "brown" && kind !== "rain") return;
+    withAudio((ctx, now) => {
+      if (!fm || fm.pausedAt || fmNoise) return;
+      const len = ctx.sampleRate * 6;
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < len; i++){
+        const white = Math.random() * 2 - 1;
+        if (kind === "brown"){ last = (last + 0.02 * white) / 1.02; d[i] = last * 3.5; }
+        else d[i] = white;
+      }
+      const fade = Math.floor(ctx.sampleRate * 0.05);
+      for (let i = 0; i < fade; i++){ const k = i / fade; d[i] *= k; d[len - 1 - i] *= k; }
+      const src = ctx.createBufferSource();
+      src.buffer = buf; src.loop = true;
+      const gain = ctx.createGain();
+      const target = clamp(state.soundVolume, 0, 1) * (kind === "brown" ? 0.55 : 0.16);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(target, now + 2.5);
+      let out = src;
+      if (kind === "rain"){
+        const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 500;
+        const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2600;
+        src.connect(hp); hp.connect(lp); out = lp;
+      }
+      out.connect(gain).connect(ctx.destination);
+      src.start(now);
+      fmNoise = { src, gain, ctx };
+    });
+  }
+  function stopNoise(){
+    if (!fmNoise) return;
+    const { src, gain, ctx } = fmNoise;
+    fmNoise = null;
+    try {
+      const t = ctx.currentTime;
+      gain.gain.cancelScheduledValues(t);
+      gain.gain.setValueAtTime(gain.gain.value, t);
+      gain.gain.linearRampToValueAtTime(0, t + 0.8);
+      src.stop(t + 0.9);
+    } catch (e) {}
   }
 
   /* ---------------------------------------------------------------------
