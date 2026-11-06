@@ -1053,6 +1053,14 @@
     const h = Math.floor(min/60), r = min % 60;
     return r ? (h + "h " + r + "m") : (h + "h");
   }
+  // "1 hour 58 minutes" reads far easier than "118 minutes".
+  function fmtLong(min){
+    min = Math.max(0, Math.round(min));
+    const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
+    if (min < 60) return plural(min, "minute");
+    const h = Math.floor(min / 60), r = min % 60;
+    return plural(h, "hour") + (r ? " " + plural(r, "minute") : "");
+  }
   function todayStr(){
     const d = new Date();
     return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
@@ -1891,7 +1899,7 @@
 
     const cat = catFor(cur);
     const { remaining, fraction, overrun } = timeInfo(cur);
-    const holeLabel = overrun ? w("timesUp") : (Math.ceil(remaining) + "m");
+    const holeLabel = overrun ? w("timesUp") : fmtDuration(Math.ceil(remaining));
     const timerOn = state.features.timer;
     const pie = !timerOn ? ""
       : state.showTimer
@@ -1916,8 +1924,8 @@
       overrunHtml =
         '<div class="overrun-banner">' +
           '<p>' + (state.ui.gentle
-            ? 'This one is taking a bit longer (about ' + Math.ceil(Math.abs(remaining)) + ' minutes). Totally fine. If you like, give it more time or push the rest of today later.'
-            : 'This task ran over by about ' + Math.ceil(Math.abs(remaining)) + ' minutes. You can give it more time, or push the rest of today later so your plan matches real life.') + '</p>' +
+            ? 'This one is taking a bit longer (about ' + fmtLong(Math.ceil(Math.abs(remaining))) + '). Totally fine. If you like, give it more time or push the rest of today later.'
+            : 'This task ran over by about ' + fmtLong(Math.ceil(Math.abs(remaining))) + '. You can give it more time, or push the rest of today later so your plan matches real life.') + '</p>' +
           '<div class="overrun-row">' +
             '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="5">Push later +5m</button>' +
             '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="10">Push later +10m</button>' +
@@ -1950,7 +1958,7 @@
   }
 
   function remainingSentence(block, remaining, overrun){
-    const n = Math.ceil(remaining), mins = n + " minute" + (n === 1 ? "" : "s");
+    const mins = fmtLong(Math.ceil(remaining));
     if (state.ui.gentle) return overrun
       ? block.title + " is taking a bit longer, that's okay. More time, or move on whenever you're ready."
       : "About " + mins + " left on " + block.title + ", no rush.";
@@ -2298,7 +2306,7 @@
     const cur = getCurrentBlock();
     if (!cur) return;
     const { remaining, fraction, overrun } = timeInfo(cur);
-    const holeLabel = overrun ? w("timesUp") : (Math.ceil(remaining) + "m");
+    const holeLabel = overrun ? w("timesUp") : fmtDuration(Math.ceil(remaining));
 
     if (state.showTimer){
       updatePieEl(document.getElementById("focusPie"), fraction, overrun, holeLabel);
@@ -2708,7 +2716,7 @@
   // start/done chimes so "nearly time to switch" is recognisable by ear.
   const headsUpGiven = new Set();
   function headsUpText(b, mins){
-    return "⏳ About " + mins + " minute" + (mins === 1 ? "" : "s") + " left on " + b.title + (state.ui.gentle ? ". Wrap up whenever it feels right." : ". A good moment to start wrapping up.");
+    return "⏳ About " + fmtLong(mins) + " left on " + b.title + (state.ui.gentle ? ". Wrap up whenever it feels right." : ". A good moment to start wrapping up.");
   }
   function playHeadsUpChime(){
     if (!state.soundEnabled) return;
@@ -2767,7 +2775,7 @@
       const { remaining, overrun } = timeInfo(cur);
       return clockPart + " " + (overrun
         ? cur.title + (state.ui.gentle ? " is taking a bit longer, and that's okay." : ", time is up.")
-        : "You're in " + cur.title + ", " + Math.ceil(remaining) + " minute" + (Math.ceil(remaining) === 1 ? "" : "s") + " left.");
+        : "You're in " + cur.title + ", " + fmtLong(Math.ceil(remaining)) + " left.");
     }
     const next = getNextUpcoming();
     return clockPart + " " + (next ? w("nextUp") + ": " + next.title + " at " + fmtClock(next.start) + "." : "Nothing else planned today.");
