@@ -3,6 +3,12 @@
   "name": "Kindday",
   "short_name": "Kindday",
   "description": "A calm, kind planner for your day.",
+  "lang": "en-GB",
+  "dir": "ltr",
+  "categories": [
+    "productivity",
+    "lifestyle"
+  ],
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

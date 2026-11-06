@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
@@ -649,7 +649,6 @@
   .subtask-list li{ display:flex; align-items:center; gap:8px; font-size:13px; padding:6px 8px; border:1px solid var(--border); border-radius:8px; background:var(--bg); }
   .subtask-list li.done{ color:var(--muted); }
   .subtask-list li.done .subtask-title{ text-decoration: line-through; text-decoration-color:var(--muted-2); }
-  .subtask-list input[type=checkbox]{ width:16px;height:16px; }
   .subtask-list .subtask-title{ flex:1; min-width:0; }
   .subtask-est{ margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
 
@@ -760,6 +759,14 @@
   .cat-manage-row input[type=text].cicon{ width:44px; text-align:center; }
 
   .low-capacity-link{ display:block; text-align:center; margin-top:18px; font-size:12px; }
+
+  /* Bigger tap areas for fingers, without making anything look bigger. */
+  .row-chip, .steps-toggle, .tl-gap button, .icon-mini, .energy-chip, .icon-btn, .text-btn{ position:relative; }
+  .row-chip::after, .steps-toggle::after, .tl-gap button::after, .icon-mini::after,
+  .energy-chip::after, .icon-btn::after, .text-btn::after{ content:""; position:absolute; inset:-8px; }
+  .primary-btn, .ghost-btn{ min-height:40px; }
+  .energy-check .seg button{ min-height:36px; }
+  .subtask-list input[type=checkbox]{ width:20px; height:20px; }
 </style>
 </head>
 <body>
@@ -1243,7 +1250,10 @@
   function rollOverDay(){
     const today = todayStr();
     state.blocks = state.blocks.filter(b => !(b.repeat === "once" && b.date && b.date < today));
-    state.blocks.forEach(b => { b.status = "pending"; (b.subtasks || []).forEach(s => { s.done = false; }); });
+    state.blocks.forEach(b => {
+      if (b.baseStart !== undefined){ b.start = b.baseStart; b.duration = b.baseDuration; delete b.baseStart; delete b.baseDuration; }
+      b.status = "pending"; (b.subtasks || []).forEach(s => { s.done = false; });
+    });
     state.todos = state.todos.filter(t => !t.done);
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 400);
     const cutoffStr = cutoff.getFullYear() + "-" + String(cutoff.getMonth() + 1).padStart(2, "0") + "-" + String(cutoff.getDate()).padStart(2, "0");
@@ -1297,6 +1307,11 @@
     return null;
   }
 
+  // Starting early, adding time or pushing later only changes today for a
+  // repeating task: its usual time is kept and restored at the next new day.
+  function todayOnly(b){
+    if (b.repeat !== "once" && b.baseStart === undefined){ b.baseStart = b.start; b.baseDuration = b.duration; }
+  }
   function shiftBlocksFrom(pointMinutes, deltaMinutes, excludeIds){
     excludeIds = excludeIds || new Set();
     sortedBlocks().forEach(b => {
@@ -1309,28 +1324,41 @@
   const LocalNotifications = hasCapacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.LocalNotifications : null;
   let notifPermission = "unknown";
 
-  async function initNotifications(){
+  // Phones only allow the permission question after a tap, so the app never
+  // asks (or nags) on launch: Settings has a "Turn on reminders" button.
+  async function initNotifications(ask){
     if (LocalNotifications){
       try {
         const perm = await LocalNotifications.checkPermissions();
-        if (perm.display !== "granted"){
-          const req = await LocalNotifications.requestPermissions();
-          notifPermission = req.display;
-        } else {
-          notifPermission = "granted";
-        }
+        notifPermission = perm.display === "granted" ? "granted"
+          : ask ? (await LocalNotifications.requestPermissions()).display : (perm.display === "denied" ? "denied" : "default");
       } catch (e) { notifPermission = "unavailable"; }
     } else if (typeof Notification !== "undefined") {
       try {
-        notifPermission = Notification.permission === "default" ? (await Notification.requestPermission()) : Notification.permission;
+        notifPermission = ask && Notification.permission === "default" ? (await Notification.requestPermission()) : Notification.permission;
       } catch (e) { notifPermission = "unavailable"; }
     } else {
       notifPermission = "unavailable";
     }
-    if (notifPermission !== "granted"){
-      showNotice("Reminders are off. Allow notifications in your phone settings if you'd like Kindday to let you know when tasks start and end.");
-    }
     scheduleNotifications();
+    return notifPermission;
+  }
+  function reminderStatusText(){
+    if (notifPermission === "granted") return LocalNotifications
+      ? "Reminders are on. Kindday lets you know when a task starts and ends."
+      : "Reminders are on. They work best while Kindday is open or in the background.";
+    if (notifPermission === "denied") return "Reminders are blocked. To turn them on, allow notifications for Kindday in your phone settings.";
+    if (notifPermission === "unavailable") return "Reminders can't show here. On an iPhone, add Kindday to your Home Screen first.";
+    return "Reminders are off. Kindday can let you know when a task starts and ends.";
+  }
+  // Android only allows notifications sent through the service worker.
+  function webNotify(title, opts){
+    opts = Object.assign({ icon: "icons/icon-192.png", badge: "icons/icon-192.png" }, opts);
+    const direct = () => { try { new Notification(title, opts); } catch (e) {} };
+    if (!("serviceWorker" in navigator)){ direct(); return; }
+    navigator.serviceWorker.getRegistration()
+      .then(reg => reg ? reg.showNotification(title, opts) : direct())
+      .catch(direct);
   }
 
   function minutesToRealDate(minutesSinceMidnight){
@@ -1385,11 +1413,11 @@
       const endKey = b.id + ":end";
       if (!webNotifiedKeys.has(startKey) && state.simNow >= b.start && state.simNow < b.start + 1){
         webNotifiedKeys.add(startKey);
-        new Notification(w("notifStart"), { body: b.title, tag: startKey });
+        webNotify(w("notifStart"), { body: b.title, tag: startKey });
       }
       if (!webNotifiedKeys.has(endKey) && state.simNow >= b.start + b.duration && state.simNow < b.start + b.duration + 1){
         webNotifiedKeys.add(endKey);
-        new Notification(b.title, { body: w("notifEnd"), tag: endKey });
+        webNotify(b.title, { body: w("notifEnd"), tag: endKey });
       }
     });
   }
@@ -1556,6 +1584,7 @@
     const now = Math.round(state.simNow);
     const others = sortedBlocks().filter(x => x.status === "pending" && x.id !== b.id);
     const waiting = others.filter(x => x.start <= now);
+    [b].concat(others).forEach(todayOnly);
     b.start = now;
     let end = now + b.duration;
     waiting.forEach(x => { x.start = end; end += x.duration; });
@@ -2529,7 +2558,7 @@
     if (action === "extend"){
       const b = state.blocks.find(x => x.id === t.dataset.id);
       const min = parseInt(t.dataset.min, 10) || 5;
-      if (b) { b.duration += min; commit(); }
+      if (b) { todayOnly(b); b.duration += min; commit(); }
       return;
     }
     if (action === "reflow"){
@@ -2901,7 +2930,7 @@
   // so the rest of the day reflects an overrun instead of silently going stale.
   function reflowAfter(block, minutes){
     const point = block.start + block.duration;
-    shiftBlocksFrom(point, minutes, new Set());
+    sortedBlocks().forEach(b => { if (b.start >= point){ todayOnly(b); b.start += minutes; } });
   }
 
   /* ---------------------------------------------------------------------
@@ -3174,6 +3203,7 @@
       block.title = titleVal;
       block.start = startVal;
       block.duration = durationVal;
+      delete block.baseStart; delete block.baseDuration; // an edit sets its usual time
     } else {
       block = mkBlock(titleVal, null, startVal, durationVal, formIsBuffer, []);
       state.blocks.push(block);
@@ -3428,6 +3458,14 @@
         '<div class="field"><button type="button" class="text-btn" id="st_addCat">+ Add category</button></div>' +
       '</div>' +
 
+      '<details class="more-options" id="st_remindDetails">' +
+        '<summary>Reminders</summary>' +
+        '<div class="more-options-body">' +
+          '<p class="dialog-sub" id="st_remindStatus" style="margin:0 0 10px;">' + reminderStatusText() + '</p>' +
+          (notifPermission === "default" ? '<div class="field"><button type="button" class="quiet-btn" id="st_remindBtn">Turn on reminders</button></div>' : '') +
+        '</div>' +
+      '</details>' +
+
       '<details class="more-options" id="st_soundDetails"' + (state.soundEnabled || state.speakEnabled ? " open" : "") + '>' +
         '<summary>Sound &amp; voice</summary>' +
         '<div class="more-options-body">' +
@@ -3510,6 +3548,12 @@
       state.soundEnabled = true;
       playHeadsUpChime();
       state.soundEnabled = was;
+    });
+    const remindBtn = document.getElementById("st_remindBtn");
+    if (remindBtn) remindBtn.addEventListener("click", async () => {
+      await initNotifications(true);
+      document.getElementById("st_remindStatus").textContent = reminderStatusText();
+      if (notifPermission !== "default") remindBtn.parentElement.remove();
     });
     document.getElementById("st_textSize").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-size]");
@@ -4105,8 +4149,24 @@
     document.getElementById("dumpInput").value = state.brainDump;
     activeTab = null;
     render();
-    initNotifications();
+    initNotifications(false);
   }
+
+  // Each open dialog adds a step to the history, so the Android back button
+  // (or back swipe) closes it instead of leaving the app.
+  let ignorePops = 0;
+  document.querySelectorAll("dialog").forEach(d => {
+    const show = d.showModal.bind(d);
+    d.showModal = () => { if (d.open) return; show(); history.pushState({ kdDialog: d.id }, ""); };
+    d.addEventListener("close", () => {
+      if (history.state && history.state.kdDialog === d.id){ ignorePops++; history.back(); }
+    });
+  });
+  window.addEventListener("popstate", () => {
+    if (ignorePops > 0){ ignorePops--; return; }
+    const open = [...document.querySelectorAll("dialog[open]")].pop();
+    if (open) open.close();
+  });
 
   if (speechSupported){
     const speakBtn = document.getElementById("speakNowBtn");
