@@ -797,7 +797,7 @@
     <div class="sim-clock" id="simClockWrap" title="Speed and other testing tools are in Settings"><strong id="simClockText">--:--</strong></div>
     <button type="button" class="icon-btn" id="speakNowBtn" aria-label="Speak the time and current plan" title="Speak the time and current plan" style="display:none;">🔊</button>
     <button type="button" class="icon-btn" id="settingsBtn" aria-label="Settings: categories, sound, and more" title="Settings">⚙️</button>
-    <button type="button" class="primary-btn" id="newBlockBtn" data-action="new-block">+ New block</button>
+    <button type="button" class="primary-btn" id="newBlockBtn" data-action="new-block">+ New task</button>
   </div>
 </header>
 
@@ -836,7 +836,7 @@
  <div class="tab-panel" data-tab="dump">
   <section class="panel" id="dumpPanelSection" aria-labelledby="dumpHeading">
     <h2 id="dumpHeading" style="margin:0 0 4px;">Brain dump</h2>
-    <p class="dialog-sub" style="margin:0 0 12px;">Get it all out of your head &mdash; messy is fine. Then tap Sort it and it becomes a list.</p>
+    <p class="dialog-sub" style="margin:0 0 12px;">Get it all out of your head. Messy is fine. Then tap Sort it and it turns into a list.</p>
     <textarea id="dumpInput" rows="7" placeholder="call GP at 3pm, buy milk and eggs&#10;finish essay for 2 hours&#10;reply to Sam&#10;book dentist tomorrow"></textarea>
     <div class="dump-actions">
       <button type="button" class="primary-btn" id="dumpSortBtn">✨ Sort it</button>
@@ -849,15 +849,15 @@
  <div class="tab-panel" data-tab="done">
   <section class="panel" id="donePanelSection" aria-labelledby="doneHeading">
     <h2 id="doneHeading" style="margin:0 0 4px;">Done list</h2>
-    <p class="dialog-sub" style="margin:0 0 12px;">Everything you've finished, day by day. No streaks, no pressure &mdash; just proof you did things.</p>
+    <p class="dialog-sub" style="margin:0 0 12px;">Everything you've finished, day by day. No streaks, no pressure. Just proof you did things.</p>
     <div id="doneList"></div>
   </section>
  </div>
 
  <div class="tab-panel" data-tab="todo">
   <section class="panel" id="todoPanelSection" aria-labelledby="todoHeading">
-    <h2 id="todoHeading" style="margin:0 0 4px;">To-do list</h2>
-    <p class="dialog-sub" style="margin:0 0 12px;">No time slot needed &mdash; just things to get to today.</p>
+    <h2 id="todoHeading" style="margin:0 0 4px;">To do list</h2>
+    <p class="dialog-sub" style="margin:0 0 12px;">No set time needed. Just things to get to today.</p>
     <div class="fm-launch-row"><button type="button" class="text-btn fm-launch" data-action="focus-with-me"><span class="buddy-emoji">☁️</span> Focus with me</button></div>
     <div id="energyCheck"></div>
     <form id="todoForm" style="display:flex;gap:8px;margin-bottom:14px;">
@@ -870,7 +870,7 @@
 
   <p id="allOffNotice">Everything's switched off right now.</p>
   <div class="customize-row">
-    <button type="button" class="text-btn" id="customizeBtn">Customize what you see</button>
+    <button type="button" class="text-btn" id="customizeBtn">Customise what you see</button>
   </div>
 </main>
 
@@ -1009,7 +1009,7 @@
     return d.getHours() * 60 + d.getMinutes() + d.getSeconds()/60;
   }
 
-  const BUFFER_META = { name: "Buffer", color: "#9aa0a1", icon: "⏳" };
+  const BUFFER_META = { name: "Break", color: "#9aa0a1", icon: "⏳" };
   const STORAGE_KEY = "timeanchor_state_v1";
 
   let appBooted = false;
@@ -1091,6 +1091,7 @@
     (list || []).forEach(b => {
       if (!["once", "daily", "weekly"].includes(b.repeat)){ b.repeat = "daily"; b.date = null; b.days = []; }
       if (!Array.isArray(b.days)) b.days = [];
+      if (b.isBuffer && b.title === "Buffer") b.title = "Break";
     });
     return list || [];
   }
@@ -1100,7 +1101,7 @@
     return true;
   }
   function mkBuffer(start, duration){
-    return mkBlock("Buffer", null, start, duration, true, []);
+    return mkBlock("Break", null, start, duration, true, []);
   }
 
   /* ---------------------------------------------------------------------
@@ -1148,7 +1149,7 @@
   --------------------------------------------------------------------- */
   const DEFAULT_FEATURES = { categories: true, dayJar: true, focus: true, timer: true, timeline: true, quickAdd: true, buffers: true, brainDump: true, todoList: true, energy: true, history: true, celebrations: true, focusMode: true, splash: true, dailyWords: true };
   const TAB_IDS = ["today", "dump", "todo", "done"];
-  const DEFAULT_NAMES = { today: "Today", dump: "Brain dump", todo: "To-do list", done: "Done list", focus: "Right now", timeline: "Today's timeline" };
+  const DEFAULT_NAMES = { today: "Today", dump: "Brain dump", todo: "To do list", done: "Done list", focus: "Right now", timeline: "Today's timeline" };
   function normalizeUi(u){
     u = u || {};
     const order = (Array.isArray(u.tabOrder) ? u.tabOrder : []).filter(id => TAB_IDS.includes(id));
@@ -1176,10 +1177,10 @@
     markDone: ["Mark done", "I did it ✨"],
     timesUp: ["Time's up", "All set?"],
     runningOver: ["Running over", "Taking a bit longer"],
-    behind: ["Waiting — running behind", "Whenever you're ready"],
+    behind: ["Running behind, that's okay", "Whenever you're ready"],
     nextUp: ["Next up", "Coming up"],
     notifStart: ["Starting now", "Ready when you are"],
-    notifEnd: ["Time's up — check in on Kindday", "Time for a gentle check-in"]
+    notifEnd: ["Time's up, check in on Kindday", "Time for a gentle check in"]
   };
   function w(key){ return WORDS[key][state && state.ui && state.ui.gentle ? 1 : 0]; }
   // Older saves only had { timeline, todoList }, where timeline:false also
@@ -1327,7 +1328,7 @@
       notifPermission = "unavailable";
     }
     if (notifPermission !== "granted"){
-      showNotice("Reminders are off — allow notifications in your device settings if you'd like Kindday to alert you when blocks start and end.");
+      showNotice("Reminders are off. Allow notifications in your phone settings if you'd like Kindday to let you know when tasks start and end.");
     }
     scheduleNotifications();
   }
@@ -1738,11 +1739,11 @@
     return sortedBlocks().some(b => b.status === "pending");
   }
   function clearLowCapacityDay(){
-    showConfirm("Clear the rest of today's plan? Nothing is lost — your schedule comes back fresh tomorrow.", () => {
+    showConfirm("Clear the rest of today's plan? Nothing is lost. Your plan comes back fresh tomorrow.", () => {
       const clearedIds = [];
       sortedBlocks().forEach(b => { if (b.status === "pending"){ clearedIds.push(b.id); b.status = "skipped"; } });
       commit();
-      showNotice("Today's plan is cleared — no pressure. Tomorrow starts fresh.", () => {
+      showNotice("Today's plan is cleared. No pressure. Tomorrow starts fresh.", () => {
         state.blocks.forEach(b => { if (clearedIds.includes(b.id)) b.status = "pending"; });
         commit();
       });
@@ -1789,15 +1790,15 @@
         const cat = catFor(next);
         el.innerHTML =
           '<div class="focus-empty">' +
-            '<p>Nothing scheduled right now &mdash; this is open time.</p>' +
+            '<p>Nothing planned right now. This is free time.</p>' +
             '<p class="next-line">' + w("nextUp") + ': <strong>' + escapeHtml(next.title) + '</strong>' + (cat.name && state.features.categories ? ' (' + cat.icon + ' ' + escapeHtml(cat.name) + ')' : '') + ' at ' + fmtClock(next.start) + '.</p>' +
             '<div class="focus-actions"><button type="button" class="ghost-btn" data-action="start-now" data-id="' + next.id + '">' + w("startNow") + '</button></div>' +
             focusLaunchHtml() +
           '</div>' + lowCapacityLinkHtml();
       } else if (sortedBlocks().length === 0){
-        el.innerHTML = '<div class="focus-empty"><p>Nothing on the calendar yet &mdash; tap "+ New block" to add your first one.</p>' + focusLaunchHtml() + '</div>';
+        el.innerHTML = '<div class="focus-empty"><p>No tasks yet. Tap "+ New task" to add your first one.</p>' + focusLaunchHtml() + '</div>';
       } else {
-        el.innerHTML = '<div class="focus-empty"><p>Nothing else is scheduled for today.</p>' + focusLaunchHtml() + '</div>' + lowCapacityLinkHtml();
+        el.innerHTML = '<div class="focus-empty"><p>Nothing else planned for today.</p>' + focusLaunchHtml() + '</div>' + lowCapacityLinkHtml();
       }
       updateAriaLive("Nothing is currently active.");
       return;
@@ -1830,12 +1831,12 @@
       overrunHtml =
         '<div class="overrun-banner">' +
           '<p>' + (state.ui.gentle
-            ? 'This one is taking a bit longer (about ' + Math.ceil(Math.abs(remaining)) + ' minutes) &mdash; totally fine. If you like, give it more time or move the rest of today along.'
-            : 'This block ran over by about ' + Math.ceil(Math.abs(remaining)) + ' minutes. You can extend it, or push the rest of today later so the schedule matches reality.') + '</p>' +
+            ? 'This one is taking a bit longer (about ' + Math.ceil(Math.abs(remaining)) + ' minutes). Totally fine. If you like, give it more time or push the rest of today later.'
+            : 'This task ran over by about ' + Math.ceil(Math.abs(remaining)) + ' minutes. You can give it more time, or push the rest of today later so your plan matches real life.') + '</p>' +
           '<div class="overrun-row">' +
-            '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="5">Reflow +5m</button>' +
-            '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="10">Reflow +10m</button>' +
-            '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="' + suggested + '">Reflow +' + suggested + 'm (match overrun)</button>' +
+            '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="5">Push later +5m</button>' +
+            '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="10">Push later +10m</button>' +
+            '<button type="button" class="quiet-btn" data-action="reflow" data-id="' + cur.id + '" data-min="' + suggested + '">Push later +' + suggested + 'm (how long it ran over)</button>' +
           '</div>' +
         '</div>';
     }
@@ -1845,7 +1846,7 @@
         catChip(cat) +
         (pie ? '<div class="big-pie">' + pie + '</div>' : '') +
         '<p class="focus-title">' + escapeHtml(cur.title) + '</p>' +
-        '<p class="focus-time-range">' + fmtClock(cur.start) + ' &ndash; ' + fmtClock(cur.start + cur.duration) + ' <span class="block-dur">&middot; ' + fmtDuration(cur.duration) + (overrun ? " (running over)" : "") + '</span></p>' +
+        '<p class="focus-time-range">' + fmtClock(cur.start) + ' to ' + fmtClock(cur.start + cur.duration) + ' <span class="block-dur">&middot; ' + fmtDuration(cur.duration) + (overrun ? " (running over)" : "") + '</span></p>' +
         (timerOn ? '<p class="focus-remaining-text" id="focusRemainingText">' + remainingSentence(cur, remaining, overrun) + '</p>' : '') +
         subtasksHtml +
         overrunHtml +
@@ -1860,15 +1861,15 @@
 
   function lowCapacityLinkHtml(){
     if (!hasClearableBlocksToday()) return "";
-    return '<a href="#" class="low-capacity-link text-btn" data-action="low-capacity-day" style="margin-top:14px;">Low-capacity day? Clear the rest of today</a>';
+    return '<a href="#" class="low-capacity-link text-btn" data-action="low-capacity-day" style="margin-top:14px;">Low energy day? Clear the rest of today</a>';
   }
 
   function remainingSentence(block, remaining, overrun){
     const n = Math.ceil(remaining), mins = n + " minute" + (n === 1 ? "" : "s");
     if (state.ui.gentle) return overrun
-      ? block.title + " is taking a bit longer — that's okay. More time, or move on whenever you're ready."
-      : "About " + mins + " left on " + block.title + " — no rush.";
-    if (overrun) return block.title + ": time is up. Extend it or reflow the rest of today.";
+      ? block.title + " is taking a bit longer, that's okay. More time, or move on whenever you're ready."
+      : "About " + mins + " left on " + block.title + ", no rush.";
+    if (overrun) return block.title + ": time is up. Give it more time or push the rest of today later.";
     return mins + " remaining on " + block.title + ".";
   }
 
@@ -1940,7 +1941,7 @@
           '<div class="swipe-content' + (block.isBuffer ? " is-buffer" : "") + '" style="border-left-color:' + cat.color + ';">' +
             (miniTimer ? miniTimer : "") +
             '<div class="block-main">' +
-              '<p class="block-time"><span style="white-space:nowrap;">' + fmtClock(block.start) + ' &ndash;</span> <span style="white-space:nowrap;">' + fmtClock(block.start + block.duration) + '</span> <span class="block-dur">' + fmtDuration(block.duration) + '</span></p>' +
+              '<p class="block-time"><span style="white-space:nowrap;">' + fmtClock(block.start) + ' to</span> <span style="white-space:nowrap;">' + fmtClock(block.start + block.duration) + '</span> <span class="block-dur">' + fmtDuration(block.duration) + '</span></p>' +
               '<div class="block-top-line">' +
                 catChip(cat) +
                 '<p class="block-title">' + escapeHtml(block.title) + '</p>' +
@@ -1959,10 +1960,10 @@
           '</div>' +
         '</div>';
 
-      html += '<div class="tl-gap"><button type="button" data-action="insert-buffer" data-after="' + block.id + '" aria-label="Insert a 5-minute buffer here" title="Insert a 5-minute buffer">+ buffer</button></div>';
+      html += '<div class="tl-gap"><button type="button" data-action="insert-buffer" data-after="' + block.id + '" aria-label="Add a 5 minute break here" title="Add a 5 minute break">+ break</button></div>';
     });
 
-    el.innerHTML = html || '<p style="color:var(--muted);font-size:13px;">No blocks yet. Use "+ New block" to add one.</p>';
+    el.innerHTML = html || '<p style="color:var(--muted);font-size:13px;">No tasks yet. Tap "+ New task" to add one.</p>';
   }
 
   function escapeHtml(s){
@@ -2112,7 +2113,7 @@
     doneSig = sig;
     const todayCount = (state.history[todayStr()] || []).length;
     if (!days.length){
-      el.innerHTML = '<p class="dump-empty" style="margin:0;">Nothing here yet. Finished things will land here &mdash; even the tiny ones count.</p>';
+      el.innerHTML = '<p class="dump-empty" style="margin:0;">Nothing here yet. Finished things will land here. Even the tiny ones count.</p>';
       return;
     }
     el.innerHTML =
@@ -2140,8 +2141,8 @@
     return s + '</svg>';
   }
   const ENERGY = {
-    low: { icon: battery(1), name: "Low", note: "Low-energy day. The easy ones are at the top \u2014 everything else can wait." },
-    med: { icon: battery(2), name: "Okay", note: "The middle-energy ones are at the top." },
+    low: { icon: battery(1), name: "Low", note: "Low energy day. The easy ones are at the top. Everything else can wait." },
+    med: { icon: battery(2), name: "Okay", note: "The middle energy ones are at the top." },
     high: { icon: battery(3), name: "Good", note: "Good energy! The bigger ones are at the top." }
   };
   const ENERGY_CYCLE = [null, "low", "med", "high"];
@@ -2192,7 +2193,7 @@
   function dayPeriodText(){
     const p = dayPosition();
     if (p.phase === "before") return "Your day hasn't started yet";
-    if (p.phase === "after") return "Day's done \u2014 rest well ⭐";
+    if (p.phase === "after") return "Day's done, rest well ⭐";
     return p.fraction < 0.34 ? "Morning 🌤️" : p.fraction < 0.67 ? "Afternoon ☀️" : "Evening 🌙";
   }
   let jarRenderedCount = -1;
@@ -2234,7 +2235,7 @@
           '<h2>Your day</h2>' +
           '<p class="jar-period" id="jarPeriod">' + dayPeriodText() + '</p>' +
           '<p>' + (count
-            ? count + (count === 1 ? ' marble' : ' marbles') + ' — one for everything you finished today 🌟' + (extra > 0 ? ' (the jar\'s overflowing!)' : '')
+            ? count + (count === 1 ? ' marble' : ' marbles') + ', one for everything you finished today 🌟' + (extra > 0 ? ' (the jar\'s overflowing!)' : '')
             : 'Every little thing you finish drops a marble in 💫') + '</p>' +
         '</div>' +
       '</div>';
@@ -2335,7 +2336,7 @@
   // start/done chimes so "nearly time to switch" is recognisable by ear.
   const headsUpGiven = new Set();
   function headsUpText(b, mins){
-    return "⏳ About " + mins + " minute" + (mins === 1 ? "" : "s") + " left on " + b.title + (state.ui.gentle ? ". Wrap up whenever it feels right." : " — a good moment to start wrapping up.");
+    return "⏳ About " + mins + " minute" + (mins === 1 ? "" : "s") + " left on " + b.title + (state.ui.gentle ? ". Wrap up whenever it feels right." : ". A good moment to start wrapping up.");
   }
   function playHeadsUpChime(){
     if (!state.soundEnabled) return;
@@ -2397,7 +2398,7 @@
         : "You're in " + cur.title + ", " + Math.ceil(remaining) + " minute" + (Math.ceil(remaining) === 1 ? "" : "s") + " left.");
     }
     const next = getNextUpcoming();
-    return clockPart + " " + (next ? w("nextUp") + ": " + next.title + " at " + fmtClock(next.start) + "." : "Nothing else scheduled today.");
+    return clockPart + " " + (next ? w("nextUp") + ": " + next.title + " at " + fmtClock(next.start) + "." : "Nothing else planned today.");
   }
 
   function speakNow(){
@@ -2720,7 +2721,7 @@
   function renderDumpResults(){
     const el = document.getElementById("dumpResults");
     if (!dumpItems.length){
-      el.innerHTML = dumpSortedEmpty ? '<p class="dump-empty">Nothing to sort yet &mdash; type a few things above first.</p>' : "";
+      el.innerHTML = dumpSortedEmpty ? '<p class="dump-empty">Nothing to sort yet. Type a few things above first.</p>' : "";
       return;
     }
     const f = state.features;
@@ -2748,7 +2749,7 @@
       ).join('') + '</ul>' +
       (anyDest
         ? '<button type="button" class="primary-btn" id="dumpAddBtn"></button>'
-        : '<p class="dump-empty">Switch on the timeline or the to-do list in Settings to add these.</p>');
+        : '<p class="dump-empty">Switch on the timeline or the to do list in Settings to add these.</p>');
     updateDumpAddBtn();
   }
 
@@ -2991,7 +2992,7 @@
             '<p id="bd_durationError" style="margin:5px 0 0;font-size:11.5px;color:var(--danger-quiet);display:none;">Type a length like 45m, 1h, or 1h 30m.</p></div>' +
         '</div>' +
         '<details class="more-options" id="bd_moreOptions"' + (hasExtrasAlready ? " open" : "") + '>' +
-          '<summary>More options <span>(steps, buffer)</span></summary>' +
+          '<summary>More options <span>(steps, break)</span></summary>' +
           '<div class="more-options-body">' +
             '<h3 style="font-size:13px;margin:14px 0 8px;color:var(--muted);">Steps (optional)</h3>' +
             '<div class="field"><button type="button" class="text-btn" id="bd_addStepLink">+ Add a step</button></div>' +
@@ -2999,10 +3000,10 @@
             '<h3 style="font-size:13px;margin:16px 0 8px;color:var(--muted);">Extras (optional)</h3>' +
             '<div class="checkbox-field bd-buffer-option">' +
               '<input type="checkbox" id="bd_addBuffer">' +
-              '<label for="bd_addBuffer">Add a short buffer right after this block</label>' +
+              '<label for="bd_addBuffer">Add a short break right after this task</label>' +
             '</div>' +
             '<div class="field" id="bd_bufferMinWrap" style="display:none;">' +
-              '<label for="bd_bufferMin">Buffer length</label>' +
+              '<label for="bd_bufferMin">Break length</label>' +
               '<input type="text" id="bd_bufferMin" value="5m" placeholder="e.g. 5m" inputmode="text">' +
             '</div>' +
           '</div>' +
@@ -3024,10 +3025,10 @@
     }
 
     document.getElementById("blockDialogInner").innerHTML =
-      '<h2 id="blockDialogTitle">' + (isEdit ? (formIsBuffer ? "Edit buffer" : "Edit block") : "New block") + '</h2>' +
-      '<p class="dialog-sub">' + (formIsBuffer ? "Buffers are short transition blocks between tasks." : "Pick a template, name it, and set when it starts &mdash; everything else is optional.") + '</p>' +
+      '<h2 id="blockDialogTitle">' + (isEdit ? (formIsBuffer ? "Edit break" : "Edit task") : "New task") + '</h2>' +
+      '<p class="dialog-sub">' + (formIsBuffer ? "Breaks are short pauses between tasks." : "Pick a category, name it and set when it starts. Everything else is optional.") + '</p>' +
       '<div class="field"><label for="bd_title">Title</label>' +
-        '<input type="text" id="bd_title" value="' + escapeAttr(title) + '" placeholder="' + (formIsBuffer ? "Buffer" : "e.g. Write report") + '"></div>' +
+        '<input type="text" id="bd_title" value="' + escapeAttr(title) + '" placeholder="' + (formIsBuffer ? "Break" : "e.g. Write report") + '"></div>' +
       repeatFieldHtml() +
       bodyFields +
       '<div class="dialog-actions">' +
@@ -3096,7 +3097,7 @@
     if (duration > state.nudgeThreshold && formSubtasks.length === 0 && !formDismissedNudge){
       wrap.innerHTML =
         '<div class="nudge-box">' +
-          '<p>This is a long block &mdash; want to break it into smaller steps?</p>' +
+          '<p>This is a long task. Want to split it into smaller steps?</p>' +
           '<div class="nudge-actions">' +
             '<button type="button" class="ghost-btn" id="bd_nudgeYes">Break it down</button>' +
             '<button type="button" class="text-btn" id="bd_nudgeNo">No thanks</button>' +
@@ -3165,7 +3166,7 @@
       return;
     }
 
-    const titleVal = document.getElementById("bd_title").value.trim() || (formIsBuffer ? "Buffer" : "Untitled block");
+    const titleVal = document.getElementById("bd_title").value.trim() || (formIsBuffer ? "Break" : "Untitled task");
 
     let block;
     if (formEditingId){
@@ -3181,7 +3182,7 @@
     block.repeat = formRepeat;
     block.days = formRepeat === "weekly" ? formDays.slice() : [];
     block.date = formRepeat === "once" ? (wasOnce && block.date ? block.date : todayStr()) : null;
-    if (!blockIsToday(block)) showNotice('Saved — "' + block.title + '" will show up on ' + repeatLabel(block) + '.');
+    if (!blockIsToday(block)) showNotice('Saved. "' + block.title + '" will show up on ' + repeatLabel(block) + '.');
 
     if (!formIsBuffer){
       block.categoryId = document.getElementById("bd_category").value || (state.categories[0] ? state.categories[0].id : null);
@@ -3263,21 +3264,21 @@
   const FEATURE_TOGGLES = [
     { group: "today", key: "dayJar", name: () => "Day jar", desc: "Fills gently as the day goes, plus a marble for everything you finish" },
     { group: "today", key: "focus", name: () => nameOf("focus") + " card", desc: "What you're on now, with its buttons" },
-    { group: "today", key: "timer", name: () => "Countdown timer", desc: "Time left on the current block" },
+    { group: "today", key: "timer", name: () => "Countdown timer", desc: "Time left on the current task" },
     { group: "today", key: "timerShape", name: () => "Show as a shrinking circle", desc: "Off shows just the minutes", sub: true, requires: "timer" },
-    { group: "today", key: "timeline", name: () => nameOf("timeline"), desc: "Today's blocks, in order" },
+    { group: "today", key: "timeline", name: () => nameOf("timeline"), desc: "Today's tasks, in order" },
     { group: "today", key: "categories", name: () => "Categories", desc: "Labels like Work or Rest on your tasks", sub: true, requires: "timeline" },
-    { group: "today", key: "quickAdd", name: () => "Quick add", desc: "One-line box to add a block fast", sub: true, requires: "timeline" },
-    { group: "today", key: "buffers", name: () => "Buffers", desc: "“+ buffer” buttons for breathing room", sub: true, requires: "timeline" },
+    { group: "today", key: "quickAdd", name: () => "Quick add", desc: "A quick box to add a task fast", sub: true, requires: "timeline" },
+    { group: "today", key: "buffers", name: () => "Breaks", desc: "“+ break” buttons for breathing room", sub: true, requires: "timeline" },
     { group: "dump", key: "brainDump", name: () => nameOf("dump"), desc: "Empty your head, then sort it into a list" },
     { group: "todo", key: "todoList", name: () => nameOf("todo"), desc: "Untimed things to get to today" },
-    { group: "todo", key: "energy", name: () => "Energy check-in", desc: "Tag to-dos low, okay or good energy and see the right ones first", sub: true, requires: "todoList" },
+    { group: "todo", key: "energy", name: () => "Energy check in", desc: "Tag to dos low, okay or good energy and see the right ones first", sub: true, requires: "todoList" },
     { group: "done", key: "history", name: () => nameOf("done"), desc: "Everything you've finished, by day" },
     { group: "all", key: "focusMode", name: () => "Focus with me", desc: "A calm companion that keeps you company while you work" },
     { group: "all", key: "dailyWords", name: () => "Kind words at the top", desc: "A gentle line that changes every hour. Off shows today's date instead" },
     { group: "all", key: "splash", name: () => "Opening animation", desc: "Your little friend wakes up and says hello when the app opens" },
     { group: "all", key: "celebrations", name: () => "Celebrations", desc: "A little party when you finish something" },
-    { group: "all", key: "sounds", name: () => "Sounds", desc: "Soft chime when a block starts or you finish" }
+    { group: "all", key: "sounds", name: () => "Sounds", desc: "Soft chime when a task starts or you finish" }
   ];
   const TEXT_SIZES = [["s", "Small"], ["m", "Medium"], ["l", "Large"], ["xl", "Extra large"]];
   const CELEBRATE_STYLES = [["burst", "Big burst"], ["sparkles", "Sparkles"], ["message", "Just words"]];
@@ -3356,18 +3357,18 @@
     const inner = document.getElementById("settingsDialogInner");
     inner.innerHTML =
       '<h2 id="settingsDialogTitle">Settings</h2>' +
-      '<p class="dialog-sub">Saved on this device only &mdash; nothing you type is ever sent anywhere.</p>' +
+      '<p class="dialog-sub">Saved on this phone only. Nothing you type is ever sent anywhere.</p>' +
 
       '<h3 style="font-size:13.5px;margin:0 0 4px;">Features</h3>' +
-      '<p class="dialog-sub" style="margin-bottom:10px;">Switch off anything you don\'t need. Nothing is deleted &mdash; switch it back on any time. A tab disappears when everything in it is off.</p>' +
+      '<p class="dialog-sub" style="margin-bottom:10px;">Switch off anything you don\'t need. Nothing is deleted. Switch it back on any time. A tab disappears when everything in it is off.</p>' +
       '<div id="st_features">' + featureListHtml() + '</div>' +
 
-      '<h3 style="font-size:13.5px;margin:6px 0 4px;">Heads-up before a block ends</h3>' +
+      '<h3 style="font-size:13.5px;margin:6px 0 4px;">Heads up before a task ends</h3>' +
       '<p class="dialog-sub" style="margin:0 0 8px;">A soft chime and a note so switching tasks never feels sudden.</p>' +
       segHtml("st_headsUp", [["0", "Off"], ["2", "2 min"], ["5", "5 min"], ["10", "10 min"]], String(state.ui.headsUp), "headsup") +
 
       '<h3 style="font-size:13.5px;margin:6px 0 4px;">Your day</h3>' +
-      '<p class="dialog-sub" style="margin:0 0 8px;">Roughly when your day starts and ends &mdash; the Day jar fills between these.</p>' +
+      '<p class="dialog-sub" style="margin:0 0 8px;">Roughly when your day starts and ends. The Day jar fills up between these.</p>' +
       '<div class="field-row">' +
         '<div class="field"><label for="st_dayStart">Starts</label><input type="text" id="st_dayStart" value="' + fmtClock(state.ui.dayStart) + '" inputmode="text"></div>' +
         '<div class="field"><label for="st_dayEnd">Ends</label><input type="text" id="st_dayEnd" value="' + fmtClock(state.ui.dayEnd) + '" inputmode="text"></div>' +
@@ -3378,7 +3379,7 @@
         '<label class="feature-row">' +
           '<span class="feature-text">' +
             '<span class="feature-name">Gentle wording</span>' +
-            '<span class="feature-desc" style="display:block;">Invitations instead of instructions &mdash; &ldquo;Want to start now?&rdquo; instead of &ldquo;Start it now&rdquo;</span>' +
+            '<span class="feature-desc" style="display:block;">Invitations instead of instructions, like &ldquo;Want to start now?&rdquo; instead of &ldquo;Start it now&rdquo;</span>' +
           '</span>' +
           '<input type="checkbox" class="switch" role="switch" id="st_gentle" aria-label="Gentle wording"' + (state.ui.gentle ? ' checked' : '') + '>' +
         '</label>' +
@@ -3392,7 +3393,7 @@
       '<div class="field"><button type="button" class="quiet-btn" id="st_previewCelebrate">Preview celebration</button></div>' +
 
       '<details class="more-options" id="st_tabsDetails">' +
-        '<summary>Tabs <span>&mdash; order and which opens first</span></summary>' +
+        '<summary>Tabs <span>(order and which opens first)</span></summary>' +
         '<div class="more-options-body" id="st_tabsBody">' + tabsSectionHtml() + '</div>' +
       '</details>' +
 
@@ -3408,8 +3409,8 @@
       '</details>' +
 
 
-      '<h3 style="font-size:13.5px;margin:16px 0 8px;">Color theme</h3>' +
-      '<p class="dialog-sub" style="margin-bottom:8px;">Recolors all categories at once &mdash; you can still fine-tune individual colors below afterward.</p>' +
+      '<h3 style="font-size:13.5px;margin:16px 0 8px;">Colour theme</h3>' +
+      '<p class="dialog-sub" style="margin-bottom:8px;">Changes the colour of all your categories at once. You can still change each colour below afterwards.</p>' +
       '<div id="st_themeRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">' +
         Object.keys(COLOR_THEMES).map(key => {
           const t = COLOR_THEMES[key];
@@ -3437,17 +3438,17 @@
           '<div class="field" style="display:flex;gap:8px;flex-wrap:wrap;">' +
             '<button type="button" class="quiet-btn" id="st_testSound">Test start chime</button>' +
             '<button type="button" class="quiet-btn" id="st_testDoneChime">Test done chime</button>' +
-            '<button type="button" class="quiet-btn" id="st_testHeadsUp">Test heads-up</button>' +
+            '<button type="button" class="quiet-btn" id="st_testHeadsUp">Test heads up</button>' +
           '</div>' +
           '<div class="checkbox-field">' +
             '<input type="checkbox" id="st_soundOnSilent" ' + (state.ui.soundOnSilent ? "checked" : "") + '>' +
             '<label for="st_soundOnSilent">Play even when my iPhone is on silent (may pause music that\'s playing)</label>' +
           '</div>' +
-          '<p class="dialog-sub" style="margin:-4px 0 12px;">No sound? Check your phone\'s volume and the silent switch on the side of an iPhone &mdash; or turn on the option above.</p>' +
+          '<p class="dialog-sub" style="margin:-4px 0 12px;">No sound? Check your phone\'s volume and the silent switch on the side of an iPhone, or turn on the option above.</p>' +
           (speechSupported ?
             '<div class="checkbox-field">' +
               '<input type="checkbox" id="st_speakEnabled" ' + (state.speakEnabled ? "checked" : "") + '>' +
-              '<label for="st_speakEnabled">Also say the time and plan out loud when a block starts</label>' +
+              '<label for="st_speakEnabled">Also say the time and plan out loud when a task starts</label>' +
             '</div>' +
             '<div class="field"><button type="button" class="quiet-btn" id="st_testSpeak">Test voice</button></div>'
           : '') +
@@ -3463,7 +3464,7 @@
       '</details>' +
 
       '<details class="more-options" id="st_backupDetails">' +
-        '<summary>Backup <span>&mdash; keep your data safe</span></summary>' +
+        '<summary>Backup <span>(keep your data safe)</span></summary>' +
         '<div class="more-options-body">' +
           '<p class="dialog-sub" style="margin-bottom:10px;">Everything lives only on this phone. Save a backup file now and then (to Files, email, or anywhere you like) so a new phone or a cleared browser doesn\'t lose it.</p>' +
           '<div class="field" style="display:flex;gap:8px;flex-wrap:wrap;">' +
@@ -3623,14 +3624,14 @@
   function renderCatRows(){
     const wrap = document.getElementById("st_catRows");
     if (!state.categories.length){
-      wrap.innerHTML = '<p class="dialog-sub" style="margin:0 0 8px;">No categories — tasks simply won\'t have a label. You can also switch Categories off above.</p>';
+      wrap.innerHTML = '<p class="dialog-sub" style="margin:0 0 8px;">No categories. Tasks simply won\'t have a label. You can also switch Categories off above.</p>';
       return;
     }
     wrap.innerHTML = state.categories.map(c => {
       const inUse = state.blocks.some(b => b.categoryId === c.id);
       return (
         '<div class="cat-manage-row" data-cat="' + c.id + '">' +
-          '<input type="color" class="color-swatch-input" data-f="color" value="' + c.color + '" aria-label="' + escapeAttr(c.name) + ' color">' +
+          '<input type="color" class="color-swatch-input" data-f="color" value="' + c.color + '" aria-label="' + escapeAttr(c.name) + ' colour">' +
           '<input type="text" class="cicon" data-f="icon" value="' + escapeAttr(c.icon) + '" maxlength="2" aria-label="' + escapeAttr(c.name) + ' icon">' +
           '<input type="text" class="cname" data-f="name" value="' + escapeAttr(c.name) + '" aria-label="Category name">' +
           '<button type="button" class="icon-mini" data-f="remove" data-inuse="' + inUse + '" title="Delete category" aria-label="Delete ' + escapeAttr(c.name) + '">🗑️</button>' +
@@ -3730,7 +3731,7 @@
       '<div class="fm-setup">' +
         '<button type="button" class="icon-btn fm-close" data-fm="close" aria-label="Close">✕</button>' +
         '<h2 id="fmTitle">' + buddyEmoji() + ' Focus with me</h2>' +
-        '<p class="dialog-sub" style="margin:0;">I\'ll keep you company while you work. No pressure &mdash; stop whenever you like.</p>' +
+        '<p class="dialog-sub" style="margin:0;">I\'ll keep you company while you work. No pressure. Stop whenever you like.</p>' +
         '<p class="fm-label">What are you working on?</p>' +
         '<div class="fm-choices">' + subjects.map((s, i) =>
           '<button type="button" class="fm-choice' + (s.kind === fmSetup.subject.kind && s.id === fmSetup.subject.id ? ' on' : '') + '" data-fm="subject" data-i="' + i + '">' + s.icon + ' ' + escapeHtml(s.title) + '</button>'
@@ -3779,7 +3780,7 @@
       '<div class="fm-normal-actions fm-calm-link"><button type="button" class="text-btn" data-fm="calm">' + buddyEmoji() + ' It\'s all too much</button></div>' +
       '<div class="fm-actions fm-calm-actions" style="flex-direction:column;align-items:stretch;">' +
         '<button type="button" class="primary-btn" data-fm="calm-resume" style="justify-content:center;">I\'m ready to carry on</button>' +
-        '<button type="button" class="ghost-btn" data-fm="calm-stop">Stop for today \u2014 that\'s okay</button>' +
+        '<button type="button" class="ghost-btn" data-fm="calm-stop">Stop for today, that\'s okay</button>' +
       '</div>';
     startBreathing();
     fmTick();
