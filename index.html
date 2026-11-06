@@ -811,7 +811,8 @@
   .low-capacity-link{ display:block; text-align:center; margin-top:18px; font-size:12px; }
 
   /* Bigger tap areas for fingers, without making anything look bigger. */
-  .row-chip, .steps-toggle, .tl-gap button, .icon-mini, .energy-chip, .icon-btn, .text-btn{ position:relative; }
+  /* :where() keeps this at zero priority, so buttons placed elsewhere on purpose (like Focus's close button) stay put. */
+  :where(.row-chip, .steps-toggle, .tl-gap button, .icon-mini, .energy-chip, .icon-btn, .text-btn){ position:relative; }
   .row-chip::after, .steps-toggle::after, .tl-gap button::after, .icon-mini::after,
   .energy-chip::after, .icon-btn::after, .text-btn::after{ content:""; position:absolute; inset:-8px; }
   .primary-btn, .ghost-btn{ min-height:40px; }
