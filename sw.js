@@ -1,5 +1,5 @@
 // Network first so updates show up right away; the cache is only used offline.
-const CACHE = "kindday-v2";
+const CACHE = "kindday-v3";
 const SHELL = [
   "./",
   "./index.html",
@@ -36,5 +36,16 @@ self.addEventListener("fetch", (e) => {
       .catch(() =>
         caches.match(req).then((hit) => hit || (req.mode === "navigate" ? caches.match("./index.html") : Response.error()))
       )
+  );
+});
+
+// Tapping a reminder opens Kindday (or brings it to the front if it's already open).
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => new URL(c.url).origin === self.location.origin);
+      return open ? open.focus() : self.clients.openWindow("./");
+    })
   );
 });
