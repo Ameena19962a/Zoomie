@@ -501,6 +501,8 @@
   .day-friend.cheer .face-happy{ display:inline; }
   .day-friend.cheer .face-awake, .day-friend.cheer .face-sleepy{ display:none; }
   .sk-shoot{ opacity:0; }
+  /* The script blinks the eyes around their own centre, so the opening animation's eye centring must not apply here too. */
+  .day-scene .cloud-eye{ transform-box:view-box; transform-origin:0 0; }
   /* The outline is a plain copy of the body drawn slightly bigger underneath (no filters). */
   .day-scene .fo *{ fill:var(--oc); stroke:var(--oc); stroke-width:3.6px; }
   .day-scene .fo .sun-rays path{ stroke-width:8.5px; }
